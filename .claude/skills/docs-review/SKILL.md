@@ -13,6 +13,7 @@ Run a comprehensive documentation quality review.
 - `/docs-review docs/swida/prd` — Targeted scan of a specific directory
 - `/docs-review docs/swida/tsd/en.md` — Targeted scan of a single file
 - `/docs-review --only sync,terminology` — Run specific checks only
+- `/docs-review --only bizlogic` — Run only business logic checks
 
 ## What It Checks
 
@@ -20,6 +21,7 @@ Run a comprehensive documentation quality review.
 - **Terminology** — Glossary enforcement, new term detection
 - **Cross-references** — Contradictions between docs, broken links
 - **Formatting** — Frontmatter, heading hierarchy, tables, whitespace
+- **Business Logic** — Cross-doc contradictions, feature coverage gaps, data flow mismatches, scope conflicts
 
 ## How to Run
 

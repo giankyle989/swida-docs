@@ -18,6 +18,7 @@ You will receive:
    - **docs-terminology** — dispatch with prompt containing the scope, file list, and glossary path (`docs/swida/glossary.md`)
    - **docs-xref** — dispatch with prompt containing the scope and file list
    - **docs-format** — dispatch with prompt containing the scope and file list
+   - **docs-bizlogic** — dispatch with prompt containing the scope and file list
 
 3. **Collect results.** Wait for all subagents to complete.
 
@@ -30,7 +31,7 @@ You will receive:
 **Files scanned:** <count>
 
 ### Summary
-<total> issues found: <N> sync, <N> terminology, <N> cross-reference, <N> formatting
+<total> issues found: <N> sync, <N> terminology, <N> cross-reference, <N> formatting, <N> business logic
 
 ### Sync (EN/KO Parity)
 <sync findings or "All clear">
@@ -44,6 +45,9 @@ You will receive:
 
 ### Formatting
 <format findings or "All clear">
+
+### Business Logic
+<bizlogic findings or "All clear">
 ```
 
 5. **Handle failures.** If a subagent fails or errors, report the failure in its section and continue with results from other subagents. Example: `docs-sync encountered an error: <message>. Skipping sync checks.`
@@ -56,7 +60,7 @@ You will receive:
 **Scope:** [scope]
 **Files scanned:** <count>
 
-All clear — no issues found across sync, terminology, cross-references, and formatting.
+All clear — no issues found across sync, terminology, cross-references, formatting, and business logic.
 ```
 
 ## Important

@@ -1,6 +1,6 @@
 ---
-title: "PRD — Product Requirements Document"
-sidebar_label: "English"
+title: "SWIDA — Product Requirements Document"
+sidebar_label: "PRD (EN)"
 sidebar_position: 1
 ---
 
@@ -228,8 +228,8 @@ The most comprehensive search mode combining multiple filters simultaneously.
 
 **Available Filters:**
 - **Shop name** — keyword/partial match → Strapi filter: `$containsi`
-- **Level 1 + Level 2 location** — cascading dropdowns → Strapi filter: `filters[region][id][$eq]` and `filters[district][id][$eq]`
-- **Service themes** — multi-select → Strapi filter: `filters[themes][id][$in]`
+- **Level 1 + Level 2 location** — cascading dropdowns → Strapi filter: `filters[region][documentId][$eq]` and `filters[district][documentId][$eq]`
+- **Service themes** — multi-select → Strapi filter: `filters[themes][documentId][$in]`
 - **Amenities** — toggle checkboxes → Strapi filter: `filters[amenities][parking_available][$eq]=true`
 - **Booking required** — yes / no / any → Strapi filter: `filters[booking_required][$eq]`
 
@@ -241,7 +241,7 @@ A focused browse experience centered on massage/service themes.
 
 **Behavior:**
 - Displays all available themes as selectable cards or tags (fetched from `GET /api/themes`)
-- Selecting a theme returns all shops tagged with that theme, sorted by rating (descending) → `filters[themes][id][$eq]={themeId}&sort=average_rating:desc`
+- Selecting a theme returns all shops tagged with that theme, sorted by rating (descending) → `filters[themes][documentId][$eq]={themeId}&sort=average_rating:desc`
 - Customer can optionally narrow results by location after selecting a theme
 
 ### 6.3 Location Search
@@ -250,7 +250,7 @@ Browse shops by geographic area using the two-level location hierarchy.
 
 **Behavior:**
 - Customer selects Level 1 region first → `GET /api/regions`
-- Level 2 options load dynamically → `GET /api/districts?filters[region][id][$eq]={regionId}`
+- Level 2 options load dynamically → `GET /api/districts?filters[region][documentId][$eq]={regionId}`
 - Selecting Level 2 returns all shops in that district, sorted by rating (descending)
 
 ### 6.4 Nearby Search
@@ -491,9 +491,9 @@ The Partnership page is a public-facing landing page that explains:
 1. Shop owner visits the Partnership page or discovers SWIDA through other channels
 2. Shop owner reaches out via SNS (KakaoTalk, Instagram) or email
 3. Admin responds and collects required shop information (name, address, themes, amenities, images, operating hours)
-4. Admin creates the shop listing in Strapi with status `pending`
+4. Admin creates the shop listing in Strapi as a `draft`
 5. Admin reviews and verifies the information
-6. Admin publishes the listing (status → `active`)
+6. Admin publishes the listing (status → `published`)
 7. Admin notifies the shop owner that the listing is live
 
 ### 10.3 Partnership Inquiry Management
@@ -543,7 +543,7 @@ Admin should aim to make first contact within **48 hours** of receiving a new in
 ### 10.4 Ongoing Communication
 - Shop owners can request updates to their listing by contacting the Admin
 - Admin periodically verifies that listed shops are still operational
-- Inactive or closed shops are set to `inactive` status and hidden from search results
+- Inactive or closed shops are unpublished (reverted to `draft` status) with an `inactive_reason` set, and hidden from search results
 
 ---
 
@@ -715,7 +715,7 @@ Strapi serves as the **headless API-only backend**, providing the public REST AP
 |---|---|
 | Language | TypeScript |
 | Database | PostgreSQL (via Knex.js, Strapi's internal query builder) |
-| Upload Provider | `strapi-provider-upload-aws-s3` configured for MinIO |
+| Upload Provider | `@strapi/provider-upload-aws-s3` configured for MinIO |
 | Auth | Users & Permissions plugin with custom Kakao/Naver providers |
 | i18n | Internationalization plugin enabled — default locale `ko`, additional locale `en`. Enabled on Shop, Theme, Region, and District content types. |
 | API Style | REST (default), GraphQL available as optional plugin |

@@ -1,6 +1,6 @@
 ---
-title: "PRD — 제품 요구사항 문서"
-sidebar_label: "한국어"
+title: "SWIDA — 제품 요구사항 문서 (PRD)"
+sidebar_label: "PRD (KO)"
 sidebar_position: 2
 ---
 
@@ -203,8 +203,8 @@ SWIDA는 대한민국 행정구역에 맞춘 2단계 계층적 위치 시스템�
 | 비활성 사유 | 열거형 (nullable) | `closed`, `owner_request`, `violation`, `stale`, `other` |
 | 영업 중 태그 | 텍스트 (단문, nullable) | 업체가 현재 영업 시간 내 운영 중일 때 Customer Web에 표시되는 커스텀 레이블 (예: "영업중", "OPEN"). 비어 있으면 기본값 "영업중"으로 표시됩니다. |
 | 영업 종료 태그 | 텍스트 (단문, nullable) | 업체가 영업 시간 외일 때 Customer Web에 표시되는 커스텀 레이블 (예: "영업종료", "CLOSED"). 비어 있으면 기본값 "영업종료"로 표시됩니다. 게시된 업체에만 해당 — 미게시 업체는 표시되지 않습니다. |
-| 평균 별점 | 소수 (Float) | 리뷰 변경 시 Strapi 생명주기 훅을 통해 계산 |
-| 총 리뷰 수 | 정수 | 게시된 리뷰 수, 생명주기 훅을 통해 업데이트 |
+| 평균 별점 | 소수 (Float) | 리뷰 변경 시 Strapi 라이프사이클 훅을 통해 계산 |
+| 총 리뷰 수 | 정수 | 게시된 리뷰 수, 라이프사이클 훅을 통해 업데이트 |
 
 > **참고:** Customer Web에서의 업체 공개 여부는 Strapi 기본 제공 초안 및 게시(Draft & Publish) 시스템으로 완전히 제어됩니다. 어드민이 Admin Web을 통해 업체를 게시 또는 미게시 처리합니다 (Strapi의 Draft & Publish API 호출) — 별도의 커스텀 불리언이 필요하지 않습니다. 게시된 업체만 고객 대면 검색 결과, 업체 상세 페이지, 사이트맵에 표시됩니다. Strapi REST API는 기본적으로 퍼블릭 쿼리에서 초안 항목을 제외하므로 기본 공개 여부 필터링을 위한 커스텀 정책이 필요하지 않습니다.
 
@@ -228,8 +228,8 @@ SWIDA는 메인 네비게이션에서 접근 가능한 5가지 검색 모드를 
 
 **사용 가능한 필터:**
 - **업체명** — 키워드/부분 일치 → Strapi 필터: `$containsi`
-- **1단계 + 2단계 위치** — 캐스케이딩 드롭다운 → Strapi 필터: `filters[region][id][$eq]` 및 `filters[district][id][$eq]`
-- **서비스 테마** — 다중 선택 → Strapi 필터: `filters[themes][id][$in]`
+- **1단계 + 2단계 위치** — 캐스케이딩 드롭다운 → Strapi 필터: `filters[region][documentId][$eq]` 및 `filters[district][documentId][$eq]`
+- **서비스 테마** — 다중 선택 → Strapi 필터: `filters[themes][documentId][$in]`
 - **편의시설** — 토글 체크박스 → Strapi 필터: `filters[amenities][parking_available][$eq]=true`
 - **예약 필수** — 예 / 아니오 / 상관없음 → Strapi 필터: `filters[booking_required][$eq]`
 
@@ -241,7 +241,7 @@ SWIDA는 메인 네비게이션에서 접근 가능한 5가지 검색 모드를 
 
 **동작 방식:**
 - 모든 사용 가능한 테마를 선택 가능한 카드 또는 태그로 표시 (`GET /api/themes`에서 가져옴)
-- 테마 선택 시 해당 테마가 태그된 모든 업체를 별점 내림차순으로 반환 → `filters[themes][id][$eq]={themeId}&sort=average_rating:desc`
+- 테마 선택 시 해당 테마가 태그된 모든 업체를 별점 내림차순으로 반환 → `filters[themes][documentId][$eq]={themeId}&sort=average_rating:desc`
 - 테마 선택 후 위치로 결과를 추가로 좁힐 수 있음
 
 ### 6.3 지역 검색
@@ -250,7 +250,7 @@ SWIDA는 메인 네비게이션에서 접근 가능한 5가지 검색 모드를 
 
 **동작 방식:**
 - 고객이 1단계 광역 먼저 선택 → `GET /api/regions`
-- 2단계 옵션이 동적으로 로드됨 → `GET /api/districts?filters[region][id][$eq]={regionId}`
+- 2단계 옵션이 동적으로 로드됨 → `GET /api/districts?filters[region][documentId][$eq]={regionId}`
 - 2단계 선택 시 해당 구의 모든 업체를 별점 내림차순으로 반환
 
 ### 6.4 주변 검색
@@ -315,7 +315,7 @@ ORDER BY distance ASC
 
 | 메뉴 | 아이콘 제안 | 설명 |
 |---|---|---|
-| **상세 검색** | 🔍 | 다중 필터 고급 검색 페이지 |
+| **상세 검색** | 🔍 | 다중 필터 상세 검색 페이지 |
 | **테마 검색** | 💆 | 마사지/서비스 테마별 탐색 |
 | **지역 검색** | 📍 | 광역 및 구/군/시별 탐색 |
 | **주변 검색** | 📡 | GPS 기반 주변 업체 탐색 |
@@ -338,7 +338,7 @@ Admin Web은 맞춤형 어드민 경험을 제공하는 커스텀 Next.js 애플
 
 **커스텀 어드민 기능:**
 - **대시보드:** 차트 및 트렌드가 포함된 플랫폼 통계 — Strapi 어드민 API 및 커스텀 분석 엔드포인트에서 데이터를 가져오는 Next.js 페이지로 구축됩니다.
-- **감사 로그 뷰어:** 모든 리스팅 변경 이력을 검색 및 필터링 가능한 테이블로 표시합니다. 데이터는 생명주기 훅을 통해 Strapi `audit-log` 컬렉션 타입에 저장됩니다.
+- **감사 로그 뷰어:** 모든 리스팅 변경 이력을 검색 및 필터링 가능한 테이블로 표시합니다. 데이터는 라이프사이클 훅을 통해 Strapi `audit-log` 컬렉션 타입에 저장됩니다.
 - **지도 핀 드롭:** 업체 리스팅 생성 또는 수정 시 위도/경도 선택을 위한 통합 지도 컴포넌트 (구글 맵 또는 카카오맵).
 
 ### 7.3 어드민 운영 워크플로우 (MVP)
@@ -370,7 +370,7 @@ Admin Web은 맞춤형 어드민 경험을 제공하는 커스텀 Next.js 애플
 - 변경 시간 (타임스탬프)
 - 변경 전/후 값
 
-> Strapi 생명주기 훅(`beforeUpdate`)을 사용하여 필드 변경 사항을 캡처하고 `audit-log` 컬렉션 타입에 기록합니다. Strapi Enterprise에는 기본 제공 감사 로그가 있습니다.
+> Strapi 라이프사이클 훅(`beforeUpdate`)을 사용하여 필드 변경 사항을 캡처하고 `audit-log` 컬렉션 타입에 기록합니다. Strapi Enterprise에는 기본 제공 감사 로그가 있습니다.
 
 ---
 
@@ -414,7 +414,7 @@ SWIDA는 방문 인증 없이 리뷰를 허용하므로, 신뢰 유지를 위해
 **사용자 신고:**
 - 고객은 "신고" 버튼을 통해 모든 리뷰를 신고할 수 있습니다 → `POST /api/reviews/:id/report`
 - 신고 시 사유 선택: `spam`, `fake`, `inappropriate`, `irrelevant`, `other`
-- 신고된 리뷰는 Strapi 생명주기 훅을 통해 `under_review` 상태로 전환됩니다.
+- 신고된 리뷰는 Strapi 라이프사이클 훅을 통해 `under_review` 상태로 전환됩니다.
 
 **어드민 계정 잠금 (주요 남용 방지 수단):**
 - 업체별 또는 일별 리뷰 제한 없음. 대신 어드민이 고객 계정을 완전히 제어하여 남용에 대응합니다.
@@ -436,7 +436,7 @@ SWIDA는 방문 인증 없이 리뷰를 허용하므로, 신뢰 유지를 위해
 | `under_review` | 사용자 신고 또는 시스템에 의해 신고됨, 어드민 결정 대기 중 |
 | `deleted` | 어드민에 의해 영구 삭제, 평균 별점에서 제외 |
 
-**별점 재계산:** Review 콘텐츠 타입의 Strapi 생명주기 훅으로 구현 — `afterCreate`, `afterUpdate`, `afterDelete`가 상위 업체의 `average_rating` 및 `total_reviews` 필드를 재계산합니다.
+**별점 재계산:** Review 콘텐츠 타입의 Strapi 라이프사이클 훅으로 구현 — `afterCreate`, `afterUpdate`, `afterDelete`가 상위 업체의 `average_rating` 및 `total_reviews` 필드를 재계산합니다.
 
 **향후 개선 사항:** 리뷰어 회원가입 시 SMS 인증, "인증된 고객" 배지, 쿨다운 기간, IP/기기 수준 부정 탐지, 행동 패턴 분석, 수정 기간 규칙, 업체 사장님 이의 제기 프로세스 — 12항 참조.
 
@@ -491,9 +491,9 @@ SWIDA는 방문 인증 없이 리뷰를 허용하므로, 신뢰 유지를 위해
 1. 업체 사장님이 파트너십 페이지를 방문하거나 다른 채널을 통해 SWIDA를 발견
 2. 업체 사장님이 SNS(카카오톡, 인스타그램) 또는 이메일로 연락
 3. 어드민이 응답하고 필요한 업체 정보 수집 (상호명, 주소, 테마, 편의시설, 이미지, 영업 시간)
-4. 어드민이 Strapi에서 `pending` 상태로 업체 리스팅 생성
+4. 어드민이 Strapi에서 `draft` 상태로 업체 리스팅 생성
 5. 어드민이 정보를 검토 및 확인
-6. 어드민이 리스팅 게시 (상태 → `active`)
+6. 어드민이 리스팅 게시 (상태 → `published`)
 7. 어드민이 리스팅 활성화를 업체 사장님에게 알림
 
 ### 10.3 파트너십 문의 관리
@@ -543,7 +543,7 @@ SWIDA는 방문 인증 없이 리뷰를 허용하므로, 신뢰 유지를 위해
 ### 10.4 지속적인 커뮤니케이션
 - 업체 사장님은 어드민에게 연락하여 리스팅 업데이트를 요청할 수 있습니다.
 - 어드민은 주기적으로 등록된 업체가 여전히 운영 중인지 확인합니다.
-- 비활성 또는 폐업한 업체는 `inactive` 상태로 설정되어 검색 결과에서 숨겨집니다.
+- 비활성 또는 폐업한 업체는 게시 취소(`draft` 상태로 전환)되고 `inactive_reason`이 설정되어 검색 결과에서 숨겨집니다.
 
 ---
 
@@ -707,7 +707,7 @@ SWIDA는 Strapi를 API 전용 백엔드로, 두 개의 Next.js 애플리케이�
 
 ### 13.2 백엔드 — Strapi
 
-Strapi는 Customer Web과 Admin Web 모두를 위한 공개 REST API를 제공하는 **헤드리스 API 전용 백엔드**로 작동합니다. Strapi 기본 제공 어드민 패널은 모니터링, 디버깅, 긴급 운영을 위해 **개발자 전용**으로만 사용되며 — 주요 어드민 인터페이스는 커스텀 Admin Web(Next.js)입니다. 콘텐츠 타입은 JSON 스키마 파일로 정의되며 CRUD API는 자동 생성됩니다. 커스텀 비즈니스 로직은 컨트롤러, 생명주기 훅, 정책, 미들웨어를 통해 구현됩니다.
+Strapi는 Customer Web과 Admin Web 모두를 위한 공개 REST API를 제공하는 **헤드리스 API 전용 백엔드**로 작동합니다. Strapi 기본 제공 어드민 패널은 모니터링, 디버깅, 긴급 운영을 위해 **개발자 전용**으로만 사용되며 — 주요 어드민 인터페이스는 커스텀 Admin Web(Next.js)입니다. 콘텐츠 타입은 JSON 스키마 파일로 정의되며 CRUD API는 자동 생성됩니다. 커스텀 비즈니스 로직은 컨트롤러, 라이프사이클 훅, 정책, 미들웨어를 통해 구현됩니다.
 
 **설정:**
 
@@ -715,7 +715,7 @@ Strapi는 Customer Web과 Admin Web 모두를 위한 공개 REST API를 제공�
 |---|---|
 | 언어 | TypeScript |
 | 데이터베이스 | PostgreSQL (Strapi 내부 쿼리 빌더인 Knex.js를 통해) |
-| 업로드 프로바이더 | MinIO용으로 설정된 `strapi-provider-upload-aws-s3` |
+| 업로드 프로바이더 | MinIO용으로 설정된 `@strapi/provider-upload-aws-s3` |
 | 인증 | 커스텀 카카오/네이버 프로바이더가 포함된 Users & Permissions 플러그인 |
 | i18n | 국제화 플러그인 활성화 — 기본 로케일 `ko`, 추가 로케일 `en`. Shop, Theme, Region, District 콘텐츠 타입에 활성화. |
 | API 스타일 | REST (기본값), GraphQL은 선택적 플러그인으로 사용 가능 |
@@ -729,8 +729,8 @@ Strapi는 Customer Web과 Admin Web 모두를 위한 공개 REST API를 제공�
 | 커스텀 컨트롤러: `shops/search` | pg_trgm을 사용한 고급 검색 (향후) |
 | 커스텀 정책: `is-active-shop` | Strapi 기본 제공 초안 및 게시 시스템 활용 — 공개 API 응답에서 게시된 업체만 반환. Strapi가 기본적으로 REST API 쿼리에서 초안 항목을 제외하므로 이 정책은 미게시 업체가 고객 대면 엔드포인트에 노출되지 않도록 추가적인 안전장치 역할을 합니다. |
 | 커스텀 미들웨어: `account-lock` | 어드민이 스팸 리뷰, 허위 리뷰 등 남용 행위를 하는 고객 계정을 잠금/정지 처리. 잠긴 계정은 리뷰 및 게시물을 제출할 수 없습니다. |
-| 생명주기 훅: Review | 업체 average_rating 및 total_reviews 재계산 |
-| 생명주기 훅: Shop | 모든 변경 사항에 대한 감사 로그 (`audit-log` 컬렉션 타입에 기록) |
+| 라이프사이클 훅: Review | 업체 average_rating 및 total_reviews 재계산 |
+| 라이프사이클 훅: Shop | 모든 변경 사항에 대한 감사 로그 (`audit-log` 컬렉션 타입에 기록) |
 | 커스텀 프로바이더: 카카오 인증 | 카카오를 통한 소셜 로그인 |
 | 커스텀 프로바이더: 네이버 인증 | 네이버를 통한 소셜 로그인 |
 
@@ -810,7 +810,7 @@ Admin Web은 Strapi의 기본 제공 어드민 패널을 대체하는 주요 어
 - 트래픽이 높고 읽기가 많은 API 응답 캐싱을 위한 Redis (Docker에서 자체 호스팅)
 - `strapi-plugin-rest-cache` 또는 커스텀 Strapi 미들웨어를 통해 구현
 - 캐시 대상 데이터: 광역/구 목록, 테마 목록, 상위 별점 업체, 자주 접근하는 업체 상세 정보
-- 관련 콘텐츠 타입 변경 시 Strapi 생명주기 훅에 의해 캐시 무효화 트리거
+- 관련 콘텐츠 타입 변경 시 Strapi 라이프사이클 훅에 의해 캐시 무효화 트리거
 
 **컨테이너화:**
 - 모든 오리진 서비스(Strapi, Customer Web, Admin Web, PostgreSQL, MinIO, Redis, Nginx)를 Docker로 컨테이너화
@@ -842,7 +842,7 @@ Admin Web은 Strapi의 기본 제공 어드민 패널을 대체하는 주요 어
 
 | 레이어 | 도구 | 범위 |
 |---|---|---|
-| **단위 테스트** | Vitest | 커스텀 컨트롤러, 서비스, 생명주기 훅, 유틸리티 |
+| **단위 테스트** | Vitest | 커스텀 컨트롤러, 서비스, 라이프사이클 훅, 유틸리티 |
 | **통합 테스트** | Vitest + Supertest | Strapi API 엔드포인트, 커스텀 라우트, 정책 적용 |
 | **E2E 테스트** | Playwright | 전체 사용자 흐름 (검색, 리뷰 제출, Admin Web을 통한 어드민 업체 CRUD) |
 
@@ -961,7 +961,7 @@ swida/
 │   ├── docker-compose.yml       # 로컬 개발 환경 (Strapi, Customer Web, Admin Web, PostgreSQL, MinIO, Redis)
 │   ├── docker-compose.prod.yml  # 프로덕션 compose
 │   ├── Dockerfile.strapi        # Strapi Dockerfile
-│   ├── Dockerfile.web           # Next.js Dockerfile (고객 웹과 어드민 웹 공유)
+│   ├── Dockerfile.web           # Next.js Dockerfile (Customer Web과 Admin Web 공유)
 │   └── Dockerfile.admin         # Next.js Admin Web Dockerfile (별도 설정이 필요한 경우)
 │
 ├── nginx/
@@ -987,7 +987,7 @@ swida/
 | **서버** | `HOST`, `PORT`, `NODE_ENV`, `URL` (공개 Strapi URL) |
 | **오브젝트 스토리지** | `MINIO_ENDPOINT`, `MINIO_PORT`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `MINIO_BUCKET_NAME` |
 | **캐시** | `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD` |
-| **Cloudflare** | `CLOUDFLARE_ZONE_ID`, `CLOUDFLARE_API_TOKEN` (CI/CD 또는 Strapi 생명주기 훅을 통한 프로그래밍 방식 캐시 제거용) |
+| **Cloudflare** | `CLOUDFLARE_ZONE_ID`, `CLOUDFLARE_API_TOKEN` (CI/CD 또는 Strapi 라이프사이클 훅을 통한 프로그래밍 방식 캐시 제거용) |
 | **외부** | `GOOGLE_MAPS_API_KEY` (지오코딩용) |
 
 환경 파일은 저장소에 **절대 커밋하지 않습니다**. 각 프로젝트에 대해 `.env.example` 템플릿이 관리됩니다.

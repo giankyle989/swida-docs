@@ -1,6 +1,6 @@
 ---
-title: "TSD — Technical Specification Document"
-sidebar_label: "English"
+title: "SWIDA — Technical Specification Document (TSD)"
+sidebar_label: "TSD (EN)"
 sidebar_position: 1
 ---
 
@@ -153,6 +153,10 @@ npm ls react react-dom  # Must be >= 19.2.4
 # Verify no vulnerable React RSC packages
 npm ls react-server-dom-webpack react-server-dom-turbopack 2>/dev/null
 ```
+
+---
+
+## 3. Architecture Overview
 
 ### 3.1 High-Level Architecture
 

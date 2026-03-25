@@ -1,6 +1,6 @@
 ---
-title: "TSD — 기술 사양 문서"
-sidebar_label: "한국어"
+title: "SWIDA — 기술 사양 문서 (TSD)"
+sidebar_label: "TSD (KO)"
 sidebar_position: 2
 ---
 
@@ -71,7 +71,7 @@ PRD는 Strapi를 **헤드리스 API 전용 백엔드**로, **커스텀 Next.js �
 | **React** | `19.2.4` | 활성 (최신 안정 버전) | Admin Web 및 Customer Web 모두 공유. 모든 RSC 보안 패치 포함. |
 | **TypeScript** | `5.9.x` | 활성 | 최신 안정 버전. `packages/`의 `tsconfig` 베이스를 통해 전 워크스페이스에서 공유. |
 | **PostgreSQL** | `17.9` | 지원 → 2029년 11월 | PG 17 안정 버전의 최신 패치. PG 18은 사용 가능하나 PostGIS 생태계는 17에서 더 검증됨. |
-| **PostGIS** | `3.6.2` | 활성 | PostgreSQL 14–18 호환. 근처 검색(`ST_Distance`, `ST_DWithin`)에 필요. |
+| **PostGIS** | `3.6.2` | 활성 | PostgreSQL 14–18 호환. 주변 검색(`ST_Distance`, `ST_DWithin`)에 필요. |
 | **Redis** | `7.4.x` | Active LTS | 오리진에서 API 응답 캐싱. |
 | **MinIO** | `RELEASE.2026-03-xx` (최신 안정 버전) | 롤링 릴리즈 | 쇼핑 이미지용 S3 호환 오브젝트 스토리지. Docker에서 특정 `RELEASE` 태그로 고정. |
 | **Nginx** | `1.26.x` (최신 안정 버전) | 안정 브랜치 | 오리진 리버스 프록시. |
@@ -400,7 +400,7 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm;  -- 향후 퍼지 검색용
 Strapi가 자동 생성하는 인덱스(PK, FK, 고유 제약) 외에, 다음 커스텀 인덱스를 Strapi 부트스트랩 스크립트 또는 마이그레이션을 통해 생성해야 합니다:
 
 ```sql
--- 근처 검색을 위한 지리 공간 인덱스 (성능에 중요)
+-- 주변 검색을 위한 지리 공간 인덱스 (성능에 중요)
 CREATE INDEX idx_shops_geography ON shops
   USING GIST (ST_MakePoint(longitude, latitude)::geography);
 
@@ -461,7 +461,7 @@ Strapi 부트스트랩 스크립트(`database/seeds/`)를 통해 출시 시 미�
 |---|---|---|---|
 | GET | `/api/shops` | 공개 | 업체 목록 (페이지네이션, 필터, 정렬 가능) |
 | GET | `/api/shops/:documentId` | 공개 | 단일 업체 상세 |
-| GET | `/api/shops/nearby` | 공개 | **커스텀 컨트롤러** — 지리 공간 근처 검색 |
+| GET | `/api/shops/nearby` | 공개 | **커스텀 컨트롤러** — 지리 공간 주변 검색 |
 
 **GET `/api/shops` — 쿼리 파라미터:**
 
@@ -598,7 +598,7 @@ export default {
 
 이들은 커스텀 컨트롤러 없이 Strapi가 자동 생성하는 단순 엔드포인트입니다.
 
-#### 5.2.4 제휴 문의(Partnership Inquiries)
+#### 5.2.4 파트너십 문의(Partnership Inquiries)
 
 | 메서드 | 엔드포인트 | 인증 | 설명 |
 |---|---|---|---|
@@ -697,7 +697,7 @@ async function recalculateShopRating(shopDocumentId: string) {
 | 지도 핀 드롭 | 업체 등록 또는 수정 시 위도/경도 선택을 위한 통합 지도 컴포넌트(Google Maps 또는 카카오맵). Admin Web 내 React 컴포넌트로 구축. |
 | 업체 CRUD | 검색, 필터, 정렬 기능을 갖춘 업체 목록 생성, 조회, 수정, 삭제 인터페이스. |
 | 리뷰 모더레이션 | 고객 리뷰 조회, 신고, 숨김, 관리. |
-| 제휴 문의 관리 | 상태 워크플로우를 통한 입력 제휴 요청 추적 및 관리. |
+| 파트너십 문의 관리 | 상태 워크플로우를 통한 입력 제휴 요청 추적 및 관리. |
 | 고객 계정 관리 | 고객 계정 잠금/해제, 활동 조회. |
 | 콘텐츠 관리 | 테마, 지역, 구/군, 편의시설 옵션 관리. |
 | 로케일 관리 | Admin Web의 로케일 전환기를 통해 Strapi i18n API를 호출하여 현지화된 콘텐츠(한국어/영어) 생성 및 관리. |
@@ -730,7 +730,7 @@ apps/customer-web/
 │       ├── search/
 │       │   └── page.tsx             # 상세 검색 (SSR)
 │       ├── nearby/
-│       │   └── page.tsx             # 근처 검색 (CSR)
+│       │   └── page.tsx             # 주변 검색 (CSR)
 │       ├── reviews/
 │       │   └── page.tsx             # 리뷰 피드 (SSR)
 │       ├── partnership/
@@ -811,7 +811,7 @@ apps/customer-web/
 | 테마 탐색 | SSG | 온디맨드 (웹훅) | 테마 목록은 거의 변경되지 않음 |
 | 위치 탐색 | SSG | 온디맨드 (웹훅) | 위치 계층 구조는 정적 |
 | 상세 검색 | SSR | N/A | 동적 필터/정렬 조합, SSG로 캐싱 불가 |
-| 근처 검색 | CSR | N/A | 클라이언트 측 GPS 필요, 완전 동적 |
+| 주변 검색 | CSR | N/A | 클라이언트 측 GPS 필요, 완전 동적 |
 | 리뷰 피드 | SSR | N/A | 최신 리뷰 반영 필요 |
 | 제휴 | SSG | 온디맨드 | 정적 콘텐츠 페이지 |
 | 로그인/콜백 | CSR | N/A | 인증 흐름, SEO 가치 없음 |
@@ -861,7 +861,7 @@ export async function fetchStrapi<T>(
 
 **계단식 위치 드롭다운:** `LocationCascade` 컴포넌트가 마운트 시 지역을 가져오고, 지역 선택 시 구/군을 가져옵니다. 두 호출 모두 적극적으로 캐싱됩니다(지역/구/군 데이터는 거의 변경되지 않음).
 
-**GPS 근처 검색:** `NearbySearch` 컴포넌트는 클라이언트 컴포넌트(`"use client"`)로:
+**GPS 주변 검색:** `NearbySearch` 컴포넌트는 클라이언트 컴포넌트(`"use client"`)로:
 1. `navigator.geolocation.getCurrentPosition()` 요청
 2. 커스텀 `/api/shops/nearby` 엔드포인트 호출
 3. 거리 레이블과 함께 결과 렌더링
@@ -1490,7 +1490,7 @@ TDD(테스트 주도 개발) — 구현 전에 테스트를 먼저 작성합니�
 ### 12.3 중요 E2E 테스트 경로
 
 1. **검색 플로우:** 홈페이지 → 테마 검색 → 위치별 필터링 → 업체 상세 조회
-2. **근처 검색:** GPS 허용 → 근처 결과 조회 → 업체 상세 조회
+2. **주변 검색:** GPS 허용 → 근처 결과 조회 → 업체 상세 조회
 3. **리뷰 플로우:** 로그인(카카오/네이버) → 업체 이동 → 리뷰 제출 → 표시 확인
 4. **제휴 플로우:** 제휴 페이지 방문 → 문의 양식 제출 → 제출 확인
 5. **관리자 플로우:** Admin Web 로그인 → 업체 생성 → 게시 → Customer Web에서 확인
