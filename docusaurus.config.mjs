@@ -1,4 +1,5 @@
 import {themes as prismThemes} from 'prism-react-renderer';
+import remarkRawMarkdown from './src/plugins/remark-raw-markdown.mjs';
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
@@ -44,6 +45,7 @@ const config = {
         docs: {
           path: 'docs/swida',
           sidebarPath: './sidebars.mjs',
+          beforeDefaultRemarkPlugins: [remarkRawMarkdown],
         },
         blog: false,
         theme: {
