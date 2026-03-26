@@ -20,7 +20,7 @@ sidebar_position: 3
 
 ### 1.1 Purpose
 
-This document defines the page list and functional specifications for the SWIDA Admin Web application. The Admin Web is the primary operational interface for managing the SWIDA platform — it replaces Strapi's built-in admin panel for all day-to-day operations. Visual design, layout, and interaction details are covered in the separate UI/UX Specification.
+This document defines the page list and functional specifications for the SWIDA Admin Web application. The Admin Web is the primary operational interface for managing the SWIDA platform — it serves as the dedicated admin panel for all day-to-day operations. Visual design, layout, and interaction details are covered in the separate UI/UX Specification.
 
 ### 1.2 Architecture Context
 
@@ -302,8 +302,8 @@ hidden ──→ published (admin restore)
 
 | # | Feature | Description |
 |---|---|---|
-| F-THEME-01 | Theme List | Table of all themes. Columns: icon, name (Korean), name (English), slug, display order, shop count |
-| F-THEME-02 | Create Theme | Form: name (Korean, required), name (English, optional), slug (auto-generated), icon upload, display order (PRD §9.1) |
+| F-THEME-01 | Theme List | Table of all themes. Columns: icon, name (Korean), name (English), URL identifier, display order, shop count |
+| F-THEME-02 | Create Theme | Form: name (Korean, required), name (English, optional), URL identifier (auto-generated), icon upload, display order (PRD §9.1) |
 | F-THEME-03 | Edit Theme | Edit existing theme. All fields editable |
 | F-THEME-04 | Delete Theme | Delete a theme. Confirmation dialog. Blocked if shops are tagged with this theme — display warning with shop count. Admin must untag all shops first before deletion is allowed. |
 | F-THEME-05 | Reorder | Drag-and-drop or manual number input to change display order |

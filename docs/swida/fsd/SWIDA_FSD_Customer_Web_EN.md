@@ -212,7 +212,7 @@ Fetches shops matching all active filters (name, location, themes, amenities, bo
 
 ## 6. Search — Theme Browse
 
-### 6.1 Theme Browse (`/[locale]/theme/[theme-slug]`)
+### 6.1 Theme Browse
 
 > PRD Reference: §6.2 Theme Search, §9 Service Themes
 
@@ -297,7 +297,7 @@ Name Search is implemented as a subset of Detail Search (§5). When a user enter
 
 ## 10. Shop Detail
 
-### 10.1 Shop Detail Page (`/[locale]/shop/[slug]`)
+### 10.1 Shop Detail Page
 
 > PRD Reference: §5 Shop Listing Data Model, §8 Review System
 

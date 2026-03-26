@@ -367,15 +367,15 @@ Desktop
 ```
 [1] User visits / or /ko → Redirect to /ko (default locale)
 
-[2] SSG page loads with:
-    - Theme icons (sorted by display_order)
+[2] Page loads with:
+    - Theme icons (sorted by display order)
     - Region quick-access tabs
-    - Editor's Choice cards (static content)
+    - Editor's Choice cards
 
-[3] ISR-loaded sections:
-    - Featured/nearby shops (revalidate 300s)
+[3] Dynamic sections:
+    - Featured/nearby shops (periodically refreshed)
 
-[4] Client-side:
+[4] After page load:
     - GPS permission request → populate "현재 위치" + nearby shops
     - If denied → hide nearby section or show "위치 권한이 필요합니다"
 
@@ -480,14 +480,13 @@ Desktop
 #### Storyboard: Detail Search
 
 ```
-[1] /search → SSR. Default: no filters, sorted by rating desc.
+[1] User opens /search. Default: no filters, sorted by rating desc.
 
-[2] User selects Region (Level 1) → Level 2 dropdown enables and loads districts.
-    API: GET /api/districts?filters[region][documentId][$eq]={regionId}
+[2] User selects Region (Level 1) → Level 2 dropdown enables and loads matching districts.
 
 [3] User selects amenities, themes → active filter chips appear above results.
 
-[4] "검색하기" click or filter change → URL updates with query params → SSR re-fetch.
+[4] "검색하기" click or filter change → URL updates → results refresh.
     All filters serialized to URL (F-SEARCH-10).
 
 [5] Results load:
@@ -495,12 +494,12 @@ Desktop
     [5b] No results → "검색 결과가 없습니다" + suggestion to broaden filters (F-SEARCH-11)
     [5c] Error → toast notification + retry option
 
-[6] Shop card click → /[locale]/shop/[slug]
+[6] Shop card click → opens shop detail page
 
-[7] Pagination → unique URL per page (/search?page=2&...) for SEO (F-SEARCH-09)
+[7] Pagination → each page has a unique URL for SEO (F-SEARCH-09)
 ```
 
-### 4.3 Theme Browse (`/[locale]/theme/[theme-slug]`)
+### 4.3 Theme Browse
 
 > FSD: §6, F-THEME-01~06
 
@@ -607,19 +606,18 @@ Desktop
 #### Storyboard: Nearby Search
 
 ```
-[1] /nearby → CSR page. Request GPS permission.
+[1] User opens /nearby. Request GPS permission.
 
 [2a] Permission granted → loading indicator → fetch nearby shops
-     API: GET /api/shops/nearby?lat={lat}&lng={lng}&radius=5000
 [2b] Permission denied → display "위치 권한이 필요합니다" + instructions (F-NEAR-02)
 
 [3] Results load → map pins + shop list sorted by distance
 
 [4] Sort toggle: 거리순 (default) / 추천순 / 가격순
 
-[5] Shop card click → /[locale]/shop/[slug]
+[5] Shop card click → opens shop detail page
 
-[6] Radius change → re-fetch with new radius parameter
+[6] Radius change → results refresh with new radius
 
 [7] "결과 더보기" → load more results (pagination)
 
@@ -630,7 +628,7 @@ Desktop
 
 ## 5. Pages — Shop
 
-### 5.1 Shop Detail (`/[locale]/shop/[slug]`)
+### 5.1 Shop Detail
 
 > FSD: §10, F-SHOP-01~17
 
@@ -724,16 +722,16 @@ Desktop
 #### Storyboard: Shop Detail
 
 ```
-[1] /shop/{slug} → ISR (revalidate 60s). Full shop data loaded.
+[1] User opens shop detail page. Full shop data loaded.
 
 [2] Image gallery → click thumbnail to swap main image.
     "+12개 더보기" → open fullscreen gallery lightbox.
 
-[3] Open/Close tag computed client-side:
-    - Compare shop.operating_hours against current time in KST (Appendix B of FSD)
+[3] Open/Close tag determined automatically:
+    - Based on shop's operating hours and current time in KST (Appendix B of FSD)
     - Display open_tag (default "영업중") or close_tag (default "영업종료")
 
-[4] Tab navigation → switch content area (SPA-style, no page reload).
+[4] Tab navigation → switch content area (no page reload).
     Default tab: 가격&코스
 
 [5] "리뷰 작성+" click:
@@ -1251,10 +1249,10 @@ Desktop (split-screen layout)
 #### Storyboard: Login
 
 ```
-[1] /auth/login → CSR page. If already logged in → redirect to homepage (F-AUTH-05).
+[1] User opens login page. If already logged in → redirect to homepage (F-AUTH-05).
 
-[2a] Kakao Login → redirect to Kakao OAuth → callback → JWT stored → redirect to previous page
-[2b] Naver Login → redirect to Naver OAuth → callback → JWT stored → redirect to previous page
+[2a] Kakao Login → redirects to Kakao → returns logged in → redirect to previous page
+[2b] Naver Login → redirects to Naver → returns logged in → redirect to previous page
 [2c] Email Login → form validation → submit to backend → session stored → redirect
 
 [3] Locked account → error message: "계정이 정지되었습니다." (F-AUTH-06)

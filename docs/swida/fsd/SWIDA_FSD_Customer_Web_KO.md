@@ -212,7 +212,7 @@ sidebar_position: 2
 
 ## 6. 검색 — 테마 탐색
 
-### 6.1 테마 탐색 (`/[locale]/theme/[theme-slug]`)
+### 6.1 테마 탐색
 
 > PRD 참조: §6.2 Theme Search, §9 Service Themes
 
@@ -297,7 +297,7 @@ sidebar_position: 2
 
 ## 10. 업체 상세
 
-### 10.1 업체 상세 페이지 (`/[locale]/shop/[slug]`)
+### 10.1 업체 상세 페이지
 
 > PRD 참조: §5 Shop Listing Data Model, §8 Review System
 
