@@ -69,10 +69,10 @@ The layout adapts across three tiers: Desktop, Tablet, and Mobile. Components ar
 ```
 ┌──────────────────────────────────────────────────────┐
 │  Header (top fixed)                                   │
-│  [Logo] [Search Bar] [샵검색▾] [이벤트] [게시판▾] [제휴문의] [로그인] │
+│  [Logo] [Search Bar] [업체검색▾] [이벤트] [게시판▾] [파트너십 문의] [로그인] │
 ├──────────────────────────────────────────────────────┤
 │  Search Tab Bar (6 tabs)                              │
-│  [상세검색] [테마별검색] [지역별검색] [내주변검색] [방문후기] [업소제휴] │
+│  [상세검색] [테마별검색] [지역별검색] [내주변검색] [리뷰] [파트너십 문의] │
 ├──────────────────────────────────────────────────────┤
 │  Main Content (scrollable)                            │
 ├──────────────────────────────────────────────────────┤
@@ -130,8 +130,8 @@ The layout adapts across three tiers: Desktop, Tablet, and Mobile. Components ar
 
 ```
 ┌────────────────────────────────────────────────────────────────────┐
-│ [Logo]  [지역,업소명,테마를 검색해보세요 🔍]  [샵검색▾] [이벤트] [게시판▾] [제휴문의] [로그인] [회원가입] │  ← Guest
-│ [Logo]  [지역,업소명,테마를 검색해보세요 🔍]  [샵검색▾] [이벤트] [게시판▾] [제휴문의] [👤]            │  ← Logged in
+│ [Logo]  [지역,업체명,테마를 검색해보세요 🔍]  [업체검색▾] [이벤트] [게시판▾] [파트너십 문의] [로그인] [회원가입] │  ← Guest
+│ [Logo]  [지역,업체명,테마를 검색해보세요 🔍]  [업체검색▾] [이벤트] [게시판▾] [파트너십 문의] [👤]            │  ← Logged in
 └────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -142,7 +142,7 @@ The layout adapts across three tiers: Desktop, Tablet, and Mobile. Components ar
 | 샵 검색 ▾ (dropdown) | ✅ → Search mode dropdown | ✅ |
 | 이벤트 | ✅ → Events & Notices | ✅ |
 | 게시판 ▾ (dropdown) | ✅ → Board dropdown | ✅ |
-| 제휴문의 | ✅ → Partnership | ✅ |
+| 파트너십 문의 | ✅ → Partnership | ✅ |
 | 로그인 / 회원가입 | ✅ → Login / Sign Up pages | — |
 | User avatar 👤 | — | ✅ → User menu dropdown |
 | Language Switcher | ✅ ko/en toggle (F-I18N-04) | ✅ |
@@ -157,8 +157,8 @@ The layout adapts across three tiers: Desktop, Tablet, and Mobile. Components ar
 
 ```
 ┌────────────────────────────────────────────────────────────────────┐
-│ [☰] [Logo]  [지역,업소명,테마를 검색해보세요 🔍]          [로그인]          │  ← Guest
-│ [☰] [Logo]  [지역,업소명,테마를 검색해보세요 🔍]          [👤]              │  ← Logged in
+│ [☰] [Logo]  [지역,업체명,테마를 검색해보세요 🔍]          [로그인]          │  ← Guest
+│ [☰] [Logo]  [지역,업체명,테마를 검색해보세요 🔍]          [👤]              │  ← Logged in
 └────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -186,7 +186,7 @@ A horizontal tab bar displayed below the header on search-related pages.
 
 ```
 ┌──────────┬──────────┬──────────┬──────────┬──────────┬──────────┐
-│ 🔍 상세검색│ 💆 테마별검색│ 📍 지역별검색│ 📡 내주변검색│ ⭐ 방문후기 │ 🤝 업소제휴 │
+│ 🔍 상세검색│ 💆 테마별검색│ 📍 지역별검색│ 📡 내주변검색│ ⭐ 리뷰 │ 🤝 파트너십 문의 │
 └──────────┴──────────┴──────────┴──────────┴──────────┴──────────┘
 ```
 
@@ -251,9 +251,9 @@ A horizontal tab bar displayed below the header on search-related pages.
 │  💬 커뮤니티                      │
 │                                  │
 │  ── 기타 ──                      │
-│  ⭐ 방문 후기                     │
+│  ⭐ 리뷰                     │
 │  📢 이벤트 & 공지                  │
-│  🤝 제휴문의                      │
+│  🤝 파트너십 문의                      │
 │                                  │
 │  🌐 한국어 / English              │
 └─────────────────────────────────┘
@@ -281,7 +281,7 @@ A horizontal tab bar displayed below the header on search-related pages.
 │  Description        │ 1588-1234       │ 이용안내         │ [IG] [Blog]│
 │                     │ 평일 09:00-18:00│ 개인정보처리방침  │            │
 │                     │                 │ 서비스이용약관    │            │
-│                     │                 │ 제휴문의         │            │
+│                     │                 │ 파트너십 문의         │            │
 ├──────────────────────────────────────────────────────────────────┤
 │  © 2026 SWIDA Co., Ltd. All Rights Reserved.                     │
 └──────────────────────────────────────────────────────────────────┘
@@ -402,7 +402,7 @@ Desktop
 │  (left)  ├───────────────────────────────────────────────────────┤
 │          │  ┌─────────┐ ┌─────────┐ ┌─────────┐                 │
 │ 키워드검색│  │ Shop 1  │ │ Shop 2  │ │ Shop 3  │  ← 3-col grid  │
-│ [업소명] │  └─────────┘ └─────────┘ └─────────┘                 │
+│ [업체명] │  └─────────┘ └─────────┘ └─────────┘                 │
 │          │  ┌─────────┐ ┌─────────┐ ┌─────────┐                 │
 │ 지역선택  │  │ (skel)  │ │ (skel)  │ │ (skel)  │  ← skeleton    │
 │ [시/도 ▾]│  └─────────┘ └─────────┘ └─────────┘                 │
@@ -761,9 +761,9 @@ Desktop
 Desktop
 ┌──────────────────────────────────────────────────────────────────┐
 │  [Header]                                                        │
-│  [Search Tab Bar — "방문 후기" active]                             │
+│  [Search Tab Bar — "리뷰" active]                             │
 ├──────────────────────────────────────────────────────────────────┤
-│  전체 방문 후기  15,240                                           │
+│  전체 리뷰  15,240                                           │
 │  ★★★★★ 4.6                                                      │
 │  [5★ ████████████████ 75%]                                      │
 │  [4★ ████████       15%]                                        │
@@ -783,7 +783,7 @@ Desktop
 │ ● 최신순  │  │ ...                                      │        │
 │ ○ 추천순  │  └──────────────────────────────────────────┘        │
 │ ○ 별점순  │                                                      │
-│          │  [후기 더보기 (4/15,240)]                              │
+│          │  [리뷰 더보기 (4/15,240)]                              │
 │ 지역선택  │                                                      │
 │ [시/도 ▾]│                                                      │
 │ [시군구▾]│                                                      │
@@ -816,12 +816,12 @@ Desktop
 │  ★ ★ ★ ★ ☆                                 │
 │  "최고예요! 추천합니다."                      │
 │                                              │
-│  상세 후기 작성                               │
+│  상세 리뷰 작성                               │
 │  ┌────────────────────────────────────────┐  │
 │  │ (textarea placeholder)                 │  │
 │  │                                0 / 500 │  │  ← FSD: 10-500 chars
 │  └────────────────────────────────────────┘  │
-│  ⓘ 부적절한 후기는 관리자에 의해 삭제될 수 있습니다  │
+│  ⓘ 부적절한 리뷰는 관리자에 의해 삭제될 수 있습니다  │
 │                                              │
 │  [취소하기]              [리뷰 등록하기]       │
 └──────────────────────────────────────────────┘
@@ -1098,7 +1098,7 @@ Desktop
 │  ┌─────────────────────┐ ┌─────────────────────┐                │
 │  │ [이벤트] [D-12]      │ │ [이벤트] [D-DAY]     │                │
 │  │ [Banner Image]      │ │ [Banner Image]      │                │
-│  │ 신규 가입하고 1만원...│ │ 후기 작성하고 기프티콘│                │
+│  │ 신규 가입하고 1만원...│ │ 리뷰 작성하고 기프티콘│                │
 │  │ 2024.05.01-05.31    │ │ 2024.04.15-05.20    │                │
 │  └─────────────────────┘ └─────────────────────┘                │
 ├──────────────────────────────────────────────────────────────────┤
@@ -1107,7 +1107,7 @@ Desktop
 │  No.  | 카테고리 | 제목                    | 작성일    | 조회수   │
 │  📌   | 공지    | 마짱 리뉴얼 기념 포인트..  | 2024.05.15| 1,245  │
 │  📌   | 공지    | 개인정보처리방침 개정...   | 2024.05.10| 856    │
-│  124  | 일반    | 이용 후기 작성 시 주의...  | 2024.05.18| 42     │
+│  124  | 일반    | 이용 리뷰 작성 시 주의...  | 2024.05.18| 42     │
 │  ...                                                             │
 │  [Pagination]                                                    │
 └──────────────────────────────────────────────────────────────────┘
@@ -1200,7 +1200,7 @@ Same structure as Board Post Detail (§7.3) without:
 ```
 ├──────────────────────────────────────────────────────────────────┤
 │  ← 다음글  서비스 정기 점검 안내 (2024년 6월 1일)    2024.05.28  │
-│  → 이전글  부적절한 후기 작성 시 제재 안내            2024.05.10  │
+│  → 이전글  부적절한 리뷰 작성 시 제재 안내            2024.05.10  │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
@@ -1225,9 +1225,9 @@ Desktop (split-screen layout)
 │                              │  [카카오 로그인]  ← yellow bg      │
 │  전국 마사지 최저가, 쉬다      │  [네이버 로그인]  ← green bg       │
 │                              │                                   │
-│  🏢 전국 8,000+ 제휴 업소 보유│  아이디/비밀번호 찾기 | 회원가입    │
+│  🏢 전국 8,000+ 제휴 업체 보유│  아이디/비밀번호 찾기 | 회원가입    │
 │  🎁 매일 쏟아지는 이벤트와 쿠폰│  ─────── OR ──────                │
-│  ⭐ 실제 방문자 100% 리얼 후기 │  [비회원 예약 조회]                │
+│  ⭐ 실제 방문자 100% 리얼 리뷰 │  [비회원 예약 조회]                │
 │                              │                                   │
 │                              │  로그인 시 이용약관 및 개인정보처리  │
 │                              │  방침에 동의하는 것으로 간주합니다.  │
@@ -1393,7 +1393,7 @@ Desktop (split-screen layout)
 Desktop
 ┌──────────────────────────────────────────────────────────────────┐
 │  [Header]                                                        │
-│  [Search Tab Bar — "업소 제휴" active]                             │
+│  [Search Tab Bar — "업체 제휴" active]                             │
 ├──────────────────────────────────────────────────────────────────┤
 │  HERO SECTION (dark bg)                                          │
 │  ┌──────────────────────────────────────────────────────┐       │
@@ -1405,7 +1405,7 @@ Desktop
 │  └──────────────────────────────────────────────────────┘       │
 ├──────────────────────────────────────────────────────────────────┤
 │  STATS ROW (4 columns)                                           │
-│  [8,000+ 제휴 업소 수] [200만+ 월간 방문자] [★4.5 실방문자 평점] [5년+ 안정적 운영] │
+│  [8,000+ 제휴 업체 수] [200만+ 월간 방문자] [★4.5 실방문자 평점] [5년+ 안정적 운영] │
 ├──────────────────────────────────────────────────────────────────┤
 │  BENEFITS SECTION                                                │
 │  쉬다 파트너만의 특별한 혜택                                      │
@@ -1421,7 +1421,7 @@ Desktop
 │  │  제휴 신청                                             │       │
 │  │  전문 상담관이 영업일 기준 24시간 내에 연락드립니다.      │       │
 │  │                                                        │       │
-│  │  업소명 [________]        대표자 성함 [________]        │       │
+│  │  업체명 [________]        대표자 성함 [________]        │       │
 │  │  연락처 [________]        지역 [▾ 지역 선택]            │       │
 │  │  상세 내용 [____________________________]               │       │
 │  │                                                        │       │
@@ -1438,7 +1438,7 @@ Desktop
 
 **FSD Form Fields**: Shop Name (required), Contact Person (required), Phone Number (required), Email (optional), Address (required), Business Type (optional), Preferred Contact Channel (required), Message (optional)
 
-**Figma form** is simplified (업소명, 대표자 성함, 연락처, 지역, 상세내용). Per FSD source of truth, include all FSD-specified fields.
+**Figma form** is simplified (업체명, 대표자 성함, 연락처, 지역, 상세내용). Per FSD source of truth, include all FSD-specified fields.
 
 #### Tier Adaptations
 
@@ -1481,7 +1481,7 @@ Desktop
 | Massage Info | Header "게시판 ▾" → dropdown | Drawer → 게시판 | Bottom Nav "게시판" → tab |
 | Community | Header "게시판 ▾" → dropdown | Drawer → 게시판 | Bottom Nav "게시판" → tab |
 | Events & Notices | Header "이벤트" | Drawer → 이벤트 | Drawer |
-| Partnership | Header "제휴문의" OR Tab Bar | Drawer OR Tab Bar | Drawer |
+| Partnership | Header "파트너십 문의" OR Tab Bar | Drawer OR Tab Bar | Drawer |
 | Login | Header "로그인" | Header "로그인" | Header "로그인" or Drawer |
 | Sign Up | Header "회원가입" | Drawer | Drawer |
 | Language Switch | Header (ko/en toggle) | Drawer | Drawer |
@@ -1544,7 +1544,7 @@ All conflicts between Figma designs and FSD are resolved with **FSD as source of
 | C-10 | Review points (500P) | Review success modal shows points | Not in PRD/FSD | **Excluded from MVP** | Point system is future scope |
 | C-11 | Welcome coupon (3,000 KRW) | Signup success modal shows coupon | Not in PRD/FSD | **Excluded from MVP** | Coupon system is future scope |
 | C-12 | User level/points | Lv.3, 보유 포인트 3200P | Not in PRD customer model | **Excluded from MVP** | Gamification is future scope |
-| C-13 | Navigation structure | Header dropdowns (샵검색▾, 게시판▾) | FSD §15.2 has 6 inline nav items | **Use Figma nav pattern** | Dropdown nav is cleaner for header; Tab Bar provides inline access. Exception to FSD-first rule — layout decision. |
+| C-13 | Navigation structure | Header dropdowns (업체검색▾, 게시판▾) | FSD §15.2 has 6 inline nav items | **Use Figma nav pattern** | Dropdown nav is cleaner for header; Tab Bar provides inline access. Exception to FSD-first rule — layout decision. |
 | C-14 | "비회원 예약 조회" | On login page | Not in FSD | **Deferred** | Non-member booking lookup is future scope |
 | C-15 | App download promo | In community sidebar | Not in FSD | **Deferred** | No mobile app in MVP |
 

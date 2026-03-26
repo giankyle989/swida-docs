@@ -466,7 +466,7 @@ Strapi 부트스트랩 스크립트(`database/seeds/`)를 통해 출시 시 미�
 | GET | `/api/shops/:documentId` | 공개 | 단일 업체 상세 |
 | GET | `/api/shops/nearby` | 공개 | **커스텀 컨트롤러** — 지리 공간 주변 검색 |
 
-> **참고:** 고객 웹은 슬러그 기반 라우트(`/[locale]/shop/[slug]`)를 사용하므로, `documentId` 대신 `GET /api/shops?filters[slug][$eq]={slug}&locale={locale}`로 업체 상세를 조회합니다. `documentId` 기반 엔드포인트는 Admin Web 및 내부 참조에서 사용됩니다.
+> **참고:** Customer Web은 슬러그 기반 라우트(`/[locale]/shop/[slug]`)를 사용하므로, `documentId` 대신 `GET /api/shops?filters[slug][$eq]={slug}&locale={locale}`로 업체 상세를 조회합니다. `documentId` 기반 엔드포인트는 Admin Web 및 내부 참조에서 사용됩니다.
 
 **GET `/api/shops` — 쿼리 파라미터:**
 
@@ -726,7 +726,7 @@ async function recalculateShopRating(shopDocumentId: string) {
 | 기능 | 설명 |
 |---|---|
 | 대시보드 | 플랫폼 통계: 전체 업체, 리뷰, 사용자, 문의 수. 커스텀 분석 엔드포인트(`GET /api/dashboard/stats`, §5.2.5)에서 데이터를 가져오는 Next.js 페이지로 구축. |
-| 지도 핀 드롭 | 업체 등록 또는 수정 시 위도/경도 선택을 위한 통합 지도 컴포넌트(카카오맵). 고객 웹 업체 상세 페이지에서도 정적 지도로 사용. Admin Web 내 React 컴포넌트로 구축. |
+| 지도 핀 드롭 | 업체 등록 또는 수정 시 위도/경도 선택을 위한 통합 지도 컴포넌트(카카오맵). Customer Web 업체 상세 페이지에서도 정적 지도로 사용. Admin Web 내 React 컴포넌트로 구축. |
 | 업체 CRUD | 검색, 필터, 정렬 기능을 갖춘 업체 목록 생성, 조회, 수정, 삭제 인터페이스. |
 | 리뷰 모더레이션 | 고객 리뷰 조회, 신고, 숨김, 관리. |
 | 파트너십 문의 관리 | 상태 워크플로우를 통한 입력 제휴 요청 추적 및 관리. |

@@ -264,7 +264,7 @@ GPS-powered discovery of shops in the customer's immediate area.
 - Optionally allows filtering by theme or amenities within nearby results
 
 **Implementation:** This requires a custom Strapi controller (`/api/shops/nearby`) that executes a raw SQL query using PostGIS:
-```
+```sql
 SELECT *, ST_Distance(
   ST_MakePoint(longitude, latitude)::geography,
   ST_MakePoint(:userLng, :userLat)::geography
