@@ -80,6 +80,7 @@ PRD는 Strapi를 **헤드리스 API 전용 백엔드**로, **커스텀 Next.js �
 | **next-intl** | `4.8.3` | 활성 | Next.js용 경로 기반 i18n 라우팅. v4.4부터 Next.js 16.x 호환. |
 | **Tailwind CSS** | `4.x` (최신 안정 버전) | 활성 | Next.js 16이 기본으로 Tailwind v4 스캐폴딩. `@tailwindcss/postcss` 사용. |
 | **Headless UI** | `2.2.9` | 활성 | 스타일 없는 접근성 컴포넌트. React 19 호환. |
+| **Nodemailer** | `7.x` (최신 안정 버전) | 활성 | 비밀번호 재설정, 알림을 위한 트랜잭션 이메일 발송. SMTP 제공자로 설정 (예: AWS SES, SendGrid, 또는 자체 호스팅 SMTP). 제공자 선택은 배포 결정 사항 — Nodemailer가 전송 방식을 추상화. |
 
 ### 2.3 주요 버전 결정 및 근거
 
@@ -686,6 +687,19 @@ async function recalculateShopRating(shopDocumentId: string) {
   });
 }
 ```
+
+**동시성 안전성:**
+
+`recalculateShopRating` 함수는 읽기 후 쓰기 패턴을 사용하므로 동시 실행에 취약합니다. 동일 업체에 두 개의 리뷰가 동시에 생성되면, 두 훅 모두 동일한(오래된) 리뷰 목록을 읽어 같은 수치를 계산하고, 하나가 다른 하나의 결과를 덮어씁니다.
+
+**필수 안전장치:** 업체의 `documentId`를 키로 하는 PostgreSQL 어드바이저리 락으로 재계산을 감쌉니다. 이를 통해 업체당 한 번에 하나의 재계산만 실행됩니다:
+
+```typescript
+await strapi.db.connection.raw('SELECT pg_advisory_xact_lock(hashtext(?))', [shopDocumentId]);
+// ... 그런 다음 리뷰 조회, 평균 계산, 업체 업데이트 (동일 트랜잭션 내에서)
+```
+
+**오류 처리:** 재계산에 실패하더라도(예: 데이터베이스 연결 오류) 리뷰 CRUD 작업은 성공해야 합니다 — 라이프사이클 훅이 사용자를 차단해서는 안 됩니다. 실패를 기록하고 재시도를 대기열에 추가합니다. 관리자 대시보드에서 `average_rating`이 오래되었을 수 있는 업체(마지막 재계산 실패)를 표시해야 합니다.
 
 #### 5.3.4 라이프사이클 훅: 감사 로그
 

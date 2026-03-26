@@ -57,6 +57,8 @@ Admin Web은 `admin.swida.com`에서 제공되는 전용 웹 애플리케이션�
 | 확인 | 모든 파괴적 작업(숨김, 삭제, 잠금, 비공개)은 확인 대화상자 필요 |
 | 토스트 알림 | 모든 쓰기 작업에 대한 성공/오류 피드백 |
 | 반응형 | 데스크톱 우선. 최소 지원 너비: 1024px |
+| 입력 값 검증 | 관리자가 제출하는 모든 자유 텍스트 필드(업체 설명, 비활성 사유 상세, 테마 이름, 관리 사유)는 저장 전 서버 측에서 검증됩니다. HTML 태그는 제거되고, 렌더링 시 출력 값은 Customer Web에서의 저장형 XSS 방지를 위해 이스케이프됩니다. |
+| 중복 제출 방지 | 모든 폼 제출 및 액션 버튼(저장, 공개, 숨김, 삭제, 잠금, 상태 변경)은 첫 클릭 시 서버 응답이 올 때까지 비활성화 + 로딩 상태로 전환됩니다. 빠른 클릭으로 인한 API 중복 호출을 방지합니다. |
 
 ---
 
@@ -286,6 +288,7 @@ under_review ──→ published (관리자 승인)
 under_review ──→ hidden (관리자 숨김)
 under_review ──→ deleted (관리자 삭제)
 hidden ──→ published (관리자 복원)
+deleted ──→ published (관리자 복원 — 확인 필요: "이 리뷰는 이전에 삭제되었습니다. 복원하면 다시 표시됩니다.")
 ```
 
 **평점 재계산**: 상태 변경 시 상위 업체의 평균 평점 및 리뷰 수가 자동으로 재계산됨 (PRD §8.5).
@@ -361,7 +364,7 @@ hidden ──→ published (관리자 복원)
 | F-INQ-04 | 필터 — 날짜 | 날짜 범위로 필터 |
 | F-INQ-05 | 정렬 | 정렬 기준: 생성일 (기본값: 최신순), 상태 |
 | F-INQ-06 | 문의 상세 | 확장/모달로 메시지 및 관리자 메모를 포함한 전체 문의 필드 표시 |
-| F-INQ-07 | 상태 업데이트 | 드롭다운을 통한 문의 상태 변경. 상태 흐름: `new` → `contacted` → `awaiting_info` → `approved` → `published`. `published`를 제외한 모든 상태 → `rejected`. `published`와 `rejected`는 모두 최종 상태. (PRD §10.3.2) |
+| F-INQ-07 | 상태 업데이트 | 드롭다운을 통한 문의 상태 변경. 상태 흐름: `new` → `contacted` → `awaiting_info` → `approved` → `published`. `published`를 제외한 모든 상태 → `rejected`. `rejected` → `new` (재오픈). `published`는 최종 상태 — 업체는 업체 관리에서 관리됨. (PRD §10.3.2) |
 | F-INQ-08 | 관리자 메모 | 모든 문의에 내부 메모 추가/수정. 메모는 외부에 공개되지 않음 (PRD §10.3.1) |
 | F-INQ-09 | 중복 감지 | 동일한 업체 이름 + 주소가 다른 문의 또는 업체 목록에 이미 존재하는 경우 시각적 플래그/배지 표시 (PRD §10.3.2) |
 | F-INQ-10 | 업체으로 전환 | `approved` 문의에서 "Create Shop Listing" 버튼. 문의 데이터(업체 이름, 주소, 업종, 연락처 정보)로 새 업체 폼(`/shops/new`)을 미리 채움 (PRD §10.3.2) |
@@ -430,8 +433,8 @@ new ──→ contacted ──→ awaiting_info ──→ approved ──→ pub
 | # | 기능 | 설명 |
 |---|---|---|
 | F-AUDIT-01 | 로그 테이블 | 전체 감사 항목의 페이지네이션 테이블. 컬럼: 타임스탬프, 관리자 사용자, 콘텐츠 유형, 작업, 문서 이름/ID |
-| F-AUDIT-02 | 필터 — 콘텐츠 유형 | 필터: 전체 / Shop / Theme / Region / District |
-| F-AUDIT-03 | 필터 — 작업 | 필터: 전체 / Create / Update / Delete / Publish / Unpublish |
+| F-AUDIT-02 | 필터 — 콘텐츠 유형 | 필터: 전체 / Shop / Theme / Region / District / Review / Partnership Inquiry / User |
+| F-AUDIT-03 | 필터 — 작업 | 필터: 전체 / Create / Update / Delete / Publish / Unpublish / Hide / Restore / Lock / Unlock |
 | F-AUDIT-04 | 필터 — 관리자 | 변경을 수행한 관리자로 필터 |
 | F-AUDIT-05 | 필터 — 날짜 | 날짜 범위로 필터 |
 | F-AUDIT-06 | 필터 — 문서 | 특정 document ID로 필터 (예: 특정 업체의 전체 감사 로그 조회) |
@@ -444,6 +447,33 @@ new ──→ contacted ──→ awaiting_info ──→ approved ──→ pub
 감사 로그는 누가 변경했는지, 무엇이 변경되었는지, 변경 전후 값을 기록한다. 각 항목에는 콘텐츠 유형(예: 업체, 테마), 수정된 특정 레코드, 수행된 작업(생성, 수정, 삭제, 공개, 비공개), 작업을 수행한 관리자, 변경 전후 값이 포함된 필드별 변경 내역, 변경 타임스탬프가 포함된다.
 
 > 자세한 데이터 스키마는 TSD §4.4.7 참조.
+
+**확장된 감사 범위**
+
+감사 로그는 업체 변경 사항뿐만 아니라 모든 상태 변경 관리자 작업을 포함합니다:
+
+| 콘텐츠 유형 | 감사 대상 작업 |
+|---|---|
+| Shop | Create, Update, Delete, Publish, Unpublish |
+| Theme | Create, Update, Delete |
+| Region / District | Create, Update, Delete |
+| Review | Hide, Restore, Delete (관리 작업) |
+| Partnership Inquiry | 상태 변경 (New → Contacted → Awaiting Info → Approved → Rejected → Published) |
+| User (Customer) | Lock, Unlock |
+
+**보안 이벤트 로그**
+
+콘텐츠 감사 로그 외에도 다음 보안 민감 이벤트는 모니터링 및 인시던트 대응을 위해 서버 측에 기록됩니다:
+
+| 이벤트 | 기록 필드 |
+|---|---|
+| 로그인 실패 시도 (관리자 또는 고객) | 이메일, IP 주소, 타임스탬프, 실패 사유 |
+| 계정 잠금/해제 | 대상 사용자, 수행 관리자, 사유, 타임스탬프 |
+| 비밀번호 재설정 요청 | 이메일, IP 주소, 타임스탬프, 발송 상태 |
+| 관리자 로그인/로그아웃 | 관리자 사용자, IP 주소, 타임스탬프 |
+| 세션 만료 | 사용자, 세션 기간, 타임스탬프 |
+
+> 보안 이벤트는 별도의 `security_events` 로그에 저장됩니다(콘텐츠 감사 로그와 분리). 보관 기간: 최소 90일. 구현 세부 사항은 TSD 참조.
 
 ---
 
@@ -522,8 +552,8 @@ new ──→ contacted ──→ awaiting_info ──→ approved ──→ pub
 | `contacted` | Contacted | 관리자가 업체 오너에게 연락함 | `awaiting_info`, `rejected` |
 | `awaiting_info` | Awaiting Info | 업체 오너의 세부 정보 제공 대기 중 | `approved`, `rejected` |
 | `approved` | Approved | 정보 확인 완료, 업체 목록 생성 준비 완료 | `published`, `rejected` |
-| `rejected` | Rejected | 문의 거부됨 | (최종 상태) |
-| `published` | Published | 업체 목록이 SWIDA에 공개됨 | (최종 상태) |
+| `rejected` | Rejected | 문의 거부됨 | `new` (관리자 재오픈 — 확인 필요: "이 거부된 문의를 다시 열겠습니까?") |
+| `published` | Published | 업체 목록이 SWIDA에 공개됨 | (최종 상태 — 이 시점부터 업체는 업체 관리에서 관리됨) |
 
 **SLA 표시기**: `new` 상태에서 48시간 이상 경과한 문의는 지연으로 시각적 강조 표시해야 함 (PRD §10.3.3).
 
