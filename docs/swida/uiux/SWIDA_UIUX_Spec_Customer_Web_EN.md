@@ -31,7 +31,7 @@ This document defines the screen layouts, responsive behavior, component structu
 | Page-level screen structure (wireframe level) | Animation speed / easing curves |
 | Component tier adaptation rules | Per-client theming |
 | User interaction flows (storyboards) | Admin Web UI |
-| State-based screen branching | Strapi backend configuration |
+| State-based screen branching | Backend configuration |
 | Figma–FSD conflict resolution log | |
 
 ---
@@ -40,35 +40,17 @@ This document defines the screen layouts, responsive behavior, component structu
 
 ### 2.1 Breakpoints
 
-| Tier | Abbr | Range | Reference Device |
-|---|---|---|---|
-| Desktop | D | ≥ 1280px | PC, large monitors |
-| Tablet | T | 768px – 1279px | iPad, small laptops |
-| Mobile | M | < 768px | Smartphones |
+| Tier | Abbr | Reference Device |
+|---|---|---|
+| Desktop | D | PC, large monitors |
+| Tablet | T | iPad, small laptops |
+| Mobile | M | Smartphones |
 
-**Implementation Strategy: Mobile-First (Tailwind CSS v4)**
+The layout adapts across three tiers: Desktop, Tablet, and Mobile. Components are designed mobile-first, then extended for larger screens.
 
-Styles are written mobile-first. Tailwind's `min-width` breakpoint prefixes extend to higher tiers.
-
-```
-Tailwind Breakpoint Mapping:
-  default (no prefix) → Mobile (<768px)
-  md:                 → Tablet (≥768px)
-  lg:                 → Desktop (≥1280px)
-```
-
-```
-Style Examples:
-  class="p-4 md:p-6 lg:p-8"                          ← spacing
-  class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3"  ← grid
-  class="text-sm md:text-base lg:text-lg"             ← font
-  class="hidden md:block"                             ← hidden on mobile, visible tablet+
-  class="block md:hidden"                             ← mobile only
-```
-
-- All components are implemented mobile-first, then extended via `md:` → `lg:`
-- `max-width` (desktop-first) approach is not used
 - Screen definitions follow Mobile → Tablet → Desktop order
+
+> For detailed technical specifications (breakpoint values, CSS implementation), see the TSD.
 
 ### 2.2 Layout Shell Matrix
 
@@ -82,7 +64,7 @@ Style Examples:
 
 ### 2.3 Layout Shell Structure
 
-**Desktop (≥ 1280px)**
+**Desktop**
 
 ```
 ┌──────────────────────────────────────────────────────┐
@@ -98,7 +80,7 @@ Style Examples:
 └──────────────────────────────────────────────────────┘
 ```
 
-**Tablet (768px – 1279px)**
+**Tablet**
 
 ```
 ┌──────────────────────────────────────────────────────┐
@@ -118,7 +100,7 @@ Style Examples:
   └──────────┘
 ```
 
-**Mobile (< 768px)**
+**Mobile**
 
 ```
 ┌──────────────────────────────────────────────────────┐
@@ -1273,7 +1255,7 @@ Desktop (split-screen layout)
 
 [2a] Kakao Login → redirect to Kakao OAuth → callback → JWT stored → redirect to previous page
 [2b] Naver Login → redirect to Naver OAuth → callback → JWT stored → redirect to previous page
-[2c] Email Login → form validation → POST to Strapi → JWT stored → redirect
+[2c] Email Login → form validation → submit to backend → session stored → redirect
 
 [3] Locked account → error message: "계정이 정지되었습니다." (F-AUTH-06)
 
@@ -1560,7 +1542,7 @@ All conflicts between Figma designs and FSD are resolved with **FSD as source of
 | C-06 | Booking CTA split | "전화 예약" / "문자 예약" | `booking_url_phone` single field | **Use FSD** | Single booking CTA |
 | C-07 | Sort options | 추천순, 가격 낮은순 | Rating, Review count, Newest | **Use FSD** | 3 sort options as specified |
 | C-08 | Signup phone + SMS verification | Phone field + 인증요청 | Email + password + display name | **Use FSD** | Phone/SMS deferred |
-| C-09 | Password requirements | 영문/숫자/특수문자 8자+ | Min 6 characters (Strapi default) | **Use FSD** | Recommend upgrading to Figma's rule in future |
+| C-09 | Password requirements | 영문/숫자/특수문자 8자+ | Min 6 characters (backend default) | **Use FSD** | Recommend upgrading to Figma's rule in future |
 | C-10 | Review points (500P) | Review success modal shows points | Not in PRD/FSD | **Excluded from MVP** | Point system is future scope |
 | C-11 | Welcome coupon (3,000 KRW) | Signup success modal shows coupon | Not in PRD/FSD | **Excluded from MVP** | Coupon system is future scope |
 | C-12 | User level/points | Lv.3, 보유 포인트 3200P | Not in PRD customer model | **Excluded from MVP** | Gamification is future scope |
