@@ -33,7 +33,7 @@ This document defines the page list and functional specifications for the SWIDA 
 | Nearby Search (GPS-based discovery) | Coupon / Deals System |
 | Shop Detail Page (full profile + reviews) | Chat / Messaging |
 | Review Feed + Review Submission | 초성 Search (consonant-based) |
-| Partnership Page + Inquiry Form | Advanced Fuzzy Search (pg_trgm / Meilisearch) |
+| Partnership Page + Inquiry Form | Advanced Fuzzy Search |
 | Customer Authentication (Email, Kakao, Naver) | Shop Owner Portal |
 | Multi-language (Korean / English) | Analytics for Shops |
 | Review Reporting | SMS Verification for Reviews |
@@ -44,12 +44,11 @@ This document defines the page list and functional specifications for the SWIDA 
 |---|---|
 | Currency | KRW (₩). Prices displayed as integers with comma separator (e.g., ₩50,000) |
 | Date/Time | KST (Korea Standard Time, UTC+9). Format: `YYYY.MM.DD` for dates, `HH:mm` for times |
-| Timezone | Open/Close tag determination uses `Asia/Seoul` timezone via `Intl.DateTimeFormat` |
+| Timezone | Open/Close tag determination uses Korea Standard Time (Asia/Seoul) |
 | Locale Routing | Path-based: `/ko/...` (default), `/en/...`. Root `/` redirects to `/ko` |
 | Pagination | Page-based (not infinite scroll) for SEO. Each page has a unique URL |
 | Filter State | All active filters persisted in URL query parameters (shareable, bookmarkable) |
-| Rendering | SSG/ISR for static content, SSR for dynamic search, CSR for GPS and auth flows |
-| Responsive | Mobile-first. Tailwind CSS min-width breakpoints (default=Mobile → `md:`=Tablet → `lg:`=Desktop) |
+| Responsive | Mobile-first design with three tiers: Mobile, Tablet, Desktop |
 | Authentication | Optional for browsing. Required only for review submission and review reporting |
 | Empty States | Friendly message with suggestion to broaden filters or try a different search mode |
 | Loading States | Skeleton placeholders for all data-fetching states (defined in UI/UX Spec) |
@@ -59,18 +58,18 @@ This document defines the page list and functional specifications for the SWIDA 
 
 ## 2. Page List
 
-| # | Page | Route | Auth | Rendering | SEO Index | Description |
-|---|---|---|---|---|---|---|
-| 1 | Homepage | `/[locale]` | Public | SSG + ISR | Yes | Featured shops, theme cards, quick access |
-| 2 | Detail Search | `/[locale]/search` | Public | SSR | No | Advanced multi-filter search |
-| 3 | Theme Browse | `/[locale]/theme/[theme-slug]` | Public | SSG | Yes | Shops filtered by service theme |
-| 4 | Location Browse | `/[locale]/location/[level1]/[level2]` | Public | SSG | Yes | Shops filtered by region/district |
-| 5 | Nearby Search | `/[locale]/nearby` | Public | CSR | No | GPS-based shop discovery |
-| 6 | Shop Detail | `/[locale]/shop/[slug]` | Public | ISR | Yes | Full shop profile + reviews |
-| 7 | Review Feed | `/[locale]/reviews` | Public | SSR | No | Latest reviews across all shops |
-| 8 | Partnership | `/[locale]/partnership` | Public | SSG | Yes | Shop owner onboarding landing page |
-| 9 | Login | `/[locale]/auth/login` | Guest Only | CSR | No | Email + social login (Kakao, Naver) |
-| 10 | OAuth Callback | `/[locale]/auth/callback` | Guest Only | CSR | No | Social login callback handler |
+| # | Page | Route | Auth | Description |
+|---|---|---|---|---|
+| 1 | Homepage | `/[locale]` | Public | Featured shops, theme cards, quick access |
+| 2 | Detail Search | `/[locale]/search` | Public | Advanced multi-filter search |
+| 3 | Theme Browse | `/[locale]/theme/[theme-slug]` | Public | Shops filtered by service theme |
+| 4 | Location Browse | `/[locale]/location/[level1]/[level2]` | Public | Shops filtered by region/district |
+| 5 | Nearby Search | `/[locale]/nearby` | Public | GPS-based shop discovery |
+| 6 | Shop Detail | `/[locale]/shop/[slug]` | Public | Full shop profile + reviews |
+| 7 | Review Feed | `/[locale]/reviews` | Public | Latest reviews across all shops |
+| 8 | Partnership | `/[locale]/partnership` | Public | Shop owner onboarding landing page |
+| 9 | Login | `/[locale]/auth/login` | Guest Only | Email + social login (Kakao, Naver) |
+| 10 | OAuth Callback | `/[locale]/auth/callback` | Guest Only | Social login callback handler |
 
 **Auth Legend**: Public = anyone can access (no login required) / Guest Only = only non-authenticated users (logged-in users redirect to homepage)
 
@@ -94,9 +93,9 @@ This document defines the page list and functional specifications for the SWIDA 
 
 | # | Feature | Description |
 |---|---|---|
-| F-AUTH-01 | Email/Password Login | Standard email + password authentication via Strapi Users & Permissions plugin |
-| F-AUTH-02 | Kakao Social Login | OAuth 2.0 login via Kakao — custom provider in Strapi (PRD §3.3) |
-| F-AUTH-03 | Naver Social Login | OAuth 2.0 login via Naver — custom provider in Strapi (PRD §3.3) |
+| F-AUTH-01 | Email/Password Login | Standard email + password authentication (PRD §3.3) |
+| F-AUTH-02 | Kakao Social Login | Login via Kakao account (PRD §3.3) |
+| F-AUTH-03 | Naver Social Login | Login via Naver account (PRD §3.3) |
 | F-AUTH-04 | Email Registration | New account creation with email, password, and display name |
 | F-AUTH-05 | Post-Login Redirect | After successful login, redirect to the page the user was on before login |
 | F-AUTH-06 | Locked Account Handling | If account is locked/suspended, display error message and prevent login to review features |
@@ -105,8 +104,8 @@ This document defines the page list and functional specifications for the SWIDA 
 
 | Field | Required | Constraints | Notes |
 |---|---|---|---|
-| Email | Yes | Valid email format, unique | Strapi Users & Permissions |
-| Password | Yes | Minimum 6 characters | Strapi default policy |
+| Email | Yes | Valid email format, unique | — |
+| Password | Yes | Minimum 6 characters | — |
 | Display Name | Yes | 2–20 characters, unique | Shown on reviews |
 
 **Server Validation Errors**
@@ -122,7 +121,7 @@ This document defines the page list and functional specifications for the SWIDA 
 
 | # | Feature | Description |
 |---|---|---|
-| F-AUTH-07 | Token Exchange | Exchange OAuth authorization code for Strapi JWT |
+| F-AUTH-07 | Token Exchange | Complete social login and establish user session |
 | F-AUTH-08 | Auto-Registration | First-time social login users are automatically registered |
 | F-AUTH-09 | Error Handling | Display error message and redirect to login if OAuth flow fails |
 
@@ -132,16 +131,16 @@ This document defines the page list and functional specifications for the SWIDA 
 
 | # | Feature | Description |
 |---|---|---|
-| F-SESSION-01 | JWT Storage | Store Strapi JWT in httpOnly cookie (secure, SameSite=Lax) |
-| F-SESSION-02 | Token Lifetime | 7 days (configurable via Strapi `plugins.ts`) (TSD §5.4.1) |
-| F-SESSION-03 | Logout | Clear JWT, reset client state, redirect to homepage |
-| F-SESSION-04 | Session Expiry | On token expiry, clear auth state and redirect to login if attempting a protected action |
+| F-SESSION-01 | Session Storage | Login session is stored securely in the browser |
+| F-SESSION-02 | Session Lifetime | Login session persists for 7 days (TSD §5.4.1) |
+| F-SESSION-03 | Logout | End session, reset state, redirect to homepage |
+| F-SESSION-04 | Session Expiry | On session expiry, redirect to login if attempting a protected action |
 
 ### 3.4 Logout
 
 | # | Feature | Description |
 |---|---|---|
-| F-LOGOUT-01 | Session Clear | Remove JWT token and clear client-side auth state |
+| F-LOGOUT-01 | Session Clear | End login session and clear user state |
 | F-LOGOUT-02 | Redirect | Navigate to homepage after logout |
 
 ---
@@ -161,12 +160,11 @@ This document defines the page list and functional specifications for the SWIDA 
 | F-HOME-03 | Search Quick Access | Prominent entry points to all five search modes (Detail, Theme, Location, Nearby, Name) via navigation |
 | F-HOME-04 | Navigation Menu | Bottom navigation (mobile) / top navigation bar (desktop) with all customer-facing menu items (PRD §7.1) |
 
-**API Calls**
+**Data Sources**
 
-| Endpoint | Purpose | Cache |
-|---|---|---|
-| `GET /api/themes?locale={locale}&sort=display_order:asc` | Theme card list | SSG, revalidate on-demand |
-| `GET /api/shops?locale={locale}&sort=average_rating:desc&pagination[pageSize]=12` | Featured shops | ISR, revalidate 300s |
+The homepage fetches the list of service themes (sorted by display order) and a selection of featured shops (sorted by highest rating).
+
+> See TSD §5.2.1 for API details.
 
 ---
 
@@ -187,42 +185,28 @@ This document defines the page list and functional specifications for the SWIDA 
 | F-SEARCH-05 | Booking Filter | Yes / No / Any toggle for booking requirement (PRD §6.1) |
 | F-SEARCH-06 | Filter Logic | All filters combined with AND logic. Only shops matching all selected criteria are returned. Empty filters are ignored (PRD §6.1) |
 | F-SEARCH-07 | Sort Options | Rating (desc, default), Review count (desc), Newest listed (desc) (PRD §6.6) |
-| F-SEARCH-08 | Result Count | Displayed at top of results (e.g., "검색 결과 42개") from `pagination.total` (PRD §6.6) |
+| F-SEARCH-08 | Result Count | Displayed at top of results (e.g., "검색 결과 42개") (PRD §6.6) |
 | F-SEARCH-09 | Pagination | Page-based with unique URL per page. SEO-friendly crawlable URLs (PRD §6.6) |
 | F-SEARCH-10 | URL State | All active filters serialized to URL query parameters. Shareable, bookmarkable, back-nav safe (PRD §6.6) |
 | F-SEARCH-11 | Zero Results | Friendly message: "검색 결과가 없습니다" / "No results found" with suggestion to broaden filters (PRD §6.6) |
 
 **Shop Card Display Fields** (applies to all search result lists)
 
-| Field | Source | Notes |
-|---|---|---|
-| Thumbnail | `shop.thumbnail.url` | Primary display image |
-| Shop Name | `shop.name` | Localized |
-| District | `shop.district.name` | Level 2 location, localized |
-| Themes | `shop.themes[].name` | Top themes as tags, localized |
-| Average Rating | `shop.average_rating` | Displayed as star rating (e.g., ★ 4.5) |
-| Review Count | `shop.total_reviews` | Displayed as count (e.g., "리뷰 23개") |
-| Open/Close Tag | Computed client-side | Compare `shop.operating_hours` against current time in KST |
+| Field | Notes |
+|---|---|
+| Thumbnail | Primary display image |
+| Shop Name | Localized |
+| District | Level 2 location, localized |
+| Themes | Top themes as tags, localized |
+| Average Rating | Displayed as star rating (e.g., ★ 4.5) |
+| Review Count | Displayed as count (e.g., "리뷰 23개") |
+| Open/Close Tag | The system determines open/closed status based on the shop's operating hours and the current time in Korea (KST) |
 
-**API Call**
+**Data Source**
 
-```
-GET /api/shops?locale={locale}
-  &filters[name][$containsi]={keyword}
-  &filters[region][documentId][$eq]={regionId}
-  &filters[district][documentId][$eq]={districtId}
-  &filters[themes][documentId][$in][0]={themeId}
-  &filters[amenities][parking_available][$eq]=true
-  &filters[booking_required][$eq]=false
-  &sort=average_rating:desc
-  &pagination[page]={page}
-  &pagination[pageSize]=20
-  &populate[thumbnail][fields][0]=url
-  &populate[themes][fields][0]=name&populate[themes][fields][1]=slug
-  &populate[district][fields][0]=name
-  &fields[0]=name&fields[1]=slug&fields[2]=average_rating
-  &fields[3]=total_reviews&fields[4]=address&fields[5]=operating_hours
-```
+Fetches shops matching all active filters (name, location, themes, amenities, booking requirement), with pagination and the selected sort order. Returns shop card data including thumbnail, name, district, themes, rating, and operating hours.
+
+> See TSD §5.2.1 for API details.
 
 ---
 
@@ -241,17 +225,11 @@ GET /api/shops?locale={locale}
 | F-THEME-05 | Pagination | Page-based with unique URL |
 | F-THEME-06 | Result Count | Total shop count for this theme |
 
-**API Call**
+**Data Source**
 
-```
-GET /api/shops?locale={locale}
-  &filters[themes][slug][$eq]={theme-slug}
-  &sort=average_rating:desc
-  &pagination[page]={page}&pagination[pageSize]=20
-  &populate[thumbnail][fields][0]=url
-  &populate[themes][fields][0]=name&populate[themes][fields][1]=slug
-  &populate[district][fields][0]=name
-```
+Fetches all shops tagged with the selected theme, with pagination and sort options. Returns shop card data.
+
+> See TSD §5.2.1 for API details.
 
 ---
 
@@ -270,13 +248,11 @@ GET /api/shops?locale={locale}
 | F-LOC-05 | Pagination | Page-based with unique URL |
 | F-LOC-06 | Breadcrumb | Display navigation breadcrumb: Home > Region > District |
 
-**API Calls**
+**Data Sources**
 
-| Endpoint | Purpose |
-|---|---|
-| `GET /api/regions?locale={locale}` | All Level 1 regions |
-| `GET /api/districts?locale={locale}&filters[region][documentId][$eq]={regionId}` | Level 2 districts for selected region |
-| `GET /api/shops?locale={locale}&filters[district][documentId][$eq]={districtId}&sort=average_rating:desc` | Shops in selected district |
+The page fetches: (1) all Level 1 regions, (2) Level 2 districts for the selected region, and (3) shops in the selected district sorted by rating.
+
+> See TSD §5.2.1 for API details.
 
 ---
 
@@ -297,15 +273,11 @@ GET /api/shops?locale={locale}
 | F-NEAR-07 | Loading State | Display loading indicator while GPS is resolving (timeout: 10 seconds — show error with retry button if GPS fails or times out) and API is fetching |
 | F-NEAR-08 | Pagination | Page-based |
 
-**API Call (Custom Controller)**
+**Data Source**
 
-```
-GET /api/shops/nearby?lat={lat}&lng={lng}&radius={meters}
-  &locale={locale}
-  &pagination[page]={page}&pagination[pageSize]=20
-```
+Fetches shops near the user's GPS location within the selected radius. Results include the distance to each shop and are sorted nearest-first.
 
-Response includes `distance` field (meters) on each shop, sorted by distance ascending. (TSD §5.2.1)
+> See TSD §5.2.1 for API details.
 
 ---
 
@@ -335,7 +307,7 @@ Name Search is implemented as a subset of Detail Search (§5). When a user enter
 |---|---|---|
 | F-SHOP-01 | Image Gallery | Display shop images (1–10 photos) with swipe/click navigation. Thumbnail as primary image (PRD §5.1) |
 | F-SHOP-02 | Basic Information | Shop name, description, address, operating hours, last order time, closed days, holiday exceptions (PRD §5.1) |
-| F-SHOP-03 | Open/Close Tag | Compare `operating_hours` against current time in KST. Display `open_tag` (default: "영업중") or `close_tag` (default: "영업종료") (PRD §5.6) |
+| F-SHOP-03 | Open/Close Tag | The system determines open/closed status based on the shop's operating hours and the current time in Korea (KST). Displays "영업중" (Open) or "영업종료" (Closed) (PRD §5.6) |
 | F-SHOP-04 | Location Display | Region + District name. Display address on a Kakao Map Static API image (MVP) |
 | F-SHOP-05 | Service Themes | Display all tagged themes as badge/tag chips (PRD §5.2) |
 | F-SHOP-06 | Service Menu | List of services with name, duration, price (formatted as ₩XX,XXX) (PRD §5.2.1) |
@@ -353,31 +325,22 @@ Name Search is implemented as a subset of Detail Search (§5). When a user enter
 
 **Gender Availability Display Labels**
 
-| Value | Korean | English |
-|---|---|---|
-| `all` | 남녀 모두 | All genders |
-| `female_only` | 여성 전용 | Female only |
-| `male_only` | 남성 전용 | Male only |
-| `couple_available` | 커플 가능 | Couples available |
+| Korean | English |
+|---|---|
+| 남녀 모두 | All genders |
+| 여성 전용 | Female only |
+| 남성 전용 | Male only |
+| 커플 가능 | Couples available |
 
-**API Call**
+**Data Source**
 
-```
-GET /api/shops?locale={locale}
-  &filters[slug][$eq]={slug}
-  &populate[images][fields][0]=url&populate[images][fields][1]=alternativeText
-  &populate[thumbnail][fields][0]=url
-  &populate[themes][fields][0]=name&populate[themes][fields][1]=slug
-  &populate[region][fields][0]=name
-  &populate[district][fields][0]=name
-  &populate[amenities]=*
-  &populate[contact_channels]=*
-  &populate[service_menu]=*
-```
+Fetches the full shop profile including images, themes, location, amenities, contact channels, and service menu.
 
-**SEO — Structured Data (JSON-LD)**
+> See TSD §5.2.1 for API details.
 
-Shop detail pages include `LocalBusiness` schema markup with: name, address, telephone, geo coordinates (latitude, longitude), opening hours, aggregate rating (`averageRating`, `reviewCount`), price range. (TSD §11.5)
+**SEO**
+
+Shop detail pages include SEO metadata for search engines, including structured business information (name, address, hours, rating) and multilingual alternate links. (TSD §11.5)
 
 ---
 
@@ -392,7 +355,7 @@ Shop detail pages include `LocalBusiness` schema markup with: name, address, tel
 | F-REV-01 | Login Gate | Review form is visible only to logged-in users. Non-logged-in users see a CTA to log in (PRD §8.2) |
 | F-REV-02 | Star Rating Input | 1–5 star scale, required. Interactive star selector (PRD §8.2) |
 | F-REV-03 | Comment Input | Free-text, required. 10–500 characters. Display character count. Client-side validation (PRD §8.2) |
-| F-REV-04 | Submit Review | POST to API. On success, review appears in list and shop rating/count updates. Display success toast |
+| F-REV-04 | Submit Review | On success, review appears in list and shop rating/count updates automatically. Display success toast |
 | F-REV-05 | Locked Account | If user's account is locked, display error message and prevent submission (PRD §8.5) |
 | F-REV-06 | Validation Error | Display inline error if comment is < 10 or > 500 characters |
 
@@ -403,15 +366,11 @@ Shop detail pages include `LocalBusiness` schema markup with: name, address, tel
 | Rating | Yes | Integer, 1–5 |
 | Comment | Yes | 10–500 characters |
 
-**API Call**
+**Data Submission**
 
-```
-POST /api/reviews
-Authorization: Bearer {jwt}
-Body: { "data": { "rating": 5, "comment": "...", "shop": "{shopDocumentId}" } }
-```
+Submits the review (rating and comment) for the specified shop. The review author is automatically determined from the logged-in user.
 
-The `author` field is automatically set from the authenticated user's JWT. (TSD §5.2.2)
+> See TSD §5.2.2 for API details.
 
 **Server Validation Errors**
 
@@ -432,17 +391,11 @@ The `author` field is automatically set from the authenticated user's JWT. (TSD 
 | F-REV-09 | Shop Link | Clicking the shop name/thumbnail on a review card navigates to that shop's detail page |
 | F-REV-10 | Pagination | Page-based |
 
-**API Call**
+**Data Source**
 
-```
-GET /api/reviews?locale={locale}
-  &sort=createdAt:desc
-  &filters[status][$eq]=published
-  &populate[shop][fields][0]=name&populate[shop][fields][1]=slug
-  &populate[shop][populate][thumbnail][fields][0]=url
-  &populate[author][fields][0]=username
-  &pagination[page]={page}&pagination[pageSize]=20
-```
+Fetches published reviews across all shops, sorted by most recent first, with linked shop name and thumbnail.
+
+> See TSD §5.2.2 for API details.
 
 ### 11.3 Review Reporting
 
@@ -452,16 +405,14 @@ GET /api/reviews?locale={locale}
 |---|---|---|
 | F-REV-11 | Report Button | "Report" button on each review. Login required (PRD §8.5) |
 | F-REV-12 | Report Reason | Reason selection: `spam`, `fake`, `inappropriate`, `irrelevant`, `other` (PRD §8.5) |
-| F-REV-13 | Report Submission | POST to API. On success, display confirmation toast. Reported review enters `under_review` status (PRD §8.5) |
+| F-REV-13 | Report Submission | On success, display confirmation toast. Reported review enters review status for moderation (PRD §8.5) |
 | F-REV-14 | Duplicate Report | If user has already reported this review, disable the report button and show "이미 신고한 리뷰입니다" / "You have already reported this review" |
 
-**API Call**
+**Data Submission**
 
-```
-POST /api/reviews/{id}/report
-Authorization: Bearer {jwt}
-Body: { "reason": "spam" }
-```
+Submits a report for the selected review with the chosen reason. Login required.
+
+> See TSD §5.2.2 for API details.
 
 ---
 
@@ -475,7 +426,7 @@ Body: { "reason": "spam" }
 |---|---|---|
 | F-PART-01 | Landing Content | What SWIDA is, benefits for shop owners, step-by-step listing process, contact info (email, KakaoTalk, Instagram), FAQ (PRD §10.1) |
 | F-PART-02 | Inquiry Form | Embedded form for shop owners to submit a partnership inquiry (PRD §10.3.1) |
-| F-PART-03 | Form Submission | POST to public API. No authentication required. Display success message on submission (PRD §10.3) |
+| F-PART-03 | Form Submission | No login required. Display success message on submission (PRD §10.3) |
 | F-PART-04 | Duplicate Detection | Server-side: if same shop name + address already exists, flag as potential duplicate (PRD §10.3.2) |
 
 **Inquiry Form Fields**
@@ -491,24 +442,11 @@ Body: { "reason": "spam" }
 | Preferred Contact Channel | Yes | Select: phone, kakaotalk, instagram, email |
 | Message | No | Text, max 2000 characters |
 
-**API Call**
+**Data Submission**
 
-```
-POST /api/partnership-inquiries
-Body: {
-  "data": {
-    "shop_name": "...",
-    "contact_person": "...",
-    "phone_number": "...",
-    "email": "...",
-    "address": "...",
-    "business_type": "...",
-    "preferred_contact_channel": "phone",
-    "message": "...",
-    "source": "website_form"
-  }
-}
-```
+Submits the partnership inquiry form data to the server.
+
+> See TSD §5.2.3 for API details.
 
 **Server Validation Errors**
 
@@ -527,13 +465,13 @@ Body: {
 | # | Feature | Description |
 |---|---|---|
 | F-I18N-01 | Path-Based Routing | `/ko/...` for Korean (default), `/en/...` for English. Both explicit, no unprefixed routes (PRD §11.4) |
-| F-I18N-02 | Root Redirect | `www.swida.com/` redirects to `/ko` via Next.js middleware (PRD §11.4) |
-| F-I18N-03 | Locale Detection | Detect locale from `Accept-Language` header on first visit. Default: `ko`. Override to `en` only if `en` is the primary language in `Accept-Language`. Redirect preserves query parameters (e.g., `/?theme=massage` → `/ko/?theme=massage`) |
+| F-I18N-02 | Root Redirect | `www.swida.com/` redirects to `/ko` (PRD §11.4) |
+| F-I18N-03 | Locale Detection | Detect preferred language from the user's browser on first visit. Default: Korean. Override to English only if the browser's primary language is English. Redirect preserves query parameters (e.g., `/?theme=massage` → `/ko/?theme=massage`) |
 | F-I18N-04 | Language Switcher | Language switcher in site header/navigation. Links to equivalent page in alternate locale (PRD §11.4) |
-| F-I18N-05 | UI String Translation | Static UI strings (labels, buttons, navigation, messages) from JSON translation files (`messages/ko.json`, `messages/en.json`) (PRD §11.4) |
-| F-I18N-06 | Content Locale | API requests include `?locale=ko` or `?locale=en`. Strapi returns localized content (PRD §11.4) |
+| F-I18N-05 | UI String Translation | Content is available in both Korean and English. All static UI strings (labels, buttons, navigation, messages) are translated (PRD §11.4) |
+| F-I18N-06 | Content Locale | All content (shop data, themes, locations) is served in the user's selected language (PRD §11.4) |
 | F-I18N-07 | Fallback Behavior | If English content is unavailable, display Korean version with indicator: "이 내용은 아직 번역되지 않았습니다" / "This content is not yet translated" (PRD §11.4) |
-| F-I18N-08 | hreflang Tags | Every page includes `<link rel="alternate" hreflang="ko">` and `<link rel="alternate" hreflang="en">` tags. `x-default` points to `/ko` (PRD §11.4) |
+| F-I18N-08 | Multilingual Links | Pages include multilingual alternate links so search engines and browsers can discover both language versions (PRD §11.4) |
 
 ---
 
@@ -543,12 +481,12 @@ Body: {
 
 | # | Feature | Description |
 |---|---|---|
-| F-SEO-01 | Meta Tags | Unique `<title>` and `<meta name="description">` per page, localized per locale (PRD §11.3) |
-| F-SEO-02 | Open Graph | OG title, description, image per page for social sharing (PRD §11.3) |
-| F-SEO-03 | Structured Data | JSON-LD `LocalBusiness` schema on shop detail pages (TSD §11.5) |
-| F-SEO-04 | Sitemap | Auto-generated `sitemap.xml` via Next.js, fetching all published shops, themes, and locations from Strapi API. Both locale versions included (PRD §11.3) |
-| F-SEO-05 | noindex | Applied to: search results with query params, review pages, login/signup pages (PRD §11.3) |
-| F-SEO-06 | Canonical URLs | Each page has a `<link rel="canonical">` tag pointing to the canonical URL |
+| F-SEO-01 | Meta Tags | Each page has a unique title and description, localized per language (PRD §11.3) |
+| F-SEO-02 | Social Sharing | Each page includes title, description, and image for social media sharing (PRD §11.3) |
+| F-SEO-03 | Structured Data | Shop detail pages include SEO metadata for search engines (business name, address, hours, rating) (TSD §11.5) |
+| F-SEO-04 | Sitemap | Auto-generated sitemap including all published shops, themes, and locations in both languages (PRD §11.3) |
+| F-SEO-05 | Search Indexing | Search engine optimization is applied to public pages. Search results, review pages, and login pages are excluded from search engine indexing (PRD §11.3) |
+| F-SEO-06 | Canonical URLs | Each page specifies its preferred URL to avoid duplicate content in search engines |
 
 ---
 
@@ -611,34 +549,17 @@ Body: {
 
 > PRD Reference: §5.6 Metadata — Open/Close Tags
 
-**Determination Logic (Client-Side)**
+**How it works**
 
-```
-currentTime = current time in Asia/Seoul timezone (Intl.DateTimeFormat)
-todayKey = day of week as "mon", "tue", ..., "sun"
+The system determines open/closed status based on the shop's operating hours and the current time in Korea (KST).
 
-// If operating_hours_text is set, display it as-is (no open/close computation)
-if shop.operating_hours_text:
-  display shop.operating_hours_text
-  return
+- If the shop has a free-text operating hours description, it is displayed as-is (no automatic open/close computation).
+- Otherwise, the system checks the shop's structured operating hours for the current day of the week.
+- If no hours are set for today, the shop is shown as closed.
+- Overnight hours (e.g., 18:00-02:00) are handled correctly by checking across midnight.
+- The displayed tag defaults to "영업중" (Open) or "영업종료" (Closed) unless the shop has custom labels.
 
-// Parse JSON operating_hours (TSD §4.4.4, §6.4)
-todayHours = shop.operating_hours[todayKey]
-
-if todayHours is null:
-  display shop.close_tag OR default "영업종료" (ko) / "CLOSED" (en)
-else if todayHours.close < todayHours.open:
-  // Overnight hours (e.g., 18:00–02:00)
-  if currentTime >= todayHours.open OR currentTime < todayHours.close:
-    display shop.open_tag OR default "영업중" (ko) / "OPEN" (en)
-  else:
-    display shop.close_tag OR default "영업종료" (ko) / "CLOSED" (en)
-else:
-  if currentTime >= todayHours.open AND currentTime < todayHours.close:
-    display shop.open_tag OR default "영업중" (ko) / "OPEN" (en)
-  else:
-    display shop.close_tag OR default "영업종료" (ko) / "CLOSED" (en)
-```
+> See TSD §4.4.4 and §6.4 for data structure details.
 
 **Display Rules**
 - Only published shops are displayed on the Customer Web
@@ -649,18 +570,18 @@ else:
 
 ## Appendix C. Amenity Display Mapping
 
-| Field | Icon Suggestion | Korean Label | English Label |
-|---|---|---|---|
-| parking_available | 🅿️ | 주차 | Parking |
-| parking_type: free | — | 무료 주차 | Free parking |
-| parking_type: paid | — | 유료 주차 | Paid parking |
-| parking_type: validated | — | 주차 확인 | Validated parking |
-| parking_type: street | — | 노상 주차 | Street parking |
-| shower | 🚿 | 샤워 | Shower |
-| sleeping | 🛏️ | 수면실 | Sleeping area |
-| private_room | 🚪 | 개인실 | Private room |
-| wifi | 📶 | 무료 WiFi | Free WiFi |
-| accessibility | ♿ | 장애인 편의 | Accessibility |
+| Amenity | Korean Label | English Label |
+|---|---|---|
+| Parking | 주차 | Parking |
+| Parking (free) | 무료 주차 | Free parking |
+| Parking (paid) | 유료 주차 | Paid parking |
+| Parking (validated) | 주차 확인 | Validated parking |
+| Parking (street) | 노상 주차 | Street parking |
+| Shower | 샤워 | Shower |
+| Sleeping area | 수면실 | Sleeping area |
+| Private room | 개인실 | Private room |
+| WiFi | 무료 WiFi | Free WiFi |
+| Accessibility | 장애인 편의 | Accessibility |
 
 ---
 
