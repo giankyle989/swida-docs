@@ -208,7 +208,7 @@ SWIDA는 대한민국 행정구역에 맞춘 2단계 계층적 위치 시스템�
 
 > **참고:** Customer Web에서의 업체 공개 여부는 Strapi 기본 제공 초안 및 게시(Draft & Publish) 시스템으로 완전히 제어됩니다. 어드민이 Admin Web을 통해 업체를 게시 또는 미게시 처리합니다 (Strapi의 Draft & Publish API 호출) — 별도의 커스텀 불리언이 필요하지 않습니다. 게시된 업체만 고객 대면 검색 결과, 업체 상세 페이지, 사이트맵에 표시됩니다. Strapi REST API는 기본적으로 퍼블릭 쿼리에서 초안 항목을 제외하므로 기본 공개 여부 필터링을 위한 커스텀 정책이 필요하지 않습니다.
 
-> **비활성 사유 참고:** Admin Web을 통해 업체를 미게시 처리할 때, 어드민은 업체가 오프라인으로 전환된 이유를 기록하기 위해 `inactive_reason`을 설정해야 합니다. 감사 목적 및 잠재적 재활성화 워크플로우를 위해 커스텀 필드로 저장됩니다.
+> **비활성 사유 참고:** Admin Web을 통해 업체를 미게시 처리할 때, 어드민은 업체가 오프라인으로 전환된 이유를 기록하기 위해 `inactive_reason`을 **반드시** 설정해야 합니다. 이 필드는 필수이며, 사유 없이 미게시 처리할 수 없습니다. 감사 목적 및 잠재적 재활성화 워크플로우를 위해 커스텀 필드로 저장됩니다.
 
 > **영업 중/종료 태그 참고:** `open_tag` 및 `close_tag` 필드는 고객에게 표시되는 상태 레이블을 업체별로 커스터마이징할 수 있습니다. 영업 중/종료 여부는 업체의 `영업시간` 필드와 현재 KST(한국 표준시)를 비교하여 결정됩니다. 미게시 업체는 태그 설정에 관계없이 Customer Web에 절대 표시되지 않습니다.
 
@@ -259,7 +259,7 @@ GPS 기반으로 고객 근처의 업체를 탐색합니다.
 
 **동작 방식:**
 - 최초 사용 시 브라우저/기기 위치 정보 권한 요청
-- 설정 가능한 반경(기본값: 5km) 내에서 거리순(가까운 곳 먼저)으로 업체 반환
+- 사용자 선택 가능한 반경(최소: 1km, 최대: 10km, 기본값: 5km, 프리셋: 1km, 3km, 5km, 10km) 내에서 거리순(가까운 곳 먼저)으로 업체 반환
 - 고객과 각 업체 간의 거리 표시
 - 주변 검색 결과 내에서 테마 또는 편의시설로 추가 필터링 가능
 
@@ -286,9 +286,9 @@ ORDER BY distance ASC
 **동작 방식:**
 - 업체명 전체 또는 일부 입력 → Strapi 필터: `filters[name][$containsi]`
 - 관련성 순으로 일치하는 업체 반환
-- 대소문자 구분 없음, 한국어 문자 매칭 지원 (초성 검색은 추가 기능으로 고려)
+- 대소문자 구분 없음, 한국어 문자 매칭 지원 (초성 검색은 MVP 범위 외 — §12 참조)
 
-### 6.6 검색 UX 규칙 (기준선 — 디자인 단계에서 조정 가능)
+### 6.6 검색 UX 규칙
 
 **기본 정렬 순서:**
 - 상세 검색 → 별점 내림차순 → `sort=average_rating:desc`
@@ -337,9 +337,9 @@ Admin Web은 맞춤형 어드민 경험을 제공하는 커스텀 Next.js 애플
 | **사용자** | 고객 계정 관리 (잠금/해제, 활동 조회) |
 
 **커스텀 어드민 기능:**
-- **대시보드:** 차트 및 트렌드가 포함된 플랫폼 통계 — Strapi 어드민 API 및 커스텀 분석 엔드포인트에서 데이터를 가져오는 Next.js 페이지로 구축됩니다.
+- **대시보드:** 차트 및 트렌드가 포함된 플랫폼 통계 — 커스텀 Strapi 분석 엔드포인트(`GET /api/dashboard/stats`, TSD §5.2.5)에서 데이터를 가져오는 Next.js 페이지로 구축됩니다.
 - **감사 로그 뷰어:** 모든 리스팅 변경 이력을 검색 및 필터링 가능한 테이블로 표시합니다. 데이터는 라이프사이클 훅을 통해 Strapi `audit-log` 컬렉션 타입에 저장됩니다.
-- **지도 핀 드롭:** 업체 리스팅 생성 또는 수정 시 위도/경도 선택을 위한 통합 지도 컴포넌트 (구글 맵 또는 카카오맵).
+- **지도 핀 드롭:** 업체 리스팅 생성 또는 수정 시 위도/경도 선택을 위한 통합 지도 컴포넌트 (카카오맵).
 
 ### 7.3 어드민 운영 워크플로우 (MVP)
 
@@ -353,7 +353,7 @@ Admin Web은 맞춤형 어드민 경험을 제공하는 커스텀 Next.js 애플
 > Strapi v5의 기본 제공 초안 및 게시 시스템은 기본적으로 공개 API 응답에서 초안 항목을 제외하므로 기본 공개 여부 제어를 위한 커스텀 정책이나 미들웨어가 필요하지 않습니다.
 
 **비활성 사유 코드:**
-업체를 미게시 처리할 때 어드민은 이유를 기록하기 위해 `inactive_reason`을 선택해야 합니다:
+업체를 미게시 처리할 때 어드민은 이유를 기록하기 위해 `inactive_reason`을 **반드시** 선택해야 합니다 (필수 필드):
 - `closed` — 사업체 영구 폐업
 - `owner_request` — 업체 사장님의 삭제 요청
 - `violation` — 플랫폼 정책 위반
@@ -718,7 +718,7 @@ Strapi는 Customer Web과 Admin Web 모두를 위한 공개 REST API를 제공�
 | 업로드 프로바이더 | MinIO용으로 설정된 `@strapi/provider-upload-aws-s3` |
 | 인증 | 커스텀 카카오/네이버 프로바이더가 포함된 Users & Permissions 플러그인 |
 | i18n | 국제화 플러그인 활성화 — 기본 로케일 `ko`, 추가 로케일 `en`. Shop, Theme, Region, District 콘텐츠 타입에 활성화. |
-| API 스타일 | REST (기본값), GraphQL은 선택적 플러그인으로 사용 가능 |
+| API 스타일 | REST 전용 (MVP에서 GraphQL 미사용) |
 | API 접두사 | `/api` (Strapi 기본값) |
 
 **커스텀 확장:**
@@ -786,7 +786,7 @@ Admin Web은 Strapi의 기본 제공 어드민 패널을 대체하는 주요 어
 - **봇 관리:** 의심스러운 자동화 트래픽에 챌린지 처리. 스크래퍼 및 자격 증명 도용자를 차단하면서 합법적인 봇(네이버 크롤러, Googlebot)은 허용하도록 설정
 - **속도 제한:** Strapi 수준 속도 제한을 보완하기 위해 민감한 엔드포인트(예: `/api/auth/*`, `/api/reviews`, `/api/partnership-inquiries`)에 엣지 수준 속도 제한 규칙 적용
 - **SSL 모드:** Full (Strict) — Cloudflare가 Nginx에 설치된 Cloudflare Origin Certificate를 사용하여 오리진으로의 트래픽을 암호화합니다. Cloudflare와 서버 간에 평문 전송 없음.
-- **이미지 최적화 (선택 사항):** Cloudflare Polish 및/또는 Cloudflare Images는 엣지에서 MinIO가 제공하는 업체 사진을 최적화 가능 (WebP 변환, 리사이징) — 오리진 대역폭을 줄이고 모바일 로드 시간 개선. MVP 단계에서 플랜 등급에 따라 평가합니다.
+- **이미지 최적화 (MVP 이후):** Cloudflare Polish 및/또는 Cloudflare Images는 엣지에서 MinIO가 제공하는 업체 사진을 최적화 가능 (WebP 변환, 리사이징) — 오리진 대역폭을 줄이고 모바일 로드 시간 개선. 유료 Cloudflare 플랜(Pro+) 필요로 MVP 이후로 연기. MVP에서는 Nginx 캐시 헤더를 통해 MinIO에서 직접 이미지 제공.
 
 **리버스 프록시 — Nginx (오리진):**
 - Nginx는 오리진 서버에서 Cloudflare 뒤에 내부 리버스 프록시로 위치합니다.
@@ -876,6 +876,7 @@ swida/
 │   │   │   │   ├── region/
 │   │   │   │   ├── district/
 │   │   │   │   ├── audit-log/
+│   │   │   │   ├── dashboard/       # 커스텀 분석 엔드포인트 (TSD §5.2.5)
 │   │   │   │   └── partnership-inquiry/
 │   │   │   ├── components/      # 재사용 가능한 Strapi 컴포넌트
 │   │   │   │   ├── shop/
@@ -939,6 +940,15 @@ swida/
 │       │       │           └── page.tsx
 │       │       ├── search/
 │       │       │   └── page.tsx
+│       │       ├── nearby/
+│       │       │   └── page.tsx     # 주변 검색 (CSR, GPS 기반)
+│       │       ├── reviews/
+│       │       │   └── page.tsx     # 리뷰 피드 (SSR)
+│       │       ├── auth/
+│       │       │   ├── login/
+│       │       │   │   └── page.tsx # 로그인 페이지 (CSR)
+│       │       │   └── callback/
+│       │       │       └── page.tsx # OAuth 콜백 (CSR)
 │       │       └── partnership/
 │       │           └── page.tsx
 │       ├── components/          # React 컴포넌트
@@ -988,7 +998,7 @@ swida/
 | **오브젝트 스토리지** | `MINIO_ENDPOINT`, `MINIO_PORT`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `MINIO_BUCKET_NAME` |
 | **캐시** | `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD` |
 | **Cloudflare** | `CLOUDFLARE_ZONE_ID`, `CLOUDFLARE_API_TOKEN` (CI/CD 또는 Strapi 라이프사이클 훅을 통한 프로그래밍 방식 캐시 제거용) |
-| **외부** | `GOOGLE_MAPS_API_KEY` (지오코딩용) |
+| **외부** | `KAKAO_MAP_APP_KEY` (카카오맵 JavaScript API 및 지오코딩용) |
 
 환경 파일은 저장소에 **절대 커밋하지 않습니다**. 각 프로젝트에 대해 `.env.example` 템플릿이 관리됩니다.
 

@@ -12,7 +12,7 @@ sidebar_position: 1
 - **Date**: 2026-03-26
 - **Based on**: SWIDA PRD v1.1, SWIDA TSD v1.1
 - **Scope**: MVP — Customer-facing shop discovery web application
-- **Related Documents**: UI/UX Specification (TBD)
+- **Related Documents**: UI/UX Specification (to be created separately)
 
 ---
 
@@ -290,10 +290,10 @@ GET /api/shops?locale={locale}
 |---|---|---|
 | F-NEAR-01 | GPS Permission | Request browser/device location permission on first use. Display permission prompt with explanation (PRD §6.4) |
 | F-NEAR-02 | Permission Denied | Display friendly message explaining that location permission is needed, with instructions to enable it |
-| F-NEAR-03 | Shop List | Shops sorted by distance (nearest first) within configurable radius (default: 5km) (PRD §6.4) |
+| F-NEAR-03 | Shop List | Shops sorted by distance (nearest first) within user-selected radius (min: 1km, max: 10km, default: 5km) (PRD §6.4) |
 | F-NEAR-04 | Distance Display | Show distance from customer to each shop (e.g., "1.2 km") (PRD §6.4) |
 | F-NEAR-05 | Optional Filters | Optionally filter nearby results by theme or amenities (PRD §6.4) |
-| F-NEAR-06 | Radius Control | Allow user to adjust search radius (e.g., 1km, 3km, 5km, 10km) |
+| F-NEAR-06 | Radius Control | Allow user to adjust search radius via preset buttons: 1km, 3km, 5km (default), 10km |
 | F-NEAR-07 | Loading State | Display loading indicator while GPS is resolving and API is fetching |
 | F-NEAR-08 | Pagination | Page-based |
 
@@ -336,7 +336,7 @@ Name Search is implemented as a subset of Detail Search (§5). When a user enter
 | F-SHOP-01 | Image Gallery | Display shop images (1–10 photos) with swipe/click navigation. Thumbnail as primary image (PRD §5.1) |
 | F-SHOP-02 | Basic Information | Shop name, description, address, operating hours, last order time, closed days, holiday exceptions (PRD §5.1) |
 | F-SHOP-03 | Open/Close Tag | Compare `operating_hours` against current time in KST. Display `open_tag` (default: "영업중") or `close_tag` (default: "영업종료") (PRD §5.6) |
-| F-SHOP-04 | Location Display | Region + District name. Optionally display address on a static map image |
+| F-SHOP-04 | Location Display | Region + District name. Display address on a Kakao Map Static API image (MVP) |
 | F-SHOP-05 | Service Themes | Display all tagged themes as badge/tag chips (PRD §5.2) |
 | F-SHOP-06 | Service Menu | List of services with name, duration, price (formatted as ₩XX,XXX) (PRD §5.2.1) |
 | F-SHOP-07 | Price Range | General price indication if available (PRD §5.2) |

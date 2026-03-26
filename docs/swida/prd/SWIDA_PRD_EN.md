@@ -208,7 +208,7 @@ A **single component** embedded in the shop content type:
 
 > **Note:** Shop visibility on the Customer Web is controlled entirely by Strapi's built-in Draft & Publish system. Admin publishes or unpublishes a shop via the Admin Web (which calls Strapi's Draft & Publish API) — no additional custom boolean is needed. Only published shops appear in customer-facing search results, shop detail pages, and the sitemap. Strapi's REST API natively excludes draft entries from public queries, so no custom policy is required for basic visibility filtering.
 
-> **Note on Inactive Reason:** When unpublishing a shop via the Admin Web, the admin should set an `inactive_reason` to record why the shop was taken offline. This is stored as a custom field for audit purposes and potential reactivation workflows.
+> **Note on Inactive Reason:** When unpublishing a shop via the Admin Web, the admin **must** set an `inactive_reason` to record why the shop was taken offline. This field is required — the unpublish action cannot proceed without a reason. This is stored as a custom field for audit purposes and potential reactivation workflows.
 
 > **Note on Open/Close Tags:** The `open_tag` and `close_tag` fields allow per-shop customization of the status labels shown to customers. The open/close determination is based on the shop's `Operating Hours` field compared to the current time in KST (Korea Standard Time). Unpublished shops are never displayed on the Customer Web regardless of tags.
 
@@ -259,7 +259,7 @@ GPS-powered discovery of shops in the customer's immediate area.
 
 **Behavior:**
 - Requests browser/device location permission on first use
-- Returns shops sorted by distance (nearest first) within a configurable radius (default: 5km)
+- Returns shops sorted by distance (nearest first) within a user-selectable radius (min: 1km, max: 10km, default: 5km, presets: 1km, 3km, 5km, 10km)
 - Displays distance from customer to each shop
 - Optionally allows filtering by theme or amenities within nearby results
 
@@ -286,9 +286,9 @@ Simple keyword search by shop name.
 **Behavior:**
 - Accepts partial or full shop name input → Strapi filter: `filters[name][$containsi]`
 - Returns matching shops ranked by relevance
-- Case-insensitive and supports Korean character matching (초성 search is a nice-to-have)
+- Case-insensitive and supports Korean character matching (초성 search is out of scope for MVP — see §12)
 
-### 6.6 Search UX Rules (Baseline — Adjustable During Design Phase)
+### 6.6 Search UX Rules
 
 **Default Sort Order:**
 - Detail Search → Rating (descending) → `sort=average_rating:desc`
@@ -337,9 +337,9 @@ The Admin Web is a custom-built Next.js application providing a tailored admin e
 | **Users** | Customer account management (lock/unlock, view activity) |
 
 **Custom Admin Features:**
-- **Dashboard:** Platform stats with charts and trends — built as a Next.js page with data fetched from Strapi's admin API and custom analytics endpoints.
+- **Dashboard:** Platform stats with charts and trends — built as a Next.js page with data fetched from a custom Strapi analytics endpoint (`GET /api/dashboard/stats`, TSD §5.2.5).
 - **Audit Log Viewer:** History of all listing changes, displayed in a searchable, filterable table. Data stored in Strapi's `audit-log` collection type, populated via lifecycle hooks.
-- **Map Pin Drop:** Integrated map component (Google Maps or Kakao Map) for latitude/longitude selection when creating or editing shop listings.
+- **Map Pin Drop:** Integrated map component (Kakao Map) for latitude/longitude selection when creating or editing shop listings.
 
 ### 7.3 Admin Operational Workflows (MVP)
 
@@ -353,7 +353,7 @@ Since shop owners do not self-manage listings, the Admin Web is the core operati
 > Strapi v5's built-in Draft & Publish system natively handles visibility. Draft entries are excluded from public API responses by default — no custom policy or middleware is needed for basic visibility control.
 
 **Inactive Reason Codes:**
-When unpublishing a shop, the admin should select an `inactive_reason` to record why:
+When unpublishing a shop, the admin **must** select an `inactive_reason` (required field) to record why:
 - `closed` — Business permanently closed
 - `owner_request` — Shop owner requested removal
 - `violation` — Listing violated platform policies
@@ -718,7 +718,7 @@ Strapi serves as the **headless API-only backend**, providing the public REST AP
 | Upload Provider | `@strapi/provider-upload-aws-s3` configured for MinIO |
 | Auth | Users & Permissions plugin with custom Kakao/Naver providers |
 | i18n | Internationalization plugin enabled — default locale `ko`, additional locale `en`. Enabled on Shop, Theme, Region, and District content types. |
-| API Style | REST (default), GraphQL available as optional plugin |
+| API Style | REST only (GraphQL is not used for MVP) |
 | API Prefix | `/api` (Strapi default) |
 
 **Custom Extensions:**
@@ -786,7 +786,7 @@ The Admin Web is a custom-built Next.js application that replaces Strapi's built
 - **Bot Management:** Challenge suspicious automated traffic. Configured to allow legitimate bots (Naver crawler, Googlebot) while blocking scrapers and credential stuffers
 - **Rate Limiting:** Edge-level rate limiting rules for sensitive endpoints (e.g., `/api/auth/*`, `/api/reviews`, `/api/partnership-inquiries`) to complement Strapi-level rate limiting
 - **SSL Mode:** Full (Strict) — Cloudflare encrypts traffic to the origin using a Cloudflare Origin Certificate installed on Nginx. No plaintext between Cloudflare and the server.
-- **Image Optimization (optional):** Cloudflare Polish and/or Cloudflare Images can optimize MinIO-served shop photos (WebP conversion, resizing) at the edge — reducing origin bandwidth and improving mobile load times. Evaluate during MVP based on plan tier.
+- **Image Optimization (post-MVP):** Cloudflare Polish and/or Cloudflare Images can optimize MinIO-served shop photos (WebP conversion, resizing) at the edge — reducing origin bandwidth and improving mobile load times. Deferred to post-MVP as it requires a paid Cloudflare plan (Pro+). For MVP, images are served directly from MinIO via Nginx with cache headers.
 
 **Reverse Proxy — Nginx (Origin):**
 - Nginx sits behind Cloudflare as the internal reverse proxy on the origin server
@@ -876,6 +876,7 @@ swida/
 │   │   │   │   ├── region/
 │   │   │   │   ├── district/
 │   │   │   │   ├── audit-log/
+│   │   │   │   ├── dashboard/       # Custom analytics endpoint (TSD §5.2.5)
 │   │   │   │   └── partnership-inquiry/
 │   │   │   ├── components/      # Reusable Strapi components
 │   │   │   │   ├── shop/
@@ -939,6 +940,15 @@ swida/
 │       │       │           └── page.tsx
 │       │       ├── search/
 │       │       │   └── page.tsx
+│       │       ├── nearby/
+│       │       │   └── page.tsx     # Nearby search (CSR, GPS-based)
+│       │       ├── reviews/
+│       │       │   └── page.tsx     # Review feed (SSR)
+│       │       ├── auth/
+│       │       │   ├── login/
+│       │       │   │   └── page.tsx # Login page (CSR)
+│       │       │   └── callback/
+│       │       │       └── page.tsx # OAuth callback (CSR)
 │       │       └── partnership/
 │       │           └── page.tsx
 │       ├── components/          # React components
@@ -988,7 +998,7 @@ All services use environment variables for configuration, managed via `.env` fil
 | **Object Storage** | `MINIO_ENDPOINT`, `MINIO_PORT`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `MINIO_BUCKET_NAME` |
 | **Cache** | `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD` |
 | **Cloudflare** | `CLOUDFLARE_ZONE_ID`, `CLOUDFLARE_API_TOKEN` (for programmatic cache purge via CI/CD or Strapi lifecycle hooks) |
-| **External** | `GOOGLE_MAPS_API_KEY` (for geocoding) |
+| **External** | `KAKAO_MAP_APP_KEY` (for Kakao Map JavaScript API and geocoding) |
 
 Environment files are **never committed** to the repository. A `.env.example` template is maintained for each project.
 

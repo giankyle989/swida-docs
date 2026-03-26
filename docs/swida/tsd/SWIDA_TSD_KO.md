@@ -316,7 +316,8 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm;  -- 향후 퍼지 검색용
 | latitude | decimal(10,7) | Not Null | GPS 좌표 |
 | longitude | decimal(10,7) | Not Null | GPS 좌표 |
 | phone_number | varchar(20) | Nullable | |
-| operating_hours | varchar(100) | Not Null | 다국어 |
+| operating_hours | jsonb | Not Null | 요일별 구조화된 스케줄 (아래 형식 참조). 다국어 아님 — 시간은 범용. |
+| operating_hours_text | varchar(200) | Nullable | 다국어. 비정기 영업시간 표시용 자유 텍스트 (예: "공휴일 휴무", "연중무휴"). 설정 시 계산된 스케줄 대신 표시. |
 | last_order_time | varchar(100) | Nullable | |
 | closed_days | varchar(200) | Not Null | 다국어 |
 | holiday_exceptions | text | Nullable | 다국어 |
@@ -358,6 +359,8 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm;  -- 향후 퍼지 검색용
 | status | varchar(20) | Not Null, 기본값 'published' | 열거형: published, hidden, under_review, deleted |
 | moderation_reason | varchar(20) | Nullable | 열거형: spam, inappropriate, fake_review, irrelevant, other |
 | report_count | integer | Not Null, 기본값 0 | |
+
+> **참고:** `moderation_reason` 값(관리자 설정: `spam`, `inappropriate`, `fake_review`, `irrelevant`, `other`)은 사용자 신고 사유(`POST /api/reviews/:id/report`로 제출: `spam`, `fake`, `inappropriate`, `irrelevant`, `other`)와 다릅니다. `fake`(사용자 신고) vs `fake_review`(관리자 모더레이션)에 유의하세요. 신고 사유는 리뷰 레코드에 저장되지 않으며, 신고 요청 본문의 일부로 전송됩니다(PRD §8.5).
 | author_id | integer | FK → up_users.id | |
 | shop_id | integer | FK → shops.id | |
 | published_at | timestamptz | Nullable | |
@@ -462,6 +465,8 @@ Strapi 부트스트랩 스크립트(`database/seeds/`)를 통해 출시 시 미�
 | GET | `/api/shops` | 공개 | 업체 목록 (페이지네이션, 필터, 정렬 가능) |
 | GET | `/api/shops/:documentId` | 공개 | 단일 업체 상세 |
 | GET | `/api/shops/nearby` | 공개 | **커스텀 컨트롤러** — 지리 공간 주변 검색 |
+
+> **참고:** 고객 웹은 슬러그 기반 라우트(`/[locale]/shop/[slug]`)를 사용하므로, `documentId` 대신 `GET /api/shops?filters[slug][$eq]={slug}&locale={locale}`로 업체 상세를 조회합니다. `documentId` 기반 엔드포인트는 Admin Web 및 내부 참조에서 사용됩니다.
 
 **GET `/api/shops` — 쿼리 파라미터:**
 
@@ -606,6 +611,33 @@ export default {
 
 공개 역할 권한: `create`만 허용. 공개 역할에는 `find`, `findOne`, `update`, `delete` 불허.
 
+#### 5.2.5 대시보드 분석(Dashboard Analytics)
+
+| 메서드 | 엔드포인트 | 인증 | 설명 |
+|---|---|---|---|
+| GET | `/api/dashboard/stats` | 관리자 (JWT) | **커스텀 컨트롤러** — 집계된 플랫폼 통계 |
+
+**위치:** `src/api/dashboard/controllers/dashboard.ts`
+**라우트:** `src/api/dashboard/routes/dashboard.ts`
+
+**응답 형태:**
+
+```json
+{
+  "data": {
+    "shops": { "total": 150, "published": 120, "draft": 30 },
+    "reviews": { "total": 500, "published": 400, "hidden": 20, "under_review": 10, "deleted": 70 },
+    "users": { "total": 300, "active": 280, "locked": 20 },
+    "inquiries": { "total": 80, "new": 5, "contacted": 10, "awaiting_info": 8, "approved": 7, "rejected": 15, "published": 35 },
+    "recent_activity": [
+      { "type": "shop_published", "document_id": "abc123", "name": "힐링스파 강남", "admin": "admin@swida.com", "timestamp": "2026-03-25T14:30:00Z" }
+    ]
+  }
+}
+```
+
+**구현:** Strapi Document Service API를 사용하여 업체, 리뷰, 사용자, 파트너십 문의에 대한 집계 쿼리(`strapi.documents().count()`)를 실행합니다. `recent_activity` 필드는 `audit-log` 컬렉션 타입에서 최근 10개 항목을 쿼리합니다. 이 엔드포인트는 관리자 API JWT를 통해 인증된 관리자 사용자만 접근 가능합니다.
+
 ### 5.3 커스텀 미들웨어, 정책 및 라이프사이클 훅
 
 #### 5.3.1 미들웨어: `account-lock`
@@ -685,7 +717,7 @@ async function recalculateShopRating(shopDocumentId: string) {
 | Users & Permissions | 고객 인증 | 카카오/네이버 제공자 확장 |
 | i18n | 콘텐츠 현지화 | 기본 로케일: `ko`, 추가: `en` |
 | Upload | 미디어 관리 | 제공자: MinIO를 가리키는 `@strapi/provider-upload-aws-s3` |
-| REST Cache (또는 커스텀 미들웨어) | API 응답 캐싱 | Redis 기반, 라이프사이클 훅으로 무효화 |
+| 커스텀 캐시 미들웨어 | API 응답 캐싱 | Redis 기반 커스텀 Strapi 미들웨어 (`src/middlewares/api-cache.ts`), 라이프사이클 훅으로 무효화. 캐시 키 및 무효화 로직의 완전한 제어를 위해 플러그인 대신 선택. |
 
 ### 5.6 Admin Web 기능 (Next.js)
 
@@ -693,8 +725,8 @@ async function recalculateShopRating(shopDocumentId: string) {
 
 | 기능 | 설명 |
 |---|---|
-| 대시보드 | 플랫폼 통계: 전체 업체, 리뷰, 사용자, 문의 수. Strapi 관리자 API 및 커스텀 분석 엔드포인트에서 데이터를 가져오는 Next.js 페이지로 구축. |
-| 지도 핀 드롭 | 업체 등록 또는 수정 시 위도/경도 선택을 위한 통합 지도 컴포넌트(Google Maps 또는 카카오맵). Admin Web 내 React 컴포넌트로 구축. |
+| 대시보드 | 플랫폼 통계: 전체 업체, 리뷰, 사용자, 문의 수. 커스텀 분석 엔드포인트(`GET /api/dashboard/stats`, §5.2.5)에서 데이터를 가져오는 Next.js 페이지로 구축. |
+| 지도 핀 드롭 | 업체 등록 또는 수정 시 위도/경도 선택을 위한 통합 지도 컴포넌트(카카오맵). 고객 웹 업체 상세 페이지에서도 정적 지도로 사용. Admin Web 내 React 컴포넌트로 구축. |
 | 업체 CRUD | 검색, 필터, 정렬 기능을 갖춘 업체 목록 생성, 조회, 수정, 삭제 인터페이스. |
 | 리뷰 모더레이션 | 고객 리뷰 조회, 신고, 숨김, 관리. |
 | 파트너십 문의 관리 | 상태 워크플로우를 통한 입력 제휴 요청 추적 및 관리. |
@@ -866,7 +898,23 @@ export async function fetchStrapi<T>(
 2. 커스텀 `/api/shops/nearby` 엔드포인트 호출
 3. 거리 레이블과 함께 결과 렌더링
 
-**영업/종료 태그:** `OpenCloseTag` 컴포넌트가 업체의 `operating_hours`를 `Intl.DateTimeFormat`의 `timeZone: 'Asia/Seoul'`을 사용하여 현재 KST 시간과 비교하여 적절한 태그를 표시합니다.
+**영업/종료 태그:** `OpenCloseTag` 컴포넌트가 업체의 `operating_hours` JSON을 `Intl.DateTimeFormat`의 `timeZone: 'Asia/Seoul'`을 사용하여 현재 KST 시간과 비교하여 적절한 태그를 표시합니다. `operating_hours_text`가 설정된 경우 JSON 스케줄 계산 대신 해당 텍스트가 그대로 표시됩니다.
+
+**`operating_hours` JSON 형식:**
+```json
+{
+  "mon": { "open": "10:00", "close": "22:00" },
+  "tue": { "open": "10:00", "close": "22:00" },
+  "wed": { "open": "10:00", "close": "22:00" },
+  "thu": { "open": "10:00", "close": "22:00" },
+  "fri": { "open": "10:00", "close": "23:00" },
+  "sat": { "open": "11:00", "close": "23:00" },
+  "sun": null
+}
+```
+- 키: `mon`, `tue`, `wed`, `thu`, `fri`, `sat`, `sun`
+- 값: `{ "open": "HH:mm", "close": "HH:mm" }` 또는 `null` (해당 요일 휴무)
+- 시간은 24시간 KST 형식. 야간 영업(예: `"open": "18:00", "close": "02:00"`)도 지원 — close 시간이 open 시간보다 이르면 다음 날로 간주.
 
 ### 6.5 이미지 처리
 
@@ -998,7 +1046,7 @@ services:
       STRAPI_API_URL: http://strapi:1337
       NEXT_PUBLIC_ADMIN_URL: https://${ADMIN_DOMAIN}
       NEXT_PUBLIC_CUSTOMER_URL: https://${DOMAIN}
-      NEXT_PUBLIC_GOOGLE_MAPS_KEY: ${GOOGLE_MAPS_API_KEY}
+      NEXT_PUBLIC_KAKAO_MAP_APP_KEY: ${KAKAO_MAP_APP_KEY}
     ports:
       - "127.0.0.1:3001:3001"
 
@@ -1522,7 +1570,7 @@ TDD(테스트 주도 개발) — 구현 전에 테스트를 먼저 작성합니�
 ### 13.3 업타임 모니터링
 
 - **Cloudflare 헬스 체크:** Cloudflare 엣지에서 오리진 서버 가용성 모니터링
-- **외부 업타임 모니터:** (예: UptimeRobot, Hetrix) `https://{{DOMAIN}}/ko`, `https://{{ADMIN_DOMAIN}}/api/health`, `https://{{API_DOMAIN}}/api/themes` 핑
+- **외부 업타임 모니터:** UptimeRobot (무료 티어, 5분 간격) `https://{{DOMAIN}}/ko`, `https://{{ADMIN_DOMAIN}}/api/health`, `https://{{API_DOMAIN}}/api/themes` 핑
 
 ---
 
@@ -1576,19 +1624,19 @@ CLOUDFLARE_ZONE_ID=CHANGE_ME
 CLOUDFLARE_API_TOKEN=CHANGE_ME
 
 # ── 외부 ──
-GOOGLE_MAPS_API_KEY=CHANGE_ME
+KAKAO_MAP_APP_KEY=CHANGE_ME
 
 # ── Next.js (Customer Web) ──
 STRAPI_API_URL=http://strapi:1337/api
 STRAPI_API_TOKEN=CHANGE_ME
 NEXT_PUBLIC_SITE_URL=https://example.com
-NEXT_PUBLIC_GOOGLE_MAPS_KEY=CHANGE_ME
+NEXT_PUBLIC_KAKAO_MAP_APP_KEY=CHANGE_ME
 
 # ── Next.js (Admin Web) ──
 STRAPI_API_URL=http://strapi:1337
 NEXT_PUBLIC_ADMIN_URL=https://admin.example.com
 NEXT_PUBLIC_CUSTOMER_URL=https://example.com
-NEXT_PUBLIC_GOOGLE_MAPS_KEY=CHANGE_ME
+NEXT_PUBLIC_KAKAO_MAP_APP_KEY=CHANGE_ME
 
 # ── 도메인 ──
 DOMAIN=example.com
@@ -1650,7 +1698,8 @@ export interface ShopDetail extends ShopListItem {
   latitude: number;
   longitude: number;
   phone_number: string | null;
-  operating_hours: string;
+  operating_hours: Record<string, { open: string; close: string } | null>;
+  operating_hours_text: string | null;
   last_order_time: string | null;
   closed_days: string;
   holiday_exceptions: string | null;

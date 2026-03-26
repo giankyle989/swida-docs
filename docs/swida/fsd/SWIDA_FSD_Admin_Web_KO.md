@@ -12,7 +12,7 @@ sidebar_position: 4
 - **날짜**: 2026-03-26
 - **기반 문서**: SWIDA PRD v1.1, SWIDA TSD v1.1
 - **범위**: MVP — 관리자용 플랫폼 관리 웹 애플리케이션
-- **관련 문서**: UI/UX 명세서 (TBD), Customer Web FSD v1.0
+- **관련 문서**: UI/UX 명세서 (별도 작성 예정), Customer Web FSD v1.0
 
 ---
 
@@ -151,7 +151,7 @@ Admin Web은 `admin.swida.com`에서 제공되는 커스텀 Next.js 애플리케
 
 | 엔드포인트 | 용도 |
 |---|---|
-| Strapi Admin API — 커스텀 분석 엔드포인트 | 집계된 플랫폼 통계 |
+| `GET /api/dashboard/stats` (커스텀 컨트롤러, TSD §5.2.5) | 집계된 플랫폼 통계 (업체, 리뷰, 사용자, 문의, 최근 활동) |
 | `GET /api/shops?pagination[pageSize]=1&status=draft` | 초안 업체 수 |
 | `GET /api/reviews?filters[status][$eq]=under_review&pagination[pageSize]=1` | 대기 중인 리뷰 수 |
 | `GET /api/partnership-inquiries?filters[status][$eq]=new&pagination[pageSize]=1` | 신규 문의 수 |
@@ -198,7 +198,7 @@ Admin Web은 `admin.swida.com`에서 제공되는 커스텀 Next.js 애플리케
 |---|---|---|
 | F-SHOP-13 | 기본 정보 폼 | 모든 기본 정보 입력 필드: 이름, 설명, 주소, 운영 시간, 라스트 오더 시간, 정기 휴무일, 휴일 예외, 전화번호 (PRD §5.1) |
 | F-SHOP-14 | 지역 선택 | 지역 (Level 1) → 구역 (Level 2) 연동 드롭다운 (PRD §5.1) |
-| F-SHOP-15 | 지도 핀 드롭 | 위도/경도 선택을 위한 통합 지도 컴포넌트 (Google Maps 또는 Kakao Map). 관리자가 지도를 클릭하여 좌표 설정. 주소 검색을 통한 지도 중심 이동 지원 (PRD §3.1, TSD §5.6) |
+| F-SHOP-15 | 지도 핀 드롭 | 위도/경도 선택을 위한 카카오맵 통합 컴포넌트. 관리자가 지도를 클릭하여 좌표 설정. 주소 검색을 통한 지도 중심 이동 지원 (PRD §3.1, TSD §5.6) |
 | F-SHOP-16 | 테마 선택 | 사용 가능한 전체 테마에서 다중 선택 (PRD §5.2) |
 | F-SHOP-17 | 서비스 메뉴 | 반복 가능한 폼 컴포넌트 — 서비스 메뉴 항목 추가/제거. 각 항목: 서비스 이름, 소요 시간(분), 가격(KRW), 설명 (PRD §5.2.1) |
 | F-SHOP-18 | 예약 정보 | 예약 필수 여부 불리언 토글. 예약 URL/전화번호 조건부 입력. 성별 이용 가능 여부 드롭다운 (PRD §5.2) |
@@ -567,9 +567,10 @@ Admin Web은 두 가지 API 인터페이스를 통해 Strapi와 통신한다:
 
 | Method | Endpoint | 용도 |
 |---|---|---|
-| GET/POST/PUT/DELETE | `/api/shops` | 업체 CRUD |
-| POST | `/api/shops/{id}/publish` | 업체 공개 |
-| POST | `/api/shops/{id}/unpublish` | 업체 비공개 |
+| GET/POST | `/api/shops` | 업체 목록 조회 / 생성 |
+| GET/PUT/DELETE | `/api/shops/{documentId}` | 단일 업체 조회 / 수정 / 삭제 |
+| POST | `/api/shops/{documentId}/actions/publish` | 업체 공개 (Strapi v5 Document Service API) |
+| POST | `/api/shops/{documentId}/actions/unpublish` | 업체 비공개 (Strapi v5 Document Service API) |
 | GET/PUT | `/api/reviews` | 리뷰 목록 조회 및 상태 업데이트 |
 | GET/POST/PUT/DELETE | `/api/themes` | 테마 CRUD |
 | GET/POST/PUT/DELETE | `/api/regions` | 지역 CRUD |

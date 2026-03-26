@@ -12,7 +12,7 @@ sidebar_position: 3
 - **Date**: 2026-03-26
 - **Based on**: SWIDA PRD v1.1, SWIDA TSD v1.1
 - **Scope**: MVP — Admin-facing platform management web application
-- **Related Documents**: UI/UX Specification (TBD), Customer Web FSD v1.0
+- **Related Documents**: UI/UX Specification (to be created separately), Customer Web FSD v1.0
 
 ---
 
@@ -151,7 +151,7 @@ The Admin Web is a custom-built Next.js application served at `admin.swida.com`.
 
 | Endpoint | Purpose |
 |---|---|
-| Strapi Admin API — custom analytics endpoint | Aggregated platform statistics |
+| `GET /api/dashboard/stats` (custom controller, TSD §5.2.5) | Aggregated platform statistics (shops, reviews, users, inquiries, recent activity) |
 | `GET /api/shops?pagination[pageSize]=1&status=draft` | Draft shop count |
 | `GET /api/reviews?filters[status][$eq]=under_review&pagination[pageSize]=1` | Pending review count |
 | `GET /api/partnership-inquiries?filters[status][$eq]=new&pagination[pageSize]=1` | New inquiry count |
@@ -198,7 +198,7 @@ The Admin Web is a custom-built Next.js application served at `admin.swida.com`.
 |---|---|---|
 | F-SHOP-13 | Basic Info Form | Input fields for all basic information: name, description, address, operating hours, last order time, closed days, holiday exceptions, phone number (PRD §5.1) |
 | F-SHOP-14 | Location Selection | Cascading dropdowns for region (Level 1) → district (Level 2) (PRD §5.1) |
-| F-SHOP-15 | Map Pin Drop | Integrated map component (Google Maps or Kakao Map) for selecting latitude/longitude. Admin clicks on map to set coordinates. Supports address search to center map (PRD §3.1, TSD §5.6) |
+| F-SHOP-15 | Map Pin Drop | Integrated Kakao Map component for selecting latitude/longitude. Admin clicks on map to set coordinates. Supports address search to center map (PRD §3.1, TSD §5.6) |
 | F-SHOP-16 | Theme Selection | Multi-select from all available themes (PRD §5.2) |
 | F-SHOP-17 | Service Menu | Repeatable form component — add/remove service menu items. Each item: service name, duration (minutes), price (KRW), description (PRD §5.2.1) |
 | F-SHOP-18 | Booking Info | Boolean toggle for booking required. Conditional input for booking URL/phone. Gender availability dropdown (PRD §5.2) |
@@ -567,9 +567,10 @@ The Admin Web communicates with Strapi via two API surfaces:
 
 | Method | Endpoint | Purpose |
 |---|---|---|
-| GET/POST/PUT/DELETE | `/api/shops` | Shop CRUD |
-| POST | `/api/shops/{id}/publish` | Publish shop |
-| POST | `/api/shops/{id}/unpublish` | Unpublish shop |
+| GET/POST | `/api/shops` | List shops / Create shop |
+| GET/PUT/DELETE | `/api/shops/{documentId}` | Get / Update / Delete single shop |
+| POST | `/api/shops/{documentId}/actions/publish` | Publish shop (Strapi v5 Document Service API) |
+| POST | `/api/shops/{documentId}/actions/unpublish` | Unpublish shop (Strapi v5 Document Service API) |
 | GET/PUT | `/api/reviews` | Review listing and status updates |
 | GET/POST/PUT/DELETE | `/api/themes` | Theme CRUD |
 | GET/POST/PUT/DELETE | `/api/regions` | Region CRUD |

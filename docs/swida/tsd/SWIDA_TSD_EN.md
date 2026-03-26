@@ -316,7 +316,8 @@ The core entity. Fields are split across the main table and embedded component t
 | latitude | decimal(10,7) | Not Null | GPS coordinate |
 | longitude | decimal(10,7) | Not Null | GPS coordinate |
 | phone_number | varchar(20) | Nullable | |
-| operating_hours | varchar(100) | Not Null | Localized |
+| operating_hours | jsonb | Not Null | Structured per-day schedule (see format below). Not localized — times are universal. |
+| operating_hours_text | varchar(200) | Nullable | Localized. Free-text display override for irregular hours (e.g., "공휴일 휴무", "연중무휴"). When set, displayed instead of computed schedule. |
 | last_order_time | varchar(100) | Nullable | |
 | closed_days | varchar(200) | Not Null | Localized |
 | holiday_exceptions | text | Nullable | Localized |
@@ -358,6 +359,8 @@ The core entity. Fields are split across the main table and embedded component t
 | status | varchar(20) | Not Null, Default 'published' | Enum: published, hidden, under_review, deleted |
 | moderation_reason | varchar(20) | Nullable | Enum: spam, inappropriate, fake_review, irrelevant, other |
 | report_count | integer | Not Null, Default 0 | |
+
+> **Note:** `moderation_reason` values (set by admin: `spam`, `inappropriate`, `fake_review`, `irrelevant`, `other`) differ from user report reasons (submitted via `POST /api/reviews/:id/report`: `spam`, `fake`, `inappropriate`, `irrelevant`, `other`). Note `fake` (user report) vs `fake_review` (admin moderation). Report reasons are not stored on the review record — they are sent as part of the report request body (PRD §8.5).
 | author_id | integer | FK → up_users.id | |
 | shop_id | integer | FK → shops.id | |
 | published_at | timestamptz | Nullable | |
@@ -462,6 +465,8 @@ All public endpoints serve published content only (Strapi v5 default behavior). 
 | GET | `/api/shops` | Public | List shops (paginated, filterable, sortable) |
 | GET | `/api/shops/:documentId` | Public | Single shop detail |
 | GET | `/api/shops/nearby` | Public | **Custom controller** — geospatial nearby search |
+
+> **Note:** The Customer Web uses slug-based routes (`/[locale]/shop/[slug]`), so it fetches shop detail via `GET /api/shops?filters[slug][$eq]={slug}&locale={locale}` rather than by `documentId`. The `documentId`-based endpoint is used by the Admin Web and internal references.
 
 **GET `/api/shops` — Query Parameters:**
 
@@ -606,6 +611,33 @@ These are simple Strapi auto-generated endpoints with no custom controllers need
 
 Public role permissions: `create` only. No `find`, `findOne`, `update`, `delete` for public role.
 
+#### 5.2.5 Dashboard Analytics
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/api/dashboard/stats` | Admin (JWT) | **Custom controller** — aggregated platform statistics |
+
+**Location:** `src/api/dashboard/controllers/dashboard.ts`
+**Route:** `src/api/dashboard/routes/dashboard.ts`
+
+**Response Shape:**
+
+```json
+{
+  "data": {
+    "shops": { "total": 150, "published": 120, "draft": 30 },
+    "reviews": { "total": 500, "published": 400, "hidden": 20, "under_review": 10, "deleted": 70 },
+    "users": { "total": 300, "active": 280, "locked": 20 },
+    "inquiries": { "total": 80, "new": 5, "contacted": 10, "awaiting_info": 8, "approved": 7, "rejected": 15, "published": 35 },
+    "recent_activity": [
+      { "type": "shop_published", "document_id": "abc123", "name": "힐링스파 강남", "admin": "admin@swida.com", "timestamp": "2026-03-25T14:30:00Z" }
+    ]
+  }
+}
+```
+
+**Implementation:** Uses Strapi's Document Service API to run aggregation queries (`strapi.documents().count()`) across shops, reviews, users, and partnership inquiries. The `recent_activity` field queries the `audit-log` collection type for the latest 10 entries. This endpoint is restricted to authenticated admin users via the admin API JWT.
+
 ### 5.3 Custom Middleware, Policies & Lifecycle Hooks
 
 #### 5.3.1 Middleware: `account-lock`
@@ -685,7 +717,7 @@ async function recalculateShopRating(shopDocumentId: string) {
 | Users & Permissions | Customer auth | Extended with Kakao/Naver providers |
 | i18n | Content localization | Default locale: `ko`, additional: `en` |
 | Upload | Media management | Provider: `@strapi/provider-upload-aws-s3` pointed at MinIO |
-| REST Cache (or custom middleware) | API response caching | Redis-backed, invalidated via lifecycle hooks |
+| Custom cache middleware | API response caching | Redis-backed custom Strapi middleware (`src/middlewares/api-cache.ts`), invalidated via lifecycle hooks. Chosen over plugin for full control over cache keys and invalidation logic. |
 
 ### 5.6 Admin Web Features (Next.js)
 
@@ -693,8 +725,8 @@ The following features are built as pages/components within the Admin Web (Next.
 
 | Feature | Description |
 |---|---|
-| Dashboard | Platform stats: total shops, reviews, users, inquiries. Built as a Next.js page fetching data from Strapi's admin API and custom analytics endpoints. |
-| Map Pin Drop | Integrated map component (Google Maps or Kakao Map) for latitude/longitude selection when creating or editing shop listings. Built as a React component within the Admin Web. |
+| Dashboard | Platform stats: total shops, reviews, users, inquiries. Built as a Next.js page fetching data from the custom analytics endpoint (`GET /api/dashboard/stats`, §5.2.5). |
+| Map Pin Drop | Integrated map component (Kakao Map) for latitude/longitude selection when creating or editing shop listings. Also used on the Customer Web shop detail page as a static map. Built as a React component within the Admin Web. |
 | Shop CRUD | Full create, read, update, delete interface for shop listings with search, filter, and sort. |
 | Review Moderation | View, flag, hide, and moderate customer reviews. |
 | Partnership Inquiry Management | Track and manage incoming partnership requests with status workflow. |
@@ -866,7 +898,23 @@ export async function fetchStrapi<T>(
 2. Calls the custom `/api/shops/nearby` endpoint
 3. Renders results with distance labels
 
-**Open/Close tag:** The `OpenCloseTag` component compares the shop's `operating_hours` against the current time in KST (using `Intl.DateTimeFormat` with `timeZone: 'Asia/Seoul'`) to display the appropriate tag.
+**Open/Close tag:** The `OpenCloseTag` component compares the shop's `operating_hours` JSON against the current time in KST (using `Intl.DateTimeFormat` with `timeZone: 'Asia/Seoul'`) to display the appropriate tag. If `operating_hours_text` is set, it is displayed as-is instead of computing from the JSON schedule.
+
+**`operating_hours` JSON format:**
+```json
+{
+  "mon": { "open": "10:00", "close": "22:00" },
+  "tue": { "open": "10:00", "close": "22:00" },
+  "wed": { "open": "10:00", "close": "22:00" },
+  "thu": { "open": "10:00", "close": "22:00" },
+  "fri": { "open": "10:00", "close": "23:00" },
+  "sat": { "open": "11:00", "close": "23:00" },
+  "sun": null
+}
+```
+- Keys: `mon`, `tue`, `wed`, `thu`, `fri`, `sat`, `sun`
+- Values: `{ "open": "HH:mm", "close": "HH:mm" }` or `null` (closed that day)
+- Times are in 24-hour KST format. Overnight hours (e.g., `"open": "18:00", "close": "02:00"`) are supported — close time before open time means next day.
 
 ### 6.5 Image Handling
 
@@ -998,7 +1046,7 @@ services:
       STRAPI_API_URL: http://strapi:1337
       NEXT_PUBLIC_ADMIN_URL: https://${ADMIN_DOMAIN}
       NEXT_PUBLIC_CUSTOMER_URL: https://${DOMAIN}
-      NEXT_PUBLIC_GOOGLE_MAPS_KEY: ${GOOGLE_MAPS_API_KEY}
+      NEXT_PUBLIC_KAKAO_MAP_APP_KEY: ${KAKAO_MAP_APP_KEY}
     ports:
       - "127.0.0.1:3001:3001"
 
@@ -1522,7 +1570,7 @@ Test-Driven Development (TDD) — tests written before implementation.
 ### 13.3 Uptime Monitoring
 
 - **Cloudflare Health Checks:** Monitor origin server availability from Cloudflare edge
-- **External uptime monitor:** (e.g., UptimeRobot, Hetrix) pinging `https://{{DOMAIN}}/ko`, `https://{{ADMIN_DOMAIN}}/api/health`, and `https://{{API_DOMAIN}}/api/themes`
+- **External uptime monitor:** UptimeRobot (free tier, 5-minute intervals) pinging `https://{{DOMAIN}}/ko`, `https://{{ADMIN_DOMAIN}}/api/health`, and `https://{{API_DOMAIN}}/api/themes`
 
 ---
 
@@ -1576,19 +1624,19 @@ CLOUDFLARE_ZONE_ID=CHANGE_ME
 CLOUDFLARE_API_TOKEN=CHANGE_ME
 
 # ── External ──
-GOOGLE_MAPS_API_KEY=CHANGE_ME
+KAKAO_MAP_APP_KEY=CHANGE_ME
 
 # ── Next.js (Customer Web) ──
 STRAPI_API_URL=http://strapi:1337/api
 STRAPI_API_TOKEN=CHANGE_ME
 NEXT_PUBLIC_SITE_URL=https://example.com
-NEXT_PUBLIC_GOOGLE_MAPS_KEY=CHANGE_ME
+NEXT_PUBLIC_KAKAO_MAP_APP_KEY=CHANGE_ME
 
 # ── Next.js (Admin Web) ──
 STRAPI_API_URL=http://strapi:1337
 NEXT_PUBLIC_ADMIN_URL=https://admin.example.com
 NEXT_PUBLIC_CUSTOMER_URL=https://example.com
-NEXT_PUBLIC_GOOGLE_MAPS_KEY=CHANGE_ME
+NEXT_PUBLIC_KAKAO_MAP_APP_KEY=CHANGE_ME
 
 # ── Domain ──
 DOMAIN=example.com
@@ -1650,7 +1698,8 @@ export interface ShopDetail extends ShopListItem {
   latitude: number;
   longitude: number;
   phone_number: string | null;
-  operating_hours: string;
+  operating_hours: Record<string, { open: string; close: string } | null>;
+  operating_hours_text: string | null;
   last_order_time: string | null;
   closed_days: string;
   holiday_exceptions: string | null;
