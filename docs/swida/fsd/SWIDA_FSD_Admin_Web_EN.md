@@ -24,13 +24,13 @@ This document defines the page list and functional specifications for the SWIDA 
 
 ### 1.2 Architecture Context
 
-The Admin Web is a custom-built Next.js application served at `admin.swida.com`. It communicates with Strapi's admin API (`/admin/*`) for authentication and Strapi's REST API (`/api/*`) for content management. Strapi's built-in admin panel is restricted to developers only for monitoring and debugging — it is not used for any operational features defined in this document.
+The Admin Web is a dedicated web application served at `admin.swida.com`. It connects to the backend for authentication and content management. The platform's underlying admin panel is restricted to developers only for monitoring and debugging — it is not used for any operational features defined in this document.
 
 ### 1.3 MVP Scope
 
 | Included | Not Included (Future) |
 |---|---|
-| Admin authentication (email/password, JWT) | Shop owner self-service portal |
+| Admin authentication (email/password) | Shop owner self-service portal |
 | Dashboard (platform statistics) | Advanced analytics & reports |
 | Shop CRUD (create, edit, publish/unpublish) | Bulk import/export of shop listings |
 | Map pin drop for lat/lng selection | Map view of all shops |
@@ -50,7 +50,7 @@ The Admin Web is a custom-built Next.js application served at `admin.swida.com`.
 | Language | Admin Web UI is in English (admin-facing, not customer-facing) |
 | Date/Time | KST (Korea Standard Time, UTC+9). Format: `YYYY-MM-DD HH:mm:ss` |
 | Authentication | All pages require admin authentication. Unauthenticated requests redirect to login |
-| API Communication | Strapi Admin API for auth (`/admin/login`). Strapi REST API + Admin API for content operations |
+| API Communication | Backend handles authentication and content operations. See TSD §5.2 for API details |
 | Soft Delete Policy | Shop listings are never hard-deleted. Deactivated shops are unpublished with an inactive reason |
 | Pagination | Table-based pagination with configurable page size (10, 20, 50) |
 | Loading States | Skeleton placeholders for data tables and forms |
@@ -90,8 +90,8 @@ The Admin Web is a custom-built Next.js application served at `admin.swida.com`.
 
 | # | Feature | Description |
 |---|---|---|
-| F-AUTH-01 | Email/Password Login | Authenticate against Strapi's admin API endpoint (`/admin/login`). Returns admin JWT |
-| F-AUTH-02 | JWT Storage | Store admin JWT securely (httpOnly cookie). Used for all subsequent Strapi admin API requests |
+| F-AUTH-01 | Email/Password Login | Admins log in with email and password. The session is maintained securely |
+| F-AUTH-02 | Session Storage | The admin session is stored securely in the browser and used for all subsequent requests |
 | F-AUTH-03 | Post-Login Redirect | On successful login, redirect to `/dashboard` |
 | F-AUTH-04 | Error Handling | Display error message for invalid credentials or server errors |
 | F-AUTH-05 | Already Authenticated | If admin is already logged in, redirect from `/login` to `/dashboard` |
@@ -114,15 +114,15 @@ The Admin Web is a custom-built Next.js application served at `admin.swida.com`.
 
 | # | Feature | Description |
 |---|---|---|
-| F-AUTH-06 | Session Persistence | Admin JWT persisted across browser sessions (until expiry or logout) |
-| F-AUTH-07 | Token Expiry | On token expiry, redirect to login page with message: "Session expired. Please log in again." |
-| F-AUTH-08 | Logout | Clear admin JWT, redirect to `/login` |
+| F-AUTH-06 | Session Persistence | Admin session persists across browser sessions (until expiry or logout) |
+| F-AUTH-07 | Session Expiry | On session expiry, redirect to login page with message: "Session expired. Please log in again." |
+| F-AUTH-08 | Logout | Clear admin session, redirect to `/login` |
 
 ### 3.3 Logout
 
 | # | Feature | Description |
 |---|---|---|
-| F-LOGOUT-01 | Session Clear | Remove admin JWT and clear client-side state |
+| F-LOGOUT-01 | Session Clear | Remove admin session and clear client-side state |
 | F-LOGOUT-02 | Redirect | Navigate to `/login` after logout |
 | F-LOGOUT-03 | Logout Button | Available in the admin header/sidebar on all authenticated pages |
 
@@ -147,14 +147,9 @@ The Admin Web is a custom-built Next.js application served at `admin.swida.com`.
 | F-DASH-07 | Recent Activity | List of recent shop publishes, review moderations, and inquiry status changes (last 10 actions) |
 | F-DASH-08 | Quick Actions | Quick links to: create new shop, view pending reviews, view new inquiries |
 
-**API Calls**
+**Data Sources**: The dashboard fetches aggregated platform statistics (shops, reviews, users, inquiries, recent activity), as well as counts of draft shops, pending reviews, and new inquiries.
 
-| Endpoint | Purpose |
-|---|---|
-| `GET /api/dashboard/stats` (custom controller, TSD §5.2.5) | Aggregated platform statistics (shops, reviews, users, inquiries, recent activity) |
-| `GET /api/shops?pagination[pageSize]=1&status=draft` | Draft shop count |
-| `GET /api/reviews?filters[status][$eq]=under_review&pagination[pageSize]=1` | Pending review count |
-| `GET /api/partnership-inquiries?filters[status][$eq]=new&pagination[pageSize]=1` | New inquiry count |
+> See TSD §5.2 for API details.
 
 ---
 
@@ -174,7 +169,7 @@ The Admin Web is a custom-built Next.js application served at `admin.swida.com`.
 | F-SHOP-04 | Filter — Region | Filter by Level 1 region |
 | F-SHOP-05 | Filter — Theme | Filter by service theme |
 | F-SHOP-06 | Sort | Sort by: name, rating, review count, created date, updated date |
-| F-SHOP-07 | Publish Action | Quick publish button on each row. Triggers Strapi's publish API. Shop becomes visible on Customer Web immediately (PRD §7.3) |
+| F-SHOP-07 | Publish Action | Quick publish button on each row. Shop becomes visible on Customer Web immediately (PRD §7.3) |
 | F-SHOP-08 | Unpublish Action | Quick unpublish button on each row. Opens inactive reason dialog before unpublishing (PRD §7.3) |
 | F-SHOP-09 | Create Button | Navigate to `/shops/new` |
 | F-SHOP-10 | Edit Button | Navigate to `/shops/[id]` for the selected shop |
@@ -198,17 +193,17 @@ The Admin Web is a custom-built Next.js application served at `admin.swida.com`.
 |---|---|---|
 | F-SHOP-13 | Basic Info Form | Input fields for all basic information: name, description, address, operating hours, last order time, closed days, holiday exceptions, phone number (PRD §5.1) |
 | F-SHOP-14 | Location Selection | Cascading dropdowns for region (Level 1) → district (Level 2) (PRD §5.1) |
-| F-SHOP-15 | Map Pin Drop | Integrated Kakao Map component for selecting latitude/longitude. Admin clicks on map to set coordinates. Supports address search to center map — if address not found, show "주소를 찾을 수 없습니다" toast and allow manual pin drop. Default center: Seoul City Hall (37.5666, 126.9784), zoom level 12. When editing an existing shop, center on saved coordinates. (PRD §3.1, TSD §5.6) |
+| F-SHOP-15 | Map Pin Drop | Integrated Kakao Map for selecting the shop's location. Admin clicks on the map to set coordinates. Supports address search to center the map — if address not found, show "주소를 찾을 수 없습니다" toast and allow manual pin drop. Default center: Seoul City Hall. When editing an existing shop, center on saved coordinates. (PRD §3.1, TSD §5.6) |
 | F-SHOP-16 | Theme Selection | Multi-select from all available themes (PRD §5.2) |
 | F-SHOP-17 | Service Menu | Repeatable form component — add/remove service menu items. Each item: service name, duration (minutes), price (KRW), description (PRD §5.2.1) |
 | F-SHOP-18 | Booking Info | Boolean toggle for booking required. Conditional input for booking URL/phone. Gender availability dropdown (PRD §5.2) |
 | F-SHOP-19 | Amenities | Toggle switches for each amenity. Conditional inputs for parking type, parking detail, accessibility detail (PRD §5.3) |
 | F-SHOP-20 | Contact Channels | Optional inputs: phone, KakaoTalk ID, Instagram, website URL, Naver Place URL (PRD §5.4) |
 | F-SHOP-21 | Languages | Multi-select for languages supported (PRD §5.5) |
-| F-SHOP-22 | Image Upload | Upload shop images (min: 1, max: 10). Accepted formats: JPEG, PNG, WebP. Max file size: 5MB per image. Drag-and-drop or file picker. Images stored via Strapi Upload → MinIO (PRD §5.1) |
+| F-SHOP-22 | Image Upload | Upload shop images (min: 1, max: 10). Accepted formats: JPEG, PNG, WebP. Max file size: 5MB per image. Drag-and-drop or file picker. Images are uploaded and stored securely (PRD §5.1) |
 | F-SHOP-23 | Thumbnail Selection | Select one image as the primary thumbnail for search results (PRD §5.1) |
 | F-SHOP-24 | Open/Close Tags | Optional custom labels for operating status display on Customer Web. Defaults: "영업중" / "영업종료" (PRD §5.6) |
-| F-SHOP-25 | Save as Draft | Save shop without publishing. Creates draft entry in Strapi (PRD §7.3) |
+| F-SHOP-25 | Save as Draft | Save shop without publishing. Creates a draft entry (PRD §7.3) |
 | F-SHOP-26 | Save & Publish | Save shop and publish immediately. Shop becomes visible on Customer Web (PRD §7.3) |
 | F-SHOP-27 | Locale Switcher | Switch between Korean and English content editing. Korean fields must be saved before English editing is enabled. English is optional (PRD §11.4) |
 
@@ -217,11 +212,11 @@ The Admin Web is a custom-built Next.js application served at `admin.swida.com`.
 | Field | Required | Constraints |
 |---|---|---|
 | Shop Name | Yes | Max 255 characters |
-| Slug | Yes (auto-generated) | Auto-generated from shop name, editable |
+| Slug | Yes (auto-generated) | A URL-friendly identifier is automatically generated from the shop name, editable |
 | Description | Yes | Max 500 characters |
 | Address | Yes | Max 500 characters |
-| Region | Yes | Select from regions API |
-| District | Yes | Select from districts API (filtered by region) |
+| Region | Yes | Select from available regions |
+| District | Yes | Select from available districts (filtered by region) |
 | Latitude | Yes | Decimal, set via map pin drop |
 | Longitude | Yes | Decimal, set via map pin drop |
 | Operating Hours | Yes | Text (e.g., "10:00–22:00") |
@@ -293,7 +288,7 @@ under_review ──→ deleted (admin delete)
 hidden ──→ published (admin restore)
 ```
 
-**Rating Recalculation**: Any status change automatically triggers Strapi lifecycle hooks to recalculate the parent shop's `average_rating` and `total_reviews` (PRD §8.5).
+**Rating Recalculation**: Any status change automatically triggers the parent shop's average rating and review count to be recalculated (PRD §8.5).
 
 ---
 
@@ -320,7 +315,7 @@ hidden ──→ published (admin restore)
 |---|---|---|
 | Name (Korean) | Yes | Max 100 characters |
 | Name (English) | No | Max 100 characters |
-| Slug | Yes (auto-generated) | Auto-generated from Korean name, editable |
+| Slug | Yes (auto-generated) | A URL-friendly identifier is automatically generated from the Korean name, editable |
 | Icon | No | Single image |
 | Display Order | No | Integer |
 
@@ -419,8 +414,8 @@ new ──→ contacted ──→ awaiting_info ──→ approved ──→ pub
 
 | Action | Effect |
 |---|---|
-| Lock | Account's `blocked` field set to `true` (Strapi built-in). User sees suspension message on Customer Web when attempting review submission. All existing published reviews remain visible (PRD §8.5) |
-| Unlock | Account's `blocked` field set to `false`. User can resume submitting reviews (PRD §8.5) |
+| Lock | Account is marked as blocked. User sees suspension message on Customer Web when attempting review submission. All existing published reviews remain visible (PRD §8.5) |
+| Unlock | Account block is removed. User can resume submitting reviews (PRD §8.5) |
 
 ---
 
@@ -440,20 +435,15 @@ new ──→ contacted ──→ awaiting_info ──→ approved ──→ pub
 | F-AUDIT-04 | Filter — Admin User | Filter by admin who made the change |
 | F-AUDIT-05 | Filter — Date | Filter by date range |
 | F-AUDIT-06 | Filter — Document | Filter by specific document ID (e.g., filter to see all changes for a specific shop) |
-| F-AUDIT-07 | Diff Viewer | Expand a log entry to show field-level diff: field name, previous value, new value (TSD §4.4.7 — `field_diffs` jsonb column) |
+| F-AUDIT-07 | Diff Viewer | Expand a log entry to show field-level changes: field name, previous value, new value |
 | F-AUDIT-08 | Sort | Sort by: timestamp (default: newest first) |
 | F-AUDIT-09 | Pagination | Table pagination with configurable page size |
 
-**Audit Entry Fields** (TSD §4.4.7)
+**Audit Entry Fields**
 
-| Field | Description |
-|---|---|
-| `content_type` | Strapi API ID (e.g., `api::shop.shop`) |
-| `document_id` | ID of the modified document |
-| `action` | `create`, `update`, `delete`, `publish`, `unpublish` |
-| `admin_user_id` | Admin who performed the action |
-| `field_diffs` | JSON object: `{ "field_name": { "before": "old value", "after": "new value" } }` |
-| `created_at` | Timestamp of the change |
+The audit log records who made changes, what was changed, and the before/after values. Each entry includes: the type of content (e.g., Shop, Theme), the specific record that was modified, the action taken (create, update, delete, publish, unpublish), the admin who performed the action, the field-level changes with before and after values, and the timestamp of the change.
+
+> See TSD §4.4.7 for the detailed data schema.
 
 ---
 
@@ -518,7 +508,7 @@ new ──→ contacted ──→ awaiting_info ──→ approved ──→ pub
 | `owner_request` | Owner Request | Shop owner requested removal from SWIDA |
 | `violation` | Policy Violation | Listing violated platform policies |
 | `stale` | Unverified | Unable to verify current operating status |
-| `other` | Other | Free-text explanation required (`inactive_reason_detail` field) |
+| `other` | Other | Free-text explanation required |
 
 ---
 
@@ -554,31 +544,9 @@ new ──→ contacted ──→ awaiting_info ──→ approved ──→ pub
 
 ## Appendix E. Admin API Endpoints Used
 
-The Admin Web communicates with Strapi via two API surfaces:
+The Admin Web communicates with the backend through two API surfaces: one for authentication and admin-level operations, and another for content management (shops, reviews, themes, locations, inquiries, audit logs, users, and image uploads).
 
-**Strapi Admin API** (authentication and admin-level operations):
-
-| Method | Endpoint | Purpose |
-|---|---|---|
-| POST | `/admin/login` | Admin authentication |
-| GET | `/admin/users/me` | Current admin user info |
-
-**Strapi REST API** (content management — using admin JWT):
-
-| Method | Endpoint | Purpose |
-|---|---|---|
-| GET/POST | `/api/shops` | List shops / Create shop |
-| GET/PUT/DELETE | `/api/shops/{documentId}` | Get / Update / Delete single shop |
-| POST | `/api/shops/{documentId}/actions/publish` | Publish shop (Strapi v5 Document Service API) |
-| POST | `/api/shops/{documentId}/actions/unpublish` | Unpublish shop (Strapi v5 Document Service API) |
-| GET/PUT | `/api/reviews` | Review listing and status updates |
-| GET/POST/PUT/DELETE | `/api/themes` | Theme CRUD |
-| GET/POST/PUT/DELETE | `/api/regions` | Region CRUD |
-| GET/POST/PUT/DELETE | `/api/districts` | District CRUD |
-| GET/PUT | `/api/partnership-inquiries` | Inquiry listing and status updates |
-| GET | `/api/audit-logs` | Audit log listing |
-| GET/PUT | `/content-manager/collection-types/plugin::users-permissions.user` | Customer account management |
-| POST | `/api/upload` | Image upload to MinIO |
+For the complete list of API endpoints, see TSD §5.2.
 
 ---
 

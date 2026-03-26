@@ -24,13 +24,13 @@ sidebar_position: 4
 
 ### 1.2 아키텍처 컨텍스트
 
-Admin Web은 `admin.swida.com`에서 제공되는 커스텀 Next.js 애플리케이션이다. 인증을 위해 Strapi Admin API(`/admin/*`)와, 콘텐츠 관리를 위해 Strapi REST API(`/api/*`)와 통신한다. Strapi 내장 관리자 패널은 모니터링 및 디버깅 목적으로 개발자에게만 접근이 제한되며, 본 문서에서 정의하는 운영 기능에는 사용되지 않는다.
+Admin Web은 `admin.swida.com`에서 제공되는 전용 웹 애플리케이션이다. 인증 및 콘텐츠 관리를 위해 백엔드와 통신한다. 플랫폼 내장 관리자 패널은 모니터링 및 디버깅 목적으로 개발자에게만 접근이 제한되며, 본 문서에서 정의하는 운영 기능에는 사용되지 않는다.
 
 ### 1.3 MVP 범위
 
 | 포함 | 미포함 (향후) |
 |---|---|
-| 관리자 인증 (이메일/비밀번호, JWT) | 업체 오너 셀프서비스 포털 |
+| 관리자 인증 (이메일/비밀번호) | 업체 오너 셀프서비스 포털 |
 | 대시보드 (플랫폼 통계) | 고급 분석 및 리포트 |
 | 업체 CRUD (생성, 수정, 공개/비공개) | 업체 목록 일괄 가져오기/내보내기 |
 | 지도 핀 드롭을 통한 위도/경도 선택 | 전체 업체 지도 보기 |
@@ -50,7 +50,7 @@ Admin Web은 `admin.swida.com`에서 제공되는 커스텀 Next.js 애플리케
 | 언어 | Admin Web UI는 영어로 표시 (관리자용이며, 고객용이 아님) |
 | 날짜/시간 | KST (한국 표준시, UTC+9). 형식: `YYYY-MM-DD HH:mm:ss` |
 | 인증 | 모든 페이지는 관리자 인증 필요. 미인증 요청은 로그인 페이지로 리다이렉트 |
-| API 통신 | 인증에는 Strapi Admin API(`/admin/login`). 콘텐츠 작업에는 Strapi REST API + Admin API |
+| API 통신 | 백엔드가 인증 및 콘텐츠 작업을 처리. 자세한 API 사양은 TSD §5.2 참조 |
 | 소프트 삭제 정책 | 업체 목록은 절대 물리 삭제하지 않음. 비활성화된 업체는 비활성 사유와 함께 비공개 처리 |
 | 페이지네이션 | 설정 가능한 페이지 크기(10, 20, 50)의 테이블 기반 페이지네이션 |
 | 로딩 상태 | 데이터 테이블 및 폼에 스켈레톤 플레이스홀더 표시 |
@@ -90,8 +90,8 @@ Admin Web은 `admin.swida.com`에서 제공되는 커스텀 Next.js 애플리케
 
 | # | 기능 | 설명 |
 |---|---|---|
-| F-AUTH-01 | 이메일/비밀번호 로그인 | Strapi Admin API 엔드포인트(`/admin/login`)를 통한 인증. 관리자 JWT 반환 |
-| F-AUTH-02 | JWT 저장 | 관리자 JWT를 안전하게 저장 (httpOnly 쿠키). 이후 모든 Strapi Admin API 요청에 사용 |
+| F-AUTH-01 | 이메일/비밀번호 로그인 | 관리자가 이메일과 비밀번호로 로그인. 세션이 안전하게 유지됨 |
+| F-AUTH-02 | 세션 저장 | 관리자 세션이 브라우저에 안전하게 저장되며 이후 모든 요청에 사용 |
 | F-AUTH-03 | 로그인 후 리다이렉트 | 로그인 성공 시 `/dashboard`로 리다이렉트 |
 | F-AUTH-04 | 오류 처리 | 잘못된 자격 증명 또는 서버 오류 시 오류 메시지 표시 |
 | F-AUTH-05 | 이미 인증된 상태 | 관리자가 이미 로그인한 경우 `/login`에서 `/dashboard`로 리다이렉트 |
@@ -114,15 +114,15 @@ Admin Web은 `admin.swida.com`에서 제공되는 커스텀 Next.js 애플리케
 
 | # | 기능 | 설명 |
 |---|---|---|
-| F-AUTH-06 | 세션 유지 | 관리자 JWT는 만료 또는 로그아웃 시까지 브라우저 세션 간 유지 |
-| F-AUTH-07 | 토큰 만료 | 토큰 만료 시 로그인 페이지로 리다이렉트하며 메시지 표시: "Session expired. Please log in again." |
-| F-AUTH-08 | 로그아웃 | 관리자 JWT 삭제 후 `/login`으로 리다이렉트 |
+| F-AUTH-06 | 세션 유지 | 관리자 세션은 만료 또는 로그아웃 시까지 브라우저 세션 간 유지 |
+| F-AUTH-07 | 세션 만료 | 세션 만료 시 로그인 페이지로 리다이렉트하며 메시지 표시: "Session expired. Please log in again." |
+| F-AUTH-08 | 로그아웃 | 관리자 세션 삭제 후 `/login`으로 리다이렉트 |
 
 ### 3.3 로그아웃
 
 | # | 기능 | 설명 |
 |---|---|---|
-| F-LOGOUT-01 | 세션 초기화 | 관리자 JWT 제거 및 클라이언트 측 상태 초기화 |
+| F-LOGOUT-01 | 세션 초기화 | 관리자 세션 제거 및 클라이언트 측 상태 초기화 |
 | F-LOGOUT-02 | 리다이렉트 | 로그아웃 후 `/login`으로 이동 |
 | F-LOGOUT-03 | 로그아웃 버튼 | 모든 인증된 페이지의 관리자 헤더/사이드바에 제공 |
 
@@ -147,14 +147,9 @@ Admin Web은 `admin.swida.com`에서 제공되는 커스텀 Next.js 애플리케
 | F-DASH-07 | 최근 활동 | 최근 업체 공개, 리뷰 관리, 문의 상태 변경 목록 (최근 10건) |
 | F-DASH-08 | 빠른 작업 | 바로가기 링크: 새 업체 생성, 대기 중인 리뷰 보기, 신규 문의 보기 |
 
-**API 호출**
+**데이터 소스**: 대시보드는 집계된 플랫폼 통계(업체, 리뷰, 사용자, 문의, 최근 활동)와 초안 업체 수, 대기 중인 리뷰 수, 신규 문의 수를 조회한다.
 
-| 엔드포인트 | 용도 |
-|---|---|
-| `GET /api/dashboard/stats` (커스텀 컨트롤러, TSD §5.2.5) | 집계된 플랫폼 통계 (업체, 리뷰, 사용자, 문의, 최근 활동) |
-| `GET /api/shops?pagination[pageSize]=1&status=draft` | 초안 업체 수 |
-| `GET /api/reviews?filters[status][$eq]=under_review&pagination[pageSize]=1` | 대기 중인 리뷰 수 |
-| `GET /api/partnership-inquiries?filters[status][$eq]=new&pagination[pageSize]=1` | 신규 문의 수 |
+> 자세한 API 사양은 TSD §5.2 참조.
 
 ---
 
@@ -174,7 +169,7 @@ Admin Web은 `admin.swida.com`에서 제공되는 커스텀 Next.js 애플리케
 | F-SHOP-04 | 필터 — 지역 | Level 1 지역별 필터 |
 | F-SHOP-05 | 필터 — 테마 | 서비스 테마별 필터 |
 | F-SHOP-06 | 정렬 | 정렬 기준: 이름, 평점, 리뷰 수, 생성일, 수정일 |
-| F-SHOP-07 | 공개 작업 | 각 행의 빠른 공개 버튼. Strapi publish API 호출. 업체가 Customer Web에 즉시 노출됨 (PRD §7.3) |
+| F-SHOP-07 | 공개 작업 | 각 행의 빠른 공개 버튼. 업체가 Customer Web에 즉시 노출됨 (PRD §7.3) |
 | F-SHOP-08 | 비공개 작업 | 각 행의 빠른 비공개 버튼. 비공개 전 비활성 사유 대화상자 표시 (PRD §7.3) |
 | F-SHOP-09 | 생성 버튼 | `/shops/new`로 이동 |
 | F-SHOP-10 | 수정 버튼 | 선택한 업체의 `/shops/[id]`로 이동 |
@@ -198,17 +193,17 @@ Admin Web은 `admin.swida.com`에서 제공되는 커스텀 Next.js 애플리케
 |---|---|---|
 | F-SHOP-13 | 기본 정보 폼 | 모든 기본 정보 입력 필드: 이름, 설명, 주소, 운영 시간, 라스트 오더 시간, 정기 휴무일, 휴일 예외, 전화번호 (PRD §5.1) |
 | F-SHOP-14 | 지역 선택 | 지역 (Level 1) → 구역 (Level 2) 연동 드롭다운 (PRD §5.1) |
-| F-SHOP-15 | 지도 핀 드롭 | 위도/경도 선택을 위한 카카오맵 통합 컴포넌트. 관리자가 지도를 클릭하여 좌표 설정. 주소 검색을 통한 지도 중심 이동 지원 — 주소를 찾을 수 없는 경우 "주소를 찾을 수 없습니다" 토스트 표시 후 수동 핀 드롭 허용. 기본 중심: 서울시청 (37.5666, 126.9784), 줌 레벨 12. 기존 업체 수정 시 저장된 좌표로 중심 이동. (PRD §3.1, TSD §5.6) |
+| F-SHOP-15 | 지도 핀 드롭 | 업체 위치 선택을 위한 카카오맵 통합. 관리자가 지도를 클릭하여 좌표 설정. 주소 검색을 통한 지도 중심 이동 지원 — 주소를 찾을 수 없는 경우 "주소를 찾을 수 없습니다" 토스트 표시 후 수동 핀 드롭 허용. 기본 중심: 서울시청. 기존 업체 수정 시 저장된 좌표로 중심 이동. (PRD §3.1, TSD §5.6) |
 | F-SHOP-16 | 테마 선택 | 사용 가능한 전체 테마에서 다중 선택 (PRD §5.2) |
 | F-SHOP-17 | 서비스 메뉴 | 반복 가능한 폼 컴포넌트 — 서비스 메뉴 항목 추가/제거. 각 항목: 서비스 이름, 소요 시간(분), 가격(KRW), 설명 (PRD §5.2.1) |
 | F-SHOP-18 | 예약 정보 | 예약 필수 여부 불리언 토글. 예약 URL/전화번호 조건부 입력. 성별 이용 가능 여부 드롭다운 (PRD §5.2) |
 | F-SHOP-19 | 편의시설 | 각 편의시설에 대한 토글 스위치. 주차 유형, 주차 세부사항, 접근성 세부사항 조건부 입력 (PRD §5.3) |
 | F-SHOP-20 | 연락 채널 | 선택 입력: 전화번호, KakaoTalk ID, Instagram, 웹사이트 URL, Naver Place URL (PRD §5.4) |
 | F-SHOP-21 | 지원 언어 | 지원 언어 다중 선택 (PRD §5.5) |
-| F-SHOP-22 | 이미지 업로드 | 업체 이미지 업로드 (최소: 1장, 최대: 10장). 허용 형식: JPEG, PNG, WebP. 파일당 최대 크기: 5MB. 드래그 앤 드롭 또는 파일 선택. 이미지는 Strapi Upload → MinIO를 통해 저장 (PRD §5.1) |
+| F-SHOP-22 | 이미지 업로드 | 업체 이미지 업로드 (최소: 1장, 최대: 10장). 허용 형식: JPEG, PNG, WebP. 파일당 최대 크기: 5MB. 드래그 앤 드롭 또는 파일 선택. 이미지는 안전하게 업로드 및 저장됨 (PRD §5.1) |
 | F-SHOP-23 | 썸네일 선택 | 검색 결과에 표시될 대표 썸네일 이미지 1장 선택 (PRD §5.1) |
 | F-SHOP-24 | 영업중/영업종료 태그 | Customer Web에서 영업 상태 표시를 위한 선택적 커스텀 라벨. 기본값: "영업중" / "영업종료" (PRD §5.6) |
-| F-SHOP-25 | 초안 | 공개하지 않고 업체 저장. Strapi에 초안 항목 생성 (PRD §7.3) |
+| F-SHOP-25 | 초안 | 공개하지 않고 업체 저장. 초안 항목 생성 (PRD §7.3) |
 | F-SHOP-26 | 저장 및 공개 | 업체 저장 후 즉시 공개. Customer Web에서 업체 노출 (PRD §7.3) |
 | F-SHOP-27 | 로케일 전환기 | 한국어와 영어 콘텐츠 편집 간 전환. 한국어 필드 저장 후 영어 편집 활성화. 영어는 선택 (PRD §11.4) |
 
@@ -217,11 +212,11 @@ Admin Web은 `admin.swida.com`에서 제공되는 커스텀 Next.js 애플리케
 | 필드 | 필수 | 제약사항 |
 |---|---|---|
 | Shop Name | 예 | 최대 255자 |
-| Slug | 예 (자동 생성) | 업체 이름에서 자동 생성, 수정 가능 |
+| Slug | 예 (자동 생성) | 업체 이름에서 URL 친화적 식별자가 자동 생성됨, 수정 가능 |
 | Description | 예 | 최대 500자 |
 | Address | 예 | 최대 500자 |
-| Region | 예 | 지역 API에서 선택 |
-| District | 예 | 구역 API에서 선택 (지역별 필터) |
+| Region | 예 | 사용 가능한 지역에서 선택 |
+| District | 예 | 사용 가능한 구역에서 선택 (지역별 필터) |
 | Latitude | 예 | 소수점, 지도 핀 드롭으로 설정 |
 | Longitude | 예 | 소수점, 지도 핀 드롭으로 설정 |
 | Operating Hours | 예 | 텍스트 (예: "10:00–22:00") |
@@ -293,7 +288,7 @@ under_review ──→ deleted (관리자 삭제)
 hidden ──→ published (관리자 복원)
 ```
 
-**평점 재계산**: 상태 변경 시 Strapi 라이프사이클 훅이 자동으로 트리거되어 상위 업체의 `average_rating` 및 `total_reviews`가 재계산됨 (PRD §8.5).
+**평점 재계산**: 상태 변경 시 상위 업체의 평균 평점 및 리뷰 수가 자동으로 재계산됨 (PRD §8.5).
 
 ---
 
@@ -320,7 +315,7 @@ hidden ──→ published (관리자 복원)
 |---|---|---|
 | Name (Korean) | 예 | 최대 100자 |
 | Name (English) | 아니오 | 최대 100자 |
-| Slug | 예 (자동 생성) | 한국어 이름에서 자동 생성, 수정 가능 |
+| Slug | 예 (자동 생성) | 한국어 이름에서 URL 친화적 식별자가 자동 생성됨, 수정 가능 |
 | Icon | 아니오 | 단일 이미지 |
 | Display Order | 아니오 | 정수 |
 
@@ -419,8 +414,8 @@ new ──→ contacted ──→ awaiting_info ──→ approved ──→ pub
 
 | 작업 | 효과 |
 |---|---|
-| 잠금 | 계정의 `blocked` 필드를 `true`로 설정 (Strapi 내장 기능). 사용자가 Customer Web에서 리뷰 제출 시도 시 정지 메시지 표시. 기존 공개된 리뷰는 그대로 유지 (PRD §8.5) |
-| 해제 | 계정의 `blocked` 필드를 `false`로 설정. 사용자가 리뷰 제출 재개 가능 (PRD §8.5) |
+| 잠금 | 계정이 차단됨으로 표시됨. 사용자가 Customer Web에서 리뷰 제출 시도 시 정지 메시지 표시. 기존 공개된 리뷰는 그대로 유지 (PRD §8.5) |
+| 해제 | 계정 차단이 해제됨. 사용자가 리뷰 제출 재개 가능 (PRD §8.5) |
 
 ---
 
@@ -440,20 +435,15 @@ new ──→ contacted ──→ awaiting_info ──→ approved ──→ pub
 | F-AUDIT-04 | 필터 — 관리자 | 변경을 수행한 관리자로 필터 |
 | F-AUDIT-05 | 필터 — 날짜 | 날짜 범위로 필터 |
 | F-AUDIT-06 | 필터 — 문서 | 특정 document ID로 필터 (예: 특정 업체의 전체 감사 로그 조회) |
-| F-AUDIT-07 | Diff 뷰어 | 로그 항목을 확장하여 필드 수준 diff 표시: 필드 이름, 이전 값, 새 값 (TSD §4.4.7 — `field_diffs` jsonb 컬럼) |
+| F-AUDIT-07 | Diff 뷰어 | 로그 항목을 확장하여 필드 수준 변경 내역 표시: 필드 이름, 이전 값, 새 값 |
 | F-AUDIT-08 | 정렬 | 정렬 기준: 타임스탬프 (기본값: 최신순) |
 | F-AUDIT-09 | 페이지네이션 | 설정 가능한 페이지 크기의 테이블 페이지네이션 |
 
-**감사 항목 필드** (TSD §4.4.7)
+**감사 항목 필드**
 
-| 필드 | 설명 |
-|---|---|
-| `content_type` | Strapi API ID (예: `api::shop.shop`) |
-| `document_id` | 수정된 문서의 ID |
-| `action` | `create`, `update`, `delete`, `publish`, `unpublish` |
-| `admin_user_id` | 작업을 수행한 관리자 |
-| `field_diffs` | JSON 객체: `{ "field_name": { "before": "old value", "after": "new value" } }` |
-| `created_at` | 변경 타임스탬프 |
+감사 로그는 누가 변경했는지, 무엇이 변경되었는지, 변경 전후 값을 기록한다. 각 항목에는 콘텐츠 유형(예: 업체, 테마), 수정된 특정 레코드, 수행된 작업(생성, 수정, 삭제, 공개, 비공개), 작업을 수행한 관리자, 변경 전후 값이 포함된 필드별 변경 내역, 변경 타임스탬프가 포함된다.
+
+> 자세한 데이터 스키마는 TSD §4.4.7 참조.
 
 ---
 
@@ -518,7 +508,7 @@ new ──→ contacted ──→ awaiting_info ──→ approved ──→ pub
 | `owner_request` | Owner Request | Shop owner requested removal from SWIDA |
 | `violation` | Policy Violation | Listing violated platform policies |
 | `stale` | Unverified | Unable to verify current operating status |
-| `other` | Other | Free-text explanation required (`inactive_reason_detail` field) |
+| `other` | Other | Free-text explanation required |
 
 ---
 
@@ -554,31 +544,9 @@ new ──→ contacted ──→ awaiting_info ──→ approved ──→ pub
 
 ## 부록 E. Admin API 엔드포인트 목록
 
-Admin Web은 두 가지 API 인터페이스를 통해 Strapi와 통신한다:
+Admin Web은 두 가지 API 인터페이스를 통해 백엔드와 통신한다: 하나는 인증 및 관리자 수준 작업용이고, 다른 하나는 콘텐츠 관리(업체, 리뷰, 테마, 지역, 문의, 감사 로그, 사용자, 이미지 업로드)용이다.
 
-**Strapi Admin API** (인증 및 관리자 수준 작업):
-
-| Method | Endpoint | 용도 |
-|---|---|---|
-| POST | `/admin/login` | 관리자 인증 |
-| GET | `/admin/users/me` | 현재 관리자 사용자 정보 |
-
-**Strapi REST API** (콘텐츠 관리 — 관리자 JWT 사용):
-
-| Method | Endpoint | 용도 |
-|---|---|---|
-| GET/POST | `/api/shops` | 업체 목록 조회 / 생성 |
-| GET/PUT/DELETE | `/api/shops/{documentId}` | 단일 업체 조회 / 수정 / 삭제 |
-| POST | `/api/shops/{documentId}/actions/publish` | 업체 공개 (Strapi v5 Document Service API) |
-| POST | `/api/shops/{documentId}/actions/unpublish` | 업체 비공개 (Strapi v5 Document Service API) |
-| GET/PUT | `/api/reviews` | 리뷰 목록 조회 및 상태 업데이트 |
-| GET/POST/PUT/DELETE | `/api/themes` | 테마 CRUD |
-| GET/POST/PUT/DELETE | `/api/regions` | 지역 CRUD |
-| GET/POST/PUT/DELETE | `/api/districts` | 구역 CRUD |
-| GET/PUT | `/api/partnership-inquiries` | 문의 목록 조회 및 상태 업데이트 |
-| GET | `/api/audit-logs` | 감사 로그 목록 조회 |
-| GET/PUT | `/content-manager/collection-types/plugin::users-permissions.user` | 고객 계정 관리 |
-| POST | `/api/upload` | MinIO로 이미지 업로드 |
+전체 API 엔드포인트 목록은 TSD §5.2 참조.
 
 ---
 
