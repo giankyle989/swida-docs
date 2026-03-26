@@ -20,8 +20,11 @@ export default function DownloadButton() {
     const link = document.createElement('a');
     link.href = url;
     link.download = filename;
+    link.style.display = 'none';
+    document.body.appendChild(link);
     link.click();
-    URL.revokeObjectURL(url);
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   }, [rawMarkdown, metadata.source]);
 
   if (!rawMarkdown) return null;
