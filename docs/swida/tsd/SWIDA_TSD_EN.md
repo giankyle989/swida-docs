@@ -80,6 +80,7 @@ All versions are selected for LTS status, active security support, mutual compat
 | **next-intl** | `4.8.3` | Active | Path-based i18n routing for Next.js. Compatible with Next.js 16.x since v4.4. |
 | **Tailwind CSS** | `4.x` (latest stable) | Active | Next.js 16 scaffolds Tailwind v4 by default. Uses `@tailwindcss/postcss`. |
 | **Headless UI** | `2.2.9` | Active | Unstyled accessible components. Compatible with React 19. |
+| **Nodemailer** | `7.x` (latest stable) | Active | Transactional email delivery for password reset, notifications. Configured with SMTP provider (e.g., AWS SES, SendGrid, or self-hosted SMTP). Provider selection is a deployment decision — Nodemailer abstracts the transport. |
 
 ### 2.3 Key Version Decisions & Rationale
 
@@ -686,6 +687,19 @@ async function recalculateShopRating(shopDocumentId: string) {
   });
 }
 ```
+
+**Concurrency Safety:**
+
+The `recalculateShopRating` function uses a read-then-write pattern that is vulnerable to concurrent execution. If two reviews are created simultaneously for the same shop, both hooks read the same set of reviews, compute the same (stale) count, and one overwrites the other's result.
+
+**Required safeguard:** Wrap the recalculation in a PostgreSQL advisory lock keyed on the shop's `documentId`. This ensures only one recalculation runs at a time per shop:
+
+```typescript
+await strapi.db.connection.raw('SELECT pg_advisory_xact_lock(hashtext(?))', [shopDocumentId]);
+// ... then read reviews, compute average, update shop (within the same transaction)
+```
+
+**Error handling:** If the recalculation fails (e.g., database connection error), the review CRUD operation should still succeed — the lifecycle hook must not block the user. Log the failure and enqueue a retry. The admin dashboard should surface shops where `average_rating` may be stale (last recalculation failed).
 
 #### 5.3.4 Lifecycle Hooks: Audit Log
 

@@ -53,6 +53,8 @@ This document defines the page list and functional specifications for the SWIDA 
 | Empty States | Friendly message with suggestion to broaden filters or try a different search mode |
 | Loading States | Skeleton placeholders for all data-fetching states (defined in UI/UX Spec) |
 | Error Handling | Toast notifications for API errors. Retry option for network failures |
+| Input Sanitization | All user-submitted free-text fields (review comments, partnership messages, display names, search queries) are sanitized server-side before storage. HTML tags are stripped. Output is escaped on render to prevent XSS. Client-side sanitization is advisory only — never trust client input. |
+| Submit Protection | All form submit buttons enter a disabled + loading state on first click until the server responds. This prevents double-submit on all write operations (sign up, review, partnership inquiry, password reset request, login). Server-side deduplication is the backstop — client-side disable is UX only. |
 
 ---
 
@@ -126,7 +128,17 @@ This document defines the page list and functional specifications for the SWIDA 
 |---|---|---|
 | F-AUTH-07 | Token Exchange | Complete social login and establish user session |
 | F-AUTH-08 | Auto-Registration | First-time social login users are automatically registered |
-| F-AUTH-09 | Error Handling | Display error message and redirect to login if OAuth flow fails |
+| F-AUTH-09 | Error Handling | Display error message and redirect to login if OAuth flow fails. Error message varies by failure type (see below). Pre-login redirect target is preserved in session storage so the user can retry without losing their place. |
+
+**OAuth Error Messages**
+
+| Failure Type | Error Message |
+|---|---|
+| Provider unreachable | "소셜 로그인 서비스에 연결할 수 없습니다. 잠시 후 다시 시도해주세요." / "Unable to connect to the social login service. Please try again later." |
+| Token exchange failed | "로그인 처리 중 오류가 발생했습니다. 다시 시도해주세요." / "An error occurred during login. Please try again." |
+| Account conflict (email exists with different provider) | "이미 다른 방법으로 가입된 이메일입니다." / "This email is already registered with a different login method." |
+
+**Recovery:** On any OAuth failure, redirect to login page with a `?error=oauth_failed` query parameter. The login page displays the appropriate error message and preserves the original return URL for retry.
 
 ### 3.3 Session Management
 
@@ -203,6 +215,7 @@ This document defines the page list and functional specifications for the SWIDA 
 [5] On validation pass → submit to server. Server checks email/display name uniqueness.
 [6a] Success → auto-login → show success modal with greeting and CTAs.
 [6b] Server error → display inline error message under the relevant field.
+[6c] Registration succeeds but auto-login fails → show success modal with message "회원가입이 완료되었습니다. 로그인 페이지로 이동합니다." / "Registration complete. Redirecting to login." CTA: "Go to Login" instead of homepage/nearby CTAs.
 [7] User dismisses modal or clicks a CTA → navigate to chosen page.
 ```
 
@@ -230,6 +243,7 @@ This document defines the page list and functional specifications for the SWIDA 
 
 - If email exists: send password reset email with tokenized link
 - If email does not exist: show same success message (no indication of whether account exists)
+- If email delivery fails (SMTP error): log the failure server-side with email, timestamp, and error details. User still sees the generic success message (no indication of delivery failure to prevent enumeration). Admin dashboard or monitoring should surface delivery failures.
 - Rate limit: max 3 reset requests per email per hour
 
 **Confirmation Message**
@@ -490,7 +504,7 @@ Shop detail pages include SEO metadata for search engines, including structured 
 | F-REV-01 | Login Gate | Review form is visible only to logged-in users. Non-logged-in users see a CTA to log in (PRD §8.2) |
 | F-REV-02 | Star Rating Input | 1–5 star scale, required. Interactive star selector (PRD §8.2) |
 | F-REV-03 | Comment Input | Free-text, required. 10–500 characters. Display character count. Client-side validation (PRD §8.2) |
-| F-REV-04 | Submit Review | On success, review appears in list and shop rating/count updates automatically. Display success toast |
+| F-REV-04 | Submit Review | On success, review appears in list and shop rating/count updates automatically (via lifecycle hook — see TSD §5.3.3). If rating recalculation fails, the review is still saved; rating updates on next successful recalculation. Display success toast |
 | F-REV-05 | Locked Account | If user's account is locked, display error message and prevent submission (PRD §8.5) |
 | F-REV-06 | Validation Error | Display inline error if comment is < 10 or > 500 characters |
 

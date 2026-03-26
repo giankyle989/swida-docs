@@ -57,6 +57,8 @@ The Admin Web is a dedicated web application served at `admin.swida.com`. It con
 | Confirmation | All destructive actions (hide, delete, lock, unpublish) require confirmation dialog |
 | Toast Notifications | Success/error feedback for all write operations |
 | Responsive | Desktop-primary. Minimum supported width: 1024px |
+| Input Sanitization | All admin-submitted free-text fields (shop descriptions, inactive reason details, theme names, moderation reasons) are sanitized server-side before storage. HTML tags are stripped. Output is escaped on render to prevent stored XSS on Customer Web. |
+| Submit Protection | All form submit and action buttons (Save, Publish, Hide, Delete, Lock, status changes) enter a disabled + loading state on first click until the server responds. Prevents duplicate API calls from rapid clicks. |
 
 ---
 
@@ -281,11 +283,12 @@ The Admin Web is a dedicated web application served at `admin.swida.com`. It con
 
 ```
 published ──→ hidden (admin hide)
-published ──→ deleted (admin delete)
+published ──→ deleted (admin soft-delete)
 under_review ──→ published (admin approve)
 under_review ──→ hidden (admin hide)
-under_review ──→ deleted (admin delete)
+under_review ──→ deleted (admin soft-delete)
 hidden ──→ published (admin restore)
+deleted ──→ published (admin restore — requires confirmation: "This review was previously deleted. Restoring will make it visible again.")
 ```
 
 **Rating Recalculation**: Any status change automatically triggers the parent shop's average rating and review count to be recalculated (PRD §8.5).
@@ -361,7 +364,7 @@ hidden ──→ published (admin restore)
 | F-INQ-04 | Filter — Date | Filter by date range |
 | F-INQ-05 | Sort | Sort by: created date (default: newest first), status |
 | F-INQ-06 | Inquiry Detail | Expand/modal to show all inquiry fields including message and admin notes |
-| F-INQ-07 | Update Status | Change inquiry status via dropdown. Status flow: `new` → `contacted` → `awaiting_info` → `approved` → `published`. Any status except `published` → `rejected`. Both `published` and `rejected` are terminal states. (PRD §10.3.2) |
+| F-INQ-07 | Update Status | Change inquiry status via dropdown. Status flow: `new` → `contacted` → `awaiting_info` → `approved` → `published`. Any status except `published` → `rejected`. `rejected` → `new` (reopen). `published` is terminal — shop is managed via Shop Management. (PRD §10.3.2) |
 | F-INQ-08 | Admin Notes | Add/edit internal notes on any inquiry. Notes are not visible to the public (PRD §10.3.1) |
 | F-INQ-09 | Duplicate Detection | Visual flag/badge on inquiries where same shop name + address already exists in another inquiry or shop listing (PRD §10.3.2) |
 | F-INQ-10 | Convert to Shop | Button on `approved` inquiries: "Create Shop Listing". Pre-populates a new shop form (`/shops/new`) with inquiry data (shop name, address, business type, contact info) (PRD §10.3.2) |
@@ -430,8 +433,8 @@ new ──→ contacted ──→ awaiting_info ──→ approved ──→ pub
 | # | Feature | Description |
 |---|---|---|
 | F-AUDIT-01 | Log Table | Paginated table of all audit entries. Columns: timestamp, admin user, content type, action, document name/ID |
-| F-AUDIT-02 | Filter — Content Type | Filter by: All / Shop / Theme / Region / District |
-| F-AUDIT-03 | Filter — Action | Filter by: All / Create / Update / Delete / Publish / Unpublish |
+| F-AUDIT-02 | Filter — Content Type | Filter by: All / Shop / Theme / Region / District / Review / Partnership Inquiry / User |
+| F-AUDIT-03 | Filter — Action | Filter by: All / Create / Update / Delete / Publish / Unpublish / Hide / Restore / Lock / Unlock |
 | F-AUDIT-04 | Filter — Admin User | Filter by admin who made the change |
 | F-AUDIT-05 | Filter — Date | Filter by date range |
 | F-AUDIT-06 | Filter — Document | Filter by specific document ID (e.g., filter to see all changes for a specific shop) |
@@ -444,6 +447,33 @@ new ──→ contacted ──→ awaiting_info ──→ approved ──→ pub
 The audit log records who made changes, what was changed, and the before/after values. Each entry includes: the type of content (e.g., Shop, Theme), the specific record that was modified, the action taken (create, update, delete, publish, unpublish), the admin who performed the action, the field-level changes with before and after values, and the timestamp of the change.
 
 > See TSD §4.4.7 for the detailed data schema.
+
+**Expanded Audit Scope**
+
+The audit log covers ALL state-changing admin actions, not only shop changes:
+
+| Content Type | Audited Actions |
+|---|---|
+| Shop | Create, Update, Delete, Publish, Unpublish |
+| Theme | Create, Update, Delete |
+| Region / District | Create, Update, Delete |
+| Review | Hide, Restore, Delete (moderation actions) |
+| Partnership Inquiry | Status changes (New → Contacted → Awaiting Info → Approved → Rejected → Published) |
+| User (Customer) | Lock, Unlock |
+
+**Security Event Log**
+
+In addition to the content audit log, the following security-sensitive events are logged server-side for monitoring and incident response:
+
+| Event | Logged Fields |
+|---|---|
+| Failed login attempt (admin or customer) | Email, IP address, timestamp, failure reason |
+| Account lock/unlock | Target user, acting admin, reason, timestamp |
+| Password reset request | Email, IP address, timestamp, delivery status |
+| Admin login/logout | Admin user, IP address, timestamp |
+| Session expiration | User, session age, timestamp |
+
+> Security events are stored in a dedicated `security_events` log (separate from the content audit log). Retention: 90 days minimum. See TSD for implementation details.
 
 ---
 
@@ -522,8 +552,8 @@ The audit log records who made changes, what was changed, and the before/after v
 | `contacted` | Contacted | Admin has reached out to the shop owner | `awaiting_info`, `rejected` |
 | `awaiting_info` | Awaiting Info | Waiting for shop owner to provide details | `approved`, `rejected` |
 | `approved` | Approved | Information verified, ready to create listing | `published`, `rejected` |
-| `rejected` | Rejected | Inquiry declined | (terminal state) |
-| `published` | Published | Shop listing is live on SWIDA | (terminal state) |
+| `rejected` | Rejected | Inquiry declined | `new` (admin reopen — requires confirmation: "Reopen this rejected inquiry?") |
+| `published` | Published | Shop listing is live on SWIDA | (terminal state — shop is managed via Shop Management from this point) |
 
 **SLA Indicator**: Inquiries in `new` status for more than 48 hours should be visually highlighted as overdue (PRD §10.3.3).
 
