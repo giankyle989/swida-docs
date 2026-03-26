@@ -132,7 +132,7 @@ sidebar_position: 2
 
 | # | 기능 | 설명 |
 |---|---|---|
-| F-SESSION-01 | JWT 저장 | Strapi JWT를 httpOnly 쿠키(권장) 또는 클라이언트 측 상태에 저장 |
+| F-SESSION-01 | JWT 저장 | Strapi JWT를 httpOnly 쿠키에 저장 (secure, SameSite=Lax) |
 | F-SESSION-02 | 토큰 유효기간 | 7일 (Strapi `plugins.ts`에서 설정 가능) (TSD §5.4.1) |
 | F-SESSION-03 | 로그아웃 | JWT 삭제, 클라이언트 상태 초기화, 홈페이지로 리다이렉트 |
 | F-SESSION-04 | 세션 만료 | 토큰 만료 시, 인증 상태를 초기화하고 보호된 동작 시도 시 로그인 페이지로 리다이렉트 |
@@ -159,7 +159,7 @@ sidebar_position: 2
 | F-HOME-01 | 테마 카드 | 모든 서비스 테마를 선택 가능한 카드/태그로 표시. 테마 클릭 시 테마 탐색 페이지로 이동. `display_order` 기준 정렬. (PRD §9) |
 | F-HOME-02 | 추천 업체 | 높은 평점 또는 최근 등록된 업체의 선별 목록 표시. 업체 카드에 표시되는 항목: 썸네일, 이름, 구/군, 테마, 평균 평점, 리뷰 수 |
 | F-HOME-03 | 빠른 검색 접근 | 내비게이션을 통한 5가지 검색 모드(상세, 테마, 지역, 내 주변, 이름)의 주요 진입점 |
-| F-HOME-04 | 내비게이션 메뉴 | 하단 내비게이션(모바일) / 사이드바 또는 상단 내비게이션(데스크톱)에 모든 고객용 메뉴 항목 표시 (PRD §7.1) |
+| F-HOME-04 | 내비게이션 메뉴 | 하단 내비게이션(모바일) / 상단 내비게이션 바(데스크톱)에 모든 고객용 메뉴 항목 표시 (PRD §7.1) |
 
 **API 호출**
 
@@ -181,7 +181,7 @@ sidebar_position: 2
 | # | 기능 | 설명 |
 |---|---|---|
 | F-SEARCH-01 | 업체명 필터 | 키워드/부분 일치 입력. 대소문자 무관 한국어 문자 매칭 (PRD §6.1) |
-| F-SEARCH-02 | 지역 필터 | 계단식 드롭다운 — Level 1 (시/도) 선택 시 Level 2 (구/군) 옵션을 동적으로 로드 (PRD §6.1) |
+| F-SEARCH-02 | 지역 필터 | 계단식 드롭다운 — Level 2 (구/군) 드롭다운은 Level 1 (시/도) 선택 전까지 비어있고 비활성화. 두 레벨 모두 "전체" 옵션 제공. (PRD §6.1) |
 | F-SEARCH-03 | 테마 필터 | 모든 테마에서 다중 선택 (PRD §6.1) |
 | F-SEARCH-04 | 편의시설 필터 | 편의시설 토글 체크박스: 주차, 샤워, 수면실, 개인실, WiFi, 장애인 편의 (PRD §6.1) |
 | F-SEARCH-05 | 예약 필터 | 예약 필요 여부 토글: 예 / 아니오 / 전체 (PRD §6.1) |
@@ -294,7 +294,7 @@ GET /api/shops?locale={locale}
 | F-NEAR-04 | 거리 표시 | 고객과 각 업체 간 거리 표시 (예: "1.2 km") (PRD §6.4) |
 | F-NEAR-05 | 선택적 필터 | 내 주변 결과를 테마 또는 편의시설로 선택적 필터링 가능 (PRD §6.4) |
 | F-NEAR-06 | 반경 조절 | 프리셋 버튼으로 검색 반경 조절: 1km, 3km, 5km (기본값), 10km |
-| F-NEAR-07 | 로딩 상태 | GPS 확인 및 API 조회 중 로딩 인디케이터 표시 |
+| F-NEAR-07 | 로딩 상태 | GPS 확인 중 로딩 인디케이터 표시 (타임아웃: 10초 — GPS 실패 또는 타임아웃 시 재시도 버튼과 함께 오류 표시) 및 API 조회 중 |
 | F-NEAR-08 | 페이지네이션 | 페이지 기반 |
 
 **API 호출 (커스텀 컨트롤러)**
@@ -346,7 +346,7 @@ GET /api/shops/nearby?lat={lat}&lng={lng}&radius={meters}
 | F-SHOP-11 | 연락 채널 | 가용한 연락 링크 표시: 전화(tel: 링크), 카카오톡, 인스타그램, 웹사이트, 네이버 플레이스 (PRD §5.4) |
 | F-SHOP-12 | 지원 언어 | 가용 시 업체에서 사용 가능한 언어 표시 (PRD §5.5) |
 | F-SHOP-13 | 평균 평점 | 별점과 전체 리뷰 수를 눈에 띄게 표시 (PRD §5.6) |
-| F-SHOP-14 | 리뷰 목록 | 해당 업체의 게시된 리뷰를 최신순으로 표시. 각 리뷰에 표시되는 항목: 작성자 닉네임, 평점(별), 코멘트, 작성일 (PRD §8.3) |
+| F-SHOP-14 | 리뷰 목록 | 해당 업체의 게시된 리뷰를 최신순으로 표시 (페이지당 10개, "더 보기" 버튼). 각 리뷰에 표시되는 항목: 작성자 닉네임, 평점(별), 코멘트, 작성일 (PRD §8.3). 비로그인 사용자에게는 리뷰 폼 대신 "로그인하고 리뷰 작성" CTA 버튼 표시. |
 | F-SHOP-15 | 리뷰 페이지네이션 | 업체 상세 페이지의 리뷰에 대한 페이지 기반 페이지네이션 |
 | F-SHOP-16 | 리뷰 작성 | 업체 상세 페이지의 인라인 리뷰 양식 (로그인 필요). 상세 내용은 §11 참조 |
 | F-SHOP-17 | 리뷰 신고 | 각 리뷰의 신고 버튼 (로그인 필요). 상세 내용은 §11.3 참조 |
@@ -528,7 +528,7 @@ Body: {
 |---|---|---|
 | F-I18N-01 | 경로 기반 라우팅 | 한국어: `/ko/...` (기본), 영어: `/en/...`. 둘 다 명시적이며, 접두사 없는 경로는 없음 (PRD §11.4) |
 | F-I18N-02 | 루트 리다이렉트 | `www.swida.com/`은 Next.js 미들웨어를 통해 `/ko`로 리다이렉트 (PRD §11.4) |
-| F-I18N-03 | 로케일 감지 | 최초 방문 시 `Accept-Language` 헤더에서 로케일을 감지하여 적절한 로케일 접두사로 리다이렉트 |
+| F-I18N-03 | 로케일 감지 | 최초 방문 시 `Accept-Language` 헤더에서 로케일 감지. 기본값: `ko`. `Accept-Language`에서 `en`이 주 언어인 경우에만 `en`으로 전환. 리다이렉트 시 쿼리 파라미터 유지 (예: `/?theme=massage` → `/ko/?theme=massage`) |
 | F-I18N-04 | 언어 전환 | 사이트 헤더/내비게이션의 언어 전환기. 대체 로케일의 동일 페이지로 링크 (PRD §11.4) |
 | F-I18N-05 | UI 문자열 번역 | 정적 UI 문자열(레이블, 버튼, 내비게이션, 메시지)을 JSON 번역 파일(`messages/ko.json`, `messages/en.json`)에서 로드 (PRD §11.4) |
 | F-I18N-06 | 콘텐츠 로케일 | API 요청에 `?locale=ko` 또는 `?locale=en` 포함. Strapi가 로컬라이즈된 콘텐츠 반환 (PRD §11.4) |
@@ -615,12 +615,29 @@ Body: {
 
 ```
 currentTime = Asia/Seoul 시간대의 현재 시간 (Intl.DateTimeFormat)
-operatingHours = shop.operating_hours (예: "10:00–22:00")
+todayKey = 요일 키 ("mon", "tue", ..., "sun")
 
-if currentTime이 operatingHours 범위 내:
-  shop.open_tag 또는 기본값 "영업중" (ko) / "OPEN" (en) 표시
-else:
+// operating_hours_text가 설정된 경우, 그대로 표시 (영업/종료 계산 없음)
+if shop.operating_hours_text:
+  shop.operating_hours_text 표시
+  return
+
+// JSON operating_hours 파싱 (TSD §4.4.4, §6.4)
+todayHours = shop.operating_hours[todayKey]
+
+if todayHours가 null:
   shop.close_tag 또는 기본값 "영업종료" (ko) / "CLOSED" (en) 표시
+else if todayHours.close < todayHours.open:
+  // 야간 영업 (예: 18:00–02:00)
+  if currentTime >= todayHours.open OR currentTime < todayHours.close:
+    shop.open_tag 또는 기본값 "영업중" (ko) / "OPEN" (en) 표시
+  else:
+    shop.close_tag 또는 기본값 "영업종료" (ko) / "CLOSED" (en) 표시
+else:
+  if currentTime >= todayHours.open AND currentTime < todayHours.close:
+    shop.open_tag 또는 기본값 "영업중" (ko) / "OPEN" (en) 표시
+  else:
+    shop.close_tag 또는 기본값 "영업종료" (ko) / "CLOSED" (en) 표시
 ```
 
 **표시 규칙**

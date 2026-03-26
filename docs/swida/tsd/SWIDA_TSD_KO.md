@@ -527,7 +527,7 @@ Strapi 부트스트랩 스크립트(`database/seeds/`)를 통해 출시 시 미�
 ```
 ?lat=37.5665
 &lng=126.9780
-&radius=5000          // 미터 단위, 기본값 5000
+&radius=5000          // 미터 단위, 기본값 5000, 최소 1000, 최대 10000
 &locale=ko
 &pagination[page]=1
 &pagination[pageSize]=20
@@ -848,7 +848,14 @@ apps/customer-web/
 | 제휴 | SSG | 온디맨드 | 정적 콘텐츠 페이지 |
 | 로그인/콜백 | CSR | N/A | 인증 흐름, SEO 가치 없음 |
 
-**온디맨드 재검증:** Strapi 웹훅이 콘텐츠 게시/업데이트 시 Next.js `revalidatePath()` 또는 `revalidateTag()` 호출을 트리거합니다.
+**온디맨드 재검증:** Strapi 웹훅이 콘텐츠 게시/업데이트 시 Next.js 재검증을 트리거합니다.
+
+**웹훅 설정:**
+- **Next.js 재검증 엔드포인트:** `POST /api/revalidate` (Customer Web과 Admin Web 모두의 커스텀 API 라우트)
+- **인증:** 웹훅 요청은 `x-revalidate-secret` 헤더에 전달되는 공유 시크릿(`REVALIDATION_SECRET` 환경 변수)으로 검증
+- **페이로드:** `{ "model": "shop", "documentId": "abc123", "event": "entry.publish" }`
+- **트리거 대상:** shop, review, theme, region, district 콘텐츠 타입의 `afterCreate`, `afterUpdate`, `afterDelete` Strapi 라이프사이클 훅
+- **실패 처리:** 웹훅 실패는 로그에 기록되지만 Strapi 작업을 차단하지 않음. 폴백으로 ISR 시간 기반 재검증을 통해 이전 콘텐츠가 계속 제공됨.
 
 ### 6.3 Strapi API 클라이언트
 
@@ -921,7 +928,7 @@ export async function fetchStrapi<T>(
 - 업체 이미지는 Nginx(캐시 프록시 역할)와 Cloudflare CDN을 통해 MinIO에서 제공
 - MinIO/API 도메인용 `remotePatterns`이 설정된 Next.js `<Image>` 컴포넌트
 - 반응형 이미지 크기: 썸네일(300w), 상세(800w, 1200w)
-- WebP 변환은 Cloudflare 엣지(Polish/Images 활성화 시) 또는 업로드 시 MinIO 클라이언트 측 리사이즈로 처리
+- WebP 변환: MVP 이후로 연기 (Cloudflare Pro+ 플랜 필요). MVP에서는 업로드된 형식(JPEG/PNG/WebP) 그대로 Nginx 캐시 및 Cloudflare CDN을 통해 제공. Next.js `<Image>` 컴포넌트가 클라이언트 측 반응형 크기 조정 처리.
 
 ---
 
@@ -1397,7 +1404,9 @@ export default [
   └── MinIO의 업체 이미지: TTL 7일
 
 계층 2: Redis (오리진 캐시)
-  └── 트래픽이 많은 API 응답: 엔드포인트별 TTL 설정
+  └── 업체 상세: TTL 1분
+  └── 업체 목록/검색: TTL 30초
+  └── 리뷰 피드: TTL 30초
   └── 지역/구군 목록: TTL 24시간
   └── 테마 목록: TTL 24시간
   └── 상위 평점 업체: TTL 5분
@@ -1411,7 +1420,7 @@ export default [
 
 캐시 무효화는 Strapi 라이프사이클 훅에 의해 트리거됩니다:
 
-- **업체 게시/수정/게시 취소** → 영향받는 업체, 검색 결과, 관련 테마/위치 캐시에 대한 Redis 키 무효화. 특정 업체 URL에 대한 Cloudflare 캐시 제거를 API를 통해 선택적으로 트리거.
+- **업체 게시/수정/게시 취소** → 영향받는 업체, 검색 결과, 관련 테마/위치 캐시에 대한 Redis 키 무효화. 항상 Cloudflare API(`POST /client/v4/zones/{zone_id}/purge_cache`)를 통해 해당 업체 URL(`/ko/shop/{slug}` 및 `/en/shop/{slug}`) 캐시 제거 트리거.
 - **리뷰 생성/수정/삭제** → 상위 업체의 Redis 캐시 무효화(평점 변경).
 - **테마/지역/구군 변경** → 해당 Redis 키 및 Cloudflare 캐시 무효화.
 
@@ -1625,6 +1634,7 @@ CLOUDFLARE_API_TOKEN=CHANGE_ME
 
 # ── 외부 ──
 KAKAO_MAP_APP_KEY=CHANGE_ME
+REVALIDATION_SECRET=CHANGE_ME
 
 # ── Next.js (Customer Web) ──
 STRAPI_API_URL=http://strapi:1337/api

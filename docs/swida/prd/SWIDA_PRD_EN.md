@@ -113,7 +113,7 @@ Sub-regions within a Level 1 area. Level 2 options are **dynamically filtered** 
 - Every shop **must** be registered under exactly one Level 2 location (district)
 - Level 2 options are only displayed after a Level 1 region is selected
 - Admin manages the full list of Level 1 and Level 2 entries via the Admin Web (add, edit, delete)
-- Location data should be pre-seeded with all South Korean administrative divisions at launch using Strapi seed scripts
+- Location data **must** be pre-seeded with all South Korean administrative divisions at launch using Strapi seed scripts (launch blocker — platform is non-functional without location data)
 
 ---
 
@@ -538,11 +538,11 @@ The Partnership page is a public-facing landing page that explains:
 - Convert an approved inquiry directly into a new shop listing draft (custom admin action button)
 
 #### 10.3.3 Response Target
-Admin should aim to make first contact within **48 hours** of receiving a new inquiry.
+Admin's target is to make first contact within **48 hours** of receiving a new inquiry. This is an operational goal, not a contractual SLA — the Admin Web highlights overdue inquiries (>48h without contact) via a visual indicator (Admin FSD F-INQ-12).
 
 ### 10.4 Ongoing Communication
 - Shop owners can request updates to their listing by contacting the Admin
-- Admin periodically verifies that listed shops are still operational
+- Admin verifies that listed shops are still operational **quarterly (every 90 days)**. Shops with `last_verified_at` older than 90 days are highlighted on the Admin dashboard as requiring re-verification.
 - Inactive or closed shops are unpublished (reverted to `draft` status) with an `inactive_reason` set, and hidden from search results
 
 ---
@@ -608,7 +608,7 @@ SWIDA supports two languages using **path-based routing** in Next.js:
 - Next.js App Router `[locale]` dynamic segment with middleware-based locale detection
 - Both locales use explicit URL prefixes: `/ko` for Korean, `/en` for English — no unprefixed routes
 - Root path (`www.swida.com/`) redirects to `/ko` (default locale) via Next.js middleware
-- `next-intl` or Next.js built-in i18n for message/string management
+- `next-intl` for message/string management
 - Static UI strings (labels, buttons, navigation, system messages) stored in JSON translation files per locale (`messages/ko.json`, `messages/en.json`)
 - Language switcher component available in the site header/navigation, linking to the equivalent page in the alternate locale using `hreflang` alternate URLs
 
@@ -808,7 +808,7 @@ The Admin Web is a custom-built Next.js application that replaces Strapi's built
 
 **Caching:**
 - Redis (self-hosted in Docker) for caching high-traffic, read-heavy API responses
-- Implemented via `strapi-plugin-rest-cache` or custom Strapi middleware
+- Implemented via custom Strapi middleware (`src/middlewares/api-cache.ts`), Redis-backed with lifecycle hook invalidation
 - Cached data includes: region/district lists, theme lists, top-rated shops, frequently accessed shop details
 - Cache invalidation triggered by Strapi lifecycle hooks on relevant content type changes
 

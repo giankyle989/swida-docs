@@ -132,7 +132,7 @@ This document defines the page list and functional specifications for the SWIDA 
 
 | # | Feature | Description |
 |---|---|---|
-| F-SESSION-01 | JWT Storage | Store Strapi JWT in httpOnly cookie (preferred) or client-side state |
+| F-SESSION-01 | JWT Storage | Store Strapi JWT in httpOnly cookie (secure, SameSite=Lax) |
 | F-SESSION-02 | Token Lifetime | 7 days (configurable via Strapi `plugins.ts`) (TSD §5.4.1) |
 | F-SESSION-03 | Logout | Clear JWT, reset client state, redirect to homepage |
 | F-SESSION-04 | Session Expiry | On token expiry, clear auth state and redirect to login if attempting a protected action |
@@ -159,7 +159,7 @@ This document defines the page list and functional specifications for the SWIDA 
 | F-HOME-01 | Theme Cards | Display all available service themes as selectable cards/tags. Clicking a theme navigates to the theme browse page. Sorted by `display_order`. (PRD §9) |
 | F-HOME-02 | Featured Shops | Display a curated selection of top-rated or recently added shops. Shop cards show: thumbnail, name, district, themes, average rating, review count |
 | F-HOME-03 | Search Quick Access | Prominent entry points to all five search modes (Detail, Theme, Location, Nearby, Name) via navigation |
-| F-HOME-04 | Navigation Menu | Bottom navigation (mobile) / sidebar or top nav (desktop) with all customer-facing menu items (PRD §7.1) |
+| F-HOME-04 | Navigation Menu | Bottom navigation (mobile) / top navigation bar (desktop) with all customer-facing menu items (PRD §7.1) |
 
 **API Calls**
 
@@ -181,7 +181,7 @@ This document defines the page list and functional specifications for the SWIDA 
 | # | Feature | Description |
 |---|---|---|
 | F-SEARCH-01 | Shop Name Filter | Keyword/partial match input. Case-insensitive Korean character matching (PRD §6.1) |
-| F-SEARCH-02 | Location Filter | Cascading dropdowns — Level 1 (region) selection dynamically loads Level 2 (district) options (PRD §6.1) |
+| F-SEARCH-02 | Location Filter | Cascading dropdowns — Level 2 (district) dropdown starts empty and disabled until Level 1 (region) is selected. "All" option available at both levels. (PRD §6.1) |
 | F-SEARCH-03 | Theme Filter | Multi-select from all available themes (PRD §6.1) |
 | F-SEARCH-04 | Amenity Filter | Toggle checkboxes for amenities: parking, shower, sleeping, private room, WiFi, accessibility (PRD §6.1) |
 | F-SEARCH-05 | Booking Filter | Yes / No / Any toggle for booking requirement (PRD §6.1) |
@@ -294,7 +294,7 @@ GET /api/shops?locale={locale}
 | F-NEAR-04 | Distance Display | Show distance from customer to each shop (e.g., "1.2 km") (PRD §6.4) |
 | F-NEAR-05 | Optional Filters | Optionally filter nearby results by theme or amenities (PRD §6.4) |
 | F-NEAR-06 | Radius Control | Allow user to adjust search radius via preset buttons: 1km, 3km, 5km (default), 10km |
-| F-NEAR-07 | Loading State | Display loading indicator while GPS is resolving and API is fetching |
+| F-NEAR-07 | Loading State | Display loading indicator while GPS is resolving (timeout: 10 seconds — show error with retry button if GPS fails or times out) and API is fetching |
 | F-NEAR-08 | Pagination | Page-based |
 
 **API Call (Custom Controller)**
@@ -346,7 +346,7 @@ Name Search is implemented as a subset of Detail Search (§5). When a user enter
 | F-SHOP-11 | Contact Channels | Display available contact links: phone (tel: link), KakaoTalk, Instagram, website, Naver Place (PRD §5.4) |
 | F-SHOP-12 | Languages Supported | Display languages spoken at the shop if available (PRD §5.5) |
 | F-SHOP-13 | Average Rating | Prominently display star rating and total review count (PRD §5.6) |
-| F-SHOP-14 | Review List | Display published reviews for this shop, sorted by most recent first. Each review shows: author display name, rating (stars), comment, submission date (PRD §8.3) |
+| F-SHOP-14 | Review List | Display published reviews for this shop, sorted by most recent first (10 per page, "Load more" button). Each review shows: author display name, rating (stars), comment, submission date (PRD §8.3). Non-logged-in users see a "로그인하고 리뷰 작성" / "Login to write a review" CTA button in place of the review form. |
 | F-SHOP-15 | Review Pagination | Page-based pagination for reviews on the shop detail page |
 | F-SHOP-16 | Review Submission | Inline review form on the shop detail page (login required). See §11 for details |
 | F-SHOP-17 | Review Report | Report button on each review (login required). See §11.3 for details |
@@ -528,7 +528,7 @@ Body: {
 |---|---|---|
 | F-I18N-01 | Path-Based Routing | `/ko/...` for Korean (default), `/en/...` for English. Both explicit, no unprefixed routes (PRD §11.4) |
 | F-I18N-02 | Root Redirect | `www.swida.com/` redirects to `/ko` via Next.js middleware (PRD §11.4) |
-| F-I18N-03 | Locale Detection | Detect locale from `Accept-Language` header on first visit, redirect to appropriate locale prefix |
+| F-I18N-03 | Locale Detection | Detect locale from `Accept-Language` header on first visit. Default: `ko`. Override to `en` only if `en` is the primary language in `Accept-Language`. Redirect preserves query parameters (e.g., `/?theme=massage` → `/ko/?theme=massage`) |
 | F-I18N-04 | Language Switcher | Language switcher in site header/navigation. Links to equivalent page in alternate locale (PRD §11.4) |
 | F-I18N-05 | UI String Translation | Static UI strings (labels, buttons, navigation, messages) from JSON translation files (`messages/ko.json`, `messages/en.json`) (PRD §11.4) |
 | F-I18N-06 | Content Locale | API requests include `?locale=ko` or `?locale=en`. Strapi returns localized content (PRD §11.4) |
@@ -615,12 +615,29 @@ Body: {
 
 ```
 currentTime = current time in Asia/Seoul timezone (Intl.DateTimeFormat)
-operatingHours = shop.operating_hours (e.g., "10:00–22:00")
+todayKey = day of week as "mon", "tue", ..., "sun"
 
-if currentTime is within operatingHours range:
-  display shop.open_tag OR default "영업중" (ko) / "OPEN" (en)
-else:
+// If operating_hours_text is set, display it as-is (no open/close computation)
+if shop.operating_hours_text:
+  display shop.operating_hours_text
+  return
+
+// Parse JSON operating_hours (TSD §4.4.4, §6.4)
+todayHours = shop.operating_hours[todayKey]
+
+if todayHours is null:
   display shop.close_tag OR default "영업종료" (ko) / "CLOSED" (en)
+else if todayHours.close < todayHours.open:
+  // Overnight hours (e.g., 18:00–02:00)
+  if currentTime >= todayHours.open OR currentTime < todayHours.close:
+    display shop.open_tag OR default "영업중" (ko) / "OPEN" (en)
+  else:
+    display shop.close_tag OR default "영업종료" (ko) / "CLOSED" (en)
+else:
+  if currentTime >= todayHours.open AND currentTime < todayHours.close:
+    display shop.open_tag OR default "영업중" (ko) / "OPEN" (en)
+  else:
+    display shop.close_tag OR default "영업종료" (ko) / "CLOSED" (en)
 ```
 
 **Display Rules**

@@ -527,7 +527,7 @@ All public endpoints serve published content only (Strapi v5 default behavior). 
 ```
 ?lat=37.5665
 &lng=126.9780
-&radius=5000          // meters, default 5000
+&radius=5000          // meters, default 5000, min 1000, max 10000
 &locale=ko
 &pagination[page]=1
 &pagination[pageSize]=20
@@ -848,7 +848,14 @@ apps/customer-web/
 | Partnership | SSG | On-demand | Static content page |
 | Login/Callback | CSR | N/A | Auth flow, no SEO value |
 
-**On-demand revalidation:** Strapi webhooks trigger Next.js `revalidatePath()` or `revalidateTag()` calls when content is published/updated.
+**On-demand revalidation:** Strapi webhooks trigger Next.js revalidation when content is published/updated.
+
+**Webhook configuration:**
+- **Next.js revalidation endpoint:** `POST /api/revalidate` (custom API route in both Customer Web and Admin Web)
+- **Authentication:** Webhook requests are verified via a shared secret (`REVALIDATION_SECRET` env var) passed in the `x-revalidate-secret` header
+- **Payload:** `{ "model": "shop", "documentId": "abc123", "event": "entry.publish" }`
+- **Triggered by:** Strapi lifecycle hooks on `afterCreate`, `afterUpdate`, `afterDelete` for shop, review, theme, region, district content types
+- **Failure handling:** Webhook failures are logged but do not block the Strapi operation. Stale content is still served via ISR time-based revalidation as fallback.
 
 ### 6.3 Strapi API Client
 
@@ -921,7 +928,7 @@ export async function fetchStrapi<T>(
 - Shop images are served from MinIO via Nginx (acting as cache proxy) and Cloudflare CDN
 - Next.js `<Image>` component with `remotePatterns` configured for the MinIO/API domain
 - Responsive image sizes: thumbnail (300w), detail (800w, 1200w)
-- WebP conversion handled at Cloudflare edge (if Polish/Images is enabled) or via MinIO client-side resize on upload
+- WebP conversion: deferred to post-MVP (requires Cloudflare Pro+ plan). For MVP, images are served in their uploaded format (JPEG/PNG/WebP) via Nginx cache and Cloudflare CDN. Next.js `<Image>` component handles client-side responsive sizing.
 
 ---
 
@@ -1397,7 +1404,9 @@ Tier 1: Cloudflare Edge Cache
   └── Shop images from MinIO: TTL 7 days
 
 Tier 2: Redis (Origin Cache)
-  └── High-traffic API responses: TTL configurable per endpoint
+  └── Shop detail: TTL 1 minute
+  └── Shop list/search: TTL 30 seconds
+  └── Review feed: TTL 30 seconds
   └── Region/District lists: TTL 24 hours
   └── Theme lists: TTL 24 hours
   └── Top-rated shops: TTL 5 minutes
@@ -1411,7 +1420,7 @@ Tier 3: PostgreSQL (Source of Truth)
 
 Cache invalidation is triggered by Strapi lifecycle hooks:
 
-- **Shop publish/update/unpublish** → Invalidate Redis keys for affected shop, search results, and relevant theme/location caches. Optionally trigger Cloudflare cache purge via API for the specific shop URL.
+- **Shop publish/update/unpublish** → Invalidate Redis keys for affected shop, search results, and relevant theme/location caches. Always trigger Cloudflare cache purge via API (`POST /client/v4/zones/{zone_id}/purge_cache`) for the specific shop URL (both `/ko/shop/{slug}` and `/en/shop/{slug}`).
 - **Review create/update/delete** → Invalidate Redis cache for the parent shop (rating change).
 - **Theme/Region/District changes** → Invalidate respective Redis keys and Cloudflare cache.
 
@@ -1625,6 +1634,7 @@ CLOUDFLARE_API_TOKEN=CHANGE_ME
 
 # ── External ──
 KAKAO_MAP_APP_KEY=CHANGE_ME
+REVALIDATION_SECRET=CHANGE_ME
 
 # ── Next.js (Customer Web) ──
 STRAPI_API_URL=http://strapi:1337/api

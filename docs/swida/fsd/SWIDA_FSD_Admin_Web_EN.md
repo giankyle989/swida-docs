@@ -186,7 +186,7 @@ The Admin Web is a custom-built Next.js application served at `admin.swida.com`.
 | Field | Required | Options |
 |---|---|---|
 | Inactive Reason | Yes | `closed`, `owner_request`, `violation`, `stale`, `other` |
-| Inactive Reason Detail | Only if `other` | Free-text explanation |
+| Inactive Reason Detail | Only if `other` | Free-text explanation (max 500 characters) |
 
 ### 5.2 Shop Create (`/shops/new`)
 
@@ -198,19 +198,19 @@ The Admin Web is a custom-built Next.js application served at `admin.swida.com`.
 |---|---|---|
 | F-SHOP-13 | Basic Info Form | Input fields for all basic information: name, description, address, operating hours, last order time, closed days, holiday exceptions, phone number (PRD §5.1) |
 | F-SHOP-14 | Location Selection | Cascading dropdowns for region (Level 1) → district (Level 2) (PRD §5.1) |
-| F-SHOP-15 | Map Pin Drop | Integrated Kakao Map component for selecting latitude/longitude. Admin clicks on map to set coordinates. Supports address search to center map (PRD §3.1, TSD §5.6) |
+| F-SHOP-15 | Map Pin Drop | Integrated Kakao Map component for selecting latitude/longitude. Admin clicks on map to set coordinates. Supports address search to center map — if address not found, show "주소를 찾을 수 없습니다" toast and allow manual pin drop. Default center: Seoul City Hall (37.5666, 126.9784), zoom level 12. When editing an existing shop, center on saved coordinates. (PRD §3.1, TSD §5.6) |
 | F-SHOP-16 | Theme Selection | Multi-select from all available themes (PRD §5.2) |
 | F-SHOP-17 | Service Menu | Repeatable form component — add/remove service menu items. Each item: service name, duration (minutes), price (KRW), description (PRD §5.2.1) |
 | F-SHOP-18 | Booking Info | Boolean toggle for booking required. Conditional input for booking URL/phone. Gender availability dropdown (PRD §5.2) |
 | F-SHOP-19 | Amenities | Toggle switches for each amenity. Conditional inputs for parking type, parking detail, accessibility detail (PRD §5.3) |
 | F-SHOP-20 | Contact Channels | Optional inputs: phone, KakaoTalk ID, Instagram, website URL, Naver Place URL (PRD §5.4) |
 | F-SHOP-21 | Languages | Multi-select for languages supported (PRD §5.5) |
-| F-SHOP-22 | Image Upload | Upload shop images (1–10). Drag-and-drop or file picker. Images stored via Strapi Upload → MinIO (PRD §5.1) |
+| F-SHOP-22 | Image Upload | Upload shop images (min: 1, max: 10). Accepted formats: JPEG, PNG, WebP. Max file size: 5MB per image. Drag-and-drop or file picker. Images stored via Strapi Upload → MinIO (PRD §5.1) |
 | F-SHOP-23 | Thumbnail Selection | Select one image as the primary thumbnail for search results (PRD §5.1) |
 | F-SHOP-24 | Open/Close Tags | Optional custom labels for operating status display on Customer Web. Defaults: "영업중" / "영업종료" (PRD §5.6) |
 | F-SHOP-25 | Save as Draft | Save shop without publishing. Creates draft entry in Strapi (PRD §7.3) |
 | F-SHOP-26 | Save & Publish | Save shop and publish immediately. Shop becomes visible on Customer Web (PRD §7.3) |
-| F-SHOP-27 | Locale Switcher | Switch between Korean and English content editing. Korean is required first, English is optional (PRD §11.4) |
+| F-SHOP-27 | Locale Switcher | Switch between Korean and English content editing. Korean fields must be saved before English editing is enabled. English is optional (PRD §11.4) |
 
 **Input Constraints**
 
@@ -310,7 +310,7 @@ hidden ──→ published (admin restore)
 | F-THEME-01 | Theme List | Table of all themes. Columns: icon, name (Korean), name (English), slug, display order, shop count |
 | F-THEME-02 | Create Theme | Form: name (Korean, required), name (English, optional), slug (auto-generated), icon upload, display order (PRD §9.1) |
 | F-THEME-03 | Edit Theme | Edit existing theme. All fields editable |
-| F-THEME-04 | Delete Theme | Delete a theme. Confirmation dialog. Only allowed if no shops are tagged with this theme. If shops exist, display warning with shop count |
+| F-THEME-04 | Delete Theme | Delete a theme. Confirmation dialog. Blocked if shops are tagged with this theme — display warning with shop count. Admin must untag all shops first before deletion is allowed. |
 | F-THEME-05 | Reorder | Drag-and-drop or manual number input to change display order |
 | F-THEME-06 | Locale Switcher | Switch between Korean and English name editing (PRD §11.4) |
 
@@ -340,7 +340,7 @@ hidden ──→ published (admin restore)
 | F-LOC-02 | Create Region | Form: name (Korean, required), name (English, optional) (PRD §4.1) |
 | F-LOC-03 | Edit Region | Edit existing region name |
 | F-LOC-04 | Delete Region | Delete a region. Only allowed if no districts exist under it. If districts exist, display warning |
-| F-LOC-05 | District List | Clicking a region expands/navigates to show its Level 2 districts. Table: name (Korean), name (English), shop count |
+| F-LOC-05 | District List | Clicking a region expands in-place to show its Level 2 districts (accordion pattern). Table: name (Korean), name (English), shop count |
 | F-LOC-06 | Create District | Form: name (Korean, required), name (English, optional), parent region (auto-set from context) (PRD §4.2) |
 | F-LOC-07 | Edit District | Edit existing district name |
 | F-LOC-08 | Delete District | Delete a district. Only allowed if no shops are registered in it. If shops exist, display warning with shop count |
@@ -366,12 +366,12 @@ hidden ──→ published (admin restore)
 | F-INQ-04 | Filter — Date | Filter by date range |
 | F-INQ-05 | Sort | Sort by: created date (default: newest first), status |
 | F-INQ-06 | Inquiry Detail | Expand/modal to show all inquiry fields including message and admin notes |
-| F-INQ-07 | Update Status | Change inquiry status via dropdown. Status flow: `new` → `contacted` → `awaiting_info` → `approved` → `published`. Also: any status → `rejected` (PRD §10.3.2) |
+| F-INQ-07 | Update Status | Change inquiry status via dropdown. Status flow: `new` → `contacted` → `awaiting_info` → `approved` → `published`. Any status except `published` → `rejected`. Both `published` and `rejected` are terminal states. (PRD §10.3.2) |
 | F-INQ-08 | Admin Notes | Add/edit internal notes on any inquiry. Notes are not visible to the public (PRD §10.3.1) |
 | F-INQ-09 | Duplicate Detection | Visual flag/badge on inquiries where same shop name + address already exists in another inquiry or shop listing (PRD §10.3.2) |
 | F-INQ-10 | Convert to Shop | Button on `approved` inquiries: "Create Shop Listing". Pre-populates a new shop form (`/shops/new`) with inquiry data (shop name, address, business type, contact info) (PRD §10.3.2) |
 | F-INQ-11 | Link to Shop | Once a shop listing is created and published from an inquiry, the inquiry shows a link to the associated shop. Status automatically set to `published` (PRD §10.3.1) |
-| F-INQ-12 | New Inquiry Badge | Visual badge/counter showing unread `new` inquiries. 48-hour SLA indicator — highlight inquiries older than 48 hours without contact (PRD §10.3.3) |
+| F-INQ-12 | New Inquiry Badge | Visual badge/counter showing unread `new` inquiries. 48-hour goal indicator — highlight inquiries still in `new` status (not yet moved to `contacted`) for more than 48 hours (PRD §10.3.3) |
 | F-INQ-13 | Pagination | Table pagination with configurable page size |
 
 **Status Flow Diagram**
