@@ -12,7 +12,7 @@ sidebar_position: 1
 - **Date**: 2026-03-26
 - **Based on**: SWIDA PRD v1.1, TSD v1.1, Admin Web FSD v1.0
 - **Scope**: MVP — Admin-facing platform management web application
-- **Target**: Desktop-primary (minimum 1024px)
+- **Target**: Desktop-primary (minimum supported screen width for desktop use)
 - **Figma**: Not yet available — to be added in a future revision
 - **Note**: Colors, typography, spacing values, and icon styles are defined in a separate Design System document. All functional decisions follow the Admin Web FSD as the source of truth.
 
@@ -22,7 +22,7 @@ sidebar_position: 1
 
 ### 1.1 Purpose
 
-This document defines the screen layouts, component structures, and interaction flows for the SWIDA Admin Web application on a page-by-page basis. The Admin Web is the primary operational interface for managing the SWIDA platform — it replaces Strapi's built-in admin panel for all day-to-day operations.
+This document defines the screen layouts, component structures, and interaction flows for the SWIDA Admin Web application on a page-by-page basis. The Admin Web is the primary operational interface for managing the SWIDA platform — it serves as the dedicated admin panel for all day-to-day operations.
 
 ### 1.2 Scope
 
@@ -31,14 +31,14 @@ This document defines the screen layouts, component structures, and interaction 
 | Desktop layout shell | Colors, typography, spacing values |
 | Page-level screen structure (wireframe level) | Animation speed / easing curves |
 | Component patterns (tables, forms, modals, dialogs) | Customer Web UI |
-| Admin interaction flows (storyboards) | Strapi built-in admin panel |
+| Admin interaction flows (storyboards) | Backend system admin panel |
 | State-based screen branching | |
 
 ### 1.3 Design Principles
 
 | Principle | Description |
 |---|---|
-| Desktop-primary | Minimum 1024px width. No mobile optimization required. |
+| Desktop-primary | Minimum supported screen width for desktop use. No mobile optimization required. |
 | Data-dense | Prioritize information density — tables, filters, and stats over whitespace |
 | Sidebar navigation | Persistent left sidebar for all pages |
 | Confirmation-first | All destructive actions require explicit confirmation dialogs |
@@ -50,13 +50,11 @@ This document defines the screen layouts, component structures, and interaction 
 
 ### 2.1 Viewport
 
-| Property | Value |
-|---|---|
-| Minimum width | 1024px |
-| Target width | 1280px – 1920px |
-| Scroll | Vertical only. No horizontal scroll on target widths |
+Optimized for standard desktop monitors. Vertical scroll only — no horizontal scroll on supported screen sizes.
 
-No responsive breakpoints — single desktop layout. If viewport is below 1024px, show a notice: "Admin Web is optimized for desktop browsers (1024px+)."
+> Detailed pixel specifications are in the TSD.
+
+No responsive breakpoints — single desktop layout. If the browser window is too narrow, a notice is shown: "Admin Web is optimized for desktop browsers."
 
 ### 2.2 Layout Shell
 
@@ -69,7 +67,7 @@ No responsive breakpoints — single desktop layout. If viewport is below 1024px
 │  (left   │  ┌───────────────────────────────────────────────────┐   │
 │  fixed)  │  │  Page Header (title + actions)                    │   │
 │          │  ├───────────────────────────────────────────────────┤   │
-│  240px   │  │  Page Body (tables, forms, cards)                 │   │
+│          │  │  Page Body (tables, forms, cards)                 │   │
 │          │  │  (scrollable)                                     │   │
 │          │  │                                                   │   │
 │          │  │                                                   │   │
@@ -78,11 +76,13 @@ No responsive breakpoints — single desktop layout. If viewport is below 1024px
 └──────────┴───────────────────────────────────────────────────────────┘
 ```
 
-| Element | Width | Behavior |
-|---|---|---|
-| Header | 100% viewport | Fixed top. Height ~56px |
-| Sidebar | 240px fixed | Fixed left. Full viewport height minus header. Scrollable if overflow |
-| Main Content | Remaining width | Scrollable. Max content width: 1440px centered. Padding: 24px |
+| Element | Behavior |
+|---|---|
+| Header | Full-width, fixed at top |
+| Sidebar | Fixed-width, fixed left. Full viewport height minus header. Scrollable if overflow |
+| Main Content | Fills remaining width. Scrollable. Content is centered with a maximum width |
+
+> Detailed dimension specifications are in the TSD.
 
 ---
 
@@ -125,9 +125,9 @@ No responsive breakpoints — single desktop layout. If viewport is below 1024px
 
 | Behavior | Description |
 |---|---|
-| Active state | Left border accent + background highlight on current page |
+| Active state | The current page is visually highlighted in the sidebar |
 | Badges | Real-time count badges on Reviews (under_review) and Inquiries (new) |
-| Collapse | Optional collapse to icon-only (~64px) with tooltips. State persisted in localStorage |
+| Collapse | Optional collapse to icon-only mode with tooltips. Collapse state is remembered between sessions |
 
 ### 3.3 Page Header Pattern
 
@@ -167,7 +167,7 @@ All list pages use a consistent table pattern:
 | Checkbox column | Row selection for bulk actions |
 | Actions column | "⋯" menu or inline icon buttons (edit, preview, etc.) |
 | Pagination | Page numbers + configurable page size (10, 20, 50) |
-| Loading | Skeleton rows (same column structure) |
+| Loading | Loading indicators are shown while content loads |
 | Empty state | "No results found" centered in table body |
 
 #### Confirmation Dialog
@@ -246,11 +246,11 @@ Used for all destructive actions:
 
 [2] Enter email + password → [Log In]
 
-[3a] Success → store JWT in httpOnly cookie → redirect to /dashboard (F-AUTH-03)
+[3a] Success → user session is saved securely → redirect to /dashboard (F-AUTH-03)
 [3b] Invalid credentials → inline error: "Invalid email or password" (F-AUTH-04)
 [3c] Server error → inline error: "Unable to connect to server. Please try again."
 
-[4] Token expiry (any page) → redirect to /login with message:
+[4] Session expiry (any page) → redirect to /login with message:
     "Session expired. Please log in again." (F-AUTH-07)
 ```
 
@@ -478,7 +478,7 @@ Used for all destructive actions:
     [3c] Address not found → toast + manual pin placement
 
 [4] Image upload:
-    [4a] Drag-and-drop or file picker → image preview + upload to MinIO
+    [4a] Drag-and-drop or file picker → image preview + upload to server
     [4b] Click star icon on an image → set as thumbnail
     [4c] Click ✕ → remove image (confirmation if it's the thumbnail)
     [4d] > 5MB → error toast: "Image file is too large. Maximum size: 5MB."
@@ -488,8 +488,8 @@ Used for all destructive actions:
     [5b] Fill name, duration, price → validate (all required)
     [5c] "✕" → remove row (confirmation if last remaining)
 
-[6a] "Save Draft" → POST to Strapi (draft) → success toast → redirect to /shops/[id]
-[6b] "Save & Publish" → POST + publish → success toast → redirect to /shops/[id]
+[6a] "Save Draft" → save as draft → success toast → redirect to /shops/[id]
+[6b] "Save & Publish" → save and publish → success toast → redirect to /shops/[id]
 [6c] Validation fails → scroll to first error + inline error messages
 
 [7] Locale switcher → save Korean first → switch to English → fill optional translations
@@ -594,7 +594,7 @@ Reasons: Permanently Closed, Owner Request, Policy Violation, Unverified, Other 
 
 [4a] "Publish" → status changes → review appears on Customer Web → rating recalculated
 [4b] "Hide" → reason dialog → confirmed → review hidden → rating recalculated
-[4c] "Delete" → confirmation dialog → soft delete → rating recalculated
+[4c] "Delete" → confirmation dialog → review removed from public view → rating recalculated
 
 [5] "View Author" → navigate to user management filtered by that user
     → If pattern of abuse → lock account from user page
@@ -847,9 +847,9 @@ Alternative:
 
 | State | Treatment |
 |---|---|
-| Loading | Skeleton rows in tables, skeleton cards on dashboard |
+| Loading | Loading indicators are shown while content loads |
 | Data empty | "No results found" centered in table body area. Suggestion to adjust filters |
-| Error (API) | Error toast: "A temporary error occurred. Please try again shortly." + retry |
+| Error (server) | Error toast: "A temporary error occurred. Please try again shortly." + retry |
 | Error (network) | Error toast: "Please check your network connection." |
 | Validation error | Inline field-level errors (red border + message). Scroll to first error on submit |
 
@@ -861,7 +861,7 @@ All of these require explicit confirmation dialogs:
 |---|---|
 | Unpublish shop | "This shop will be hidden from the Customer Web immediately." + reason selection |
 | Hide review | "This review will be removed from public view." + reason selection |
-| Delete review | "This review will be permanently removed (soft delete)." |
+| Delete review | "This review will be permanently removed from public view." |
 | Lock user | "This user will be unable to submit reviews or content." + reason selection |
 | Delete theme | "This theme will be permanently deleted." (blocked if shops tagged) |
 | Delete region/district | "This will be permanently deleted." (blocked if children exist) |
