@@ -1263,7 +1263,7 @@ Desktop (split-screen layout)
 
 ### 10.2 Sign Up (`/[locale]/auth/signup`)
 
-> FSD: §3.1, F-AUTH-04
+> FSD: §3.5, F-AUTH-10~15
 
 #### Screen Structure
 
@@ -1328,7 +1328,7 @@ Desktop (split-screen layout)
 
 ### 10.4 Password Reset (`/[locale]/auth/reset-password`)
 
-> **Note**: Not in current FSD. Derived from Figma frame.
+> FSD: §3.6, F-AUTH-16~21
 
 #### Screen Structure
 
@@ -1355,7 +1355,7 @@ Desktop (split-screen layout)
 
 ### 10.5 ID Recovery Modal
 
-> **Note**: Not in current FSD. Derived from Figma frame.
+> **Note**: Deferred from MVP — see FSD Appendix D. Requires Phone/SMS verification as alternative identifier.
 
 ```
 ┌──────────────────────────────────────┐
@@ -1552,4 +1552,4 @@ All conflicts between Figma designs and FSD are resolved with **FSD as source of
 
 > **Document End**
 >
-> This UI/UX Specification should be reviewed alongside the FSD and updated when new features are added. Sections §7 (Board), §8 (Community), §9 (Events), §10.4 (Password Reset), and §10.5 (ID Recovery) require corresponding FSD updates before implementation.
+> This UI/UX Specification should be reviewed alongside the FSD and updated when new features are added. Sections §7 (Board), §8 (Community), and §9 (Events) require corresponding FSD updates before implementation.
