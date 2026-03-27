@@ -865,7 +865,7 @@ Desktop
 
 ## 7. Pages — Board System
 
-> **Note**: Board system is NOT in the current FSD. These specs are derived from Figma frames with functional details inferred from the Figma designs. A corresponding FSD update is recommended.
+> FSD Reference: §17 Board System
 
 ### 7.1 Shop Recommendation Board (`/[locale]/board/recommendation`)
 
@@ -1009,7 +1009,7 @@ Desktop
 
 ## 8. Pages — Community
 
-> **Note**: Community is NOT in the current FSD. These specs are derived from Figma frames. A corresponding FSD update is recommended.
+> FSD Reference: §18 Community
 
 ### 8.1 Community Feed (`/[locale]/community`)
 
@@ -1073,7 +1073,7 @@ Same structure as Board Post Detail (§7.3) but with:
 
 ## 9. Pages — Events & Notices
 
-> **Note**: Events pages are NOT in the current FSD. These specs are derived from Figma frames. A corresponding FSD update is recommended.
+> FSD Reference: §19 Events & Notices
 
 ### 9.1 Events & Notices Hub (`/[locale]/events`)
 
@@ -1718,4 +1718,4 @@ All conflicts between Figma designs and FSD are resolved with **FSD as source of
 
 > **Document End**
 >
-> This UI/UX Specification should be reviewed alongside the FSD and updated when new features are added. Sections §7 (Board), §8 (Community), and §9 (Events) require corresponding FSD updates before implementation.
+> This UI/UX Specification should be reviewed alongside the FSD and updated when new features are added.

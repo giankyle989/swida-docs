@@ -59,7 +59,7 @@ This document defines the page list and functional specifications for the SWIDA 
 | Pagination | Page-based (not infinite scroll) for SEO. Each page has a unique URL |
 | Filter State | All active filters persisted in URL query parameters (shareable, bookmarkable) |
 | Responsive | Mobile-first design with three tiers: Mobile, Tablet, Desktop |
-| Authentication | Optional for browsing. Required only for review submission and review reporting |
+| Authentication | Optional for browsing. Required for review submission, review reporting, community post creation, and commenting |
 | Empty States | Friendly message with suggestion to broaden filters or try a different search mode |
 | Loading States | Skeleton placeholders for all data-fetching states (defined in UI/UX Spec) |
 | Error Handling | Toast notifications for API errors. Retry option for network failures |
@@ -860,7 +860,7 @@ Shared sub-nav bar across Board and Community pages:
 
 | Tab | Label (KO) | Label (EN) | Route |
 |---|---|---|---|
-| Shop Recommendations | 샵추천 | Shop Picks | `/[locale]/board/recommendation` |
+| Shop Recommendations | 업체추천 | Shop Picks | `/[locale]/board/recommendation` |
 | Massage Info | 마사지정보 | Massage Info | `/[locale]/board/info` |
 | Community | 커뮤니티 | Community | `/[locale]/community` |
 
@@ -1003,7 +1003,7 @@ Active tab is determined by current route.
 |---|---|---|
 | F-EVENT-10 | Breadcrumb | 이벤트 & 공지사항 > 진행중인 이벤트 > event title |
 | F-EVENT-11 | Event Banner | Full-width banner with status badge + D-day countdown |
-| F-EVENT-12 | Event Header | Title, author, date, view count, like count, comment count |
+| F-EVENT-12 | Event Header | Title, author, date, view count, like count |
 | F-EVENT-13 | Event Body | Rich text content with embedded images |
 | F-EVENT-14 | Disclaimers | "이벤트 유의사항" section with bulleted rules |
 | F-EVENT-15 | Like Button | Same pattern as Board (§17.3 F-BOARD-14). Login required, one per user. |
