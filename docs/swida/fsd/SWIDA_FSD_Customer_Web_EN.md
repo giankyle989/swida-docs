@@ -655,6 +655,7 @@ Submits the partnership inquiry form data to the server.
 | F-NAV-02 | Quick Search | Search input in header for quick name search from any page |
 | F-NAV-03 | Language Switcher | Toggle between Korean and English (see §13 F-I18N-04) |
 | F-NAV-04 | Auth Actions | Not logged in: "로그인" / "Login" button. Logged in: user display name + logout option |
+| F-NAV-14 | My Page Link | Logged in: user dropdown includes "마이페이지" / "My Page" link to `/[locale]/mypage` |
 
 ### 15.2 Navigation Menu
 
@@ -772,6 +773,10 @@ Bookmark toggle (heart icon) also appears on shop detail page and shop cards sit
 | ERR_NETWORK | 네트워크 연결을 확인해 주세요. | Please check your network connection. |
 | ERR_SERVER | 일시적인 오류가 발생했습니다. 잠시 후 다시 시도해 주세요. | A temporary error occurred. Please try again shortly. |
 | ERR_NOT_TRANSLATED | 이 내용은 아직 번역되지 않았습니다 | This content is not yet translated |
+| ERR_FILE_TOO_LARGE | 파일 크기가 5MB를 초과합니다. | File size exceeds 5MB. |
+| ERR_INVALID_FILE_TYPE | 지원하지 않는 파일 형식입니다. JPG, PNG, WebP만 가능합니다. | Unsupported file type. Only JPG, PNG, and WebP are allowed. |
+| ERR_UPLOAD_FAILED | 업로드에 실패했습니다. 다시 시도해주세요. | Upload failed. Please try again. |
+| ERR_BOOKMARK_FAILED | 북마크 해제에 실패했습니다. 다시 시도해주세요. | Failed to remove bookmark. Please try again. |
 
 ---
 
