@@ -240,15 +240,40 @@ The `postgis/postgis:17-3.6` Docker image ships with PostGIS pre-installed and a
                               │ 1:N
                         ┌─────▼─────┐      M:N     ┌─────────┐
                         │   Shop    │──────────────│  Theme  │
-                        └─────┬─────┘              └─────────┘
-                              │ 1:N
-                        ┌─────▼─────┐
-                        │  Review   │
-                        └─────┬─────┘
-                              │ N:1
-                        ┌─────▼─────────────┐
-                        │  User (customer)  │
-                        └───────────────────┘
+                        └──┬──┬─────┘              └─────────┘
+                           │  │ 1:N
+              ┌────────────┘  └──────────────┐
+              │ 1:N                          │ M:N
+        ┌─────▼─────┐               ┌───────▼───────┐
+        │  Review   │               │ User Bookmark │
+        └─────┬─────┘               └───────┬───────┘
+              │ N:1                          │ N:1
+        ┌─────▼─────────────┐────────────────┘
+        │  User (customer)  │
+        └──┬──┬──┬──────────┘
+           │  │  │ 1:N
+   ┌───────┘  │  └───────────────┐
+   │ 1:N      │ 1:N              │ 1:N
+┌──▼──────┐ ┌─▼──────┐  ┌───────▼──────┐
+│Community│ │Comment │  │  Post Like   │
+│  Post   │ │(poly)  │  │  (poly)      │
+└─────────┘ └────────┘  └──────────────┘
+
+Comment targets (polymorphic):
+  Board Post, Community Post, Event
+
+Post Like targets (polymorphic):
+  Board Post, Community Post, Event
+
+┌──────────────┐     ┌──────────────┐
+│  Board Post  │     │    Event     │
+│ (admin)      │     │  (admin)     │
+└──────────────┘     └──────────────┘
+
+┌──────────────┐     ┌──────────────────┐
+│    Notice    │     │ User Points Log  │
+│ (admin)      │     │                  │
+└──────────────┘     └──────────────────┘
 
 ┌───────────────────────┐
 │  Partnership Inquiry  │ ──(optional)──→ Shop
@@ -399,6 +424,188 @@ The core entity. Fields are split across the main table and embedded component t
 | field_diffs | jsonb | Nullable | `{ field: { before, after } }` |
 | created_at | timestamptz | Not Null | |
 
+#### Extending `up_users` (Strapi Users & Permissions)
+
+Additional fields on the existing Strapi user model:
+
+| Column | Type | Constraints | Notes |
+|---|---|---|---|
+| avatar | relation | Nullable | Strapi media (single). Profile photo. Max 5MB, JPG/PNG/WebP. |
+| total_points | integer | Not Null, Default 0 | Computed: SUM of user_points_log.points. Updated via lifecycle hook. |
+
+**Level derivation (computed, not stored):**
+- 0P → Lv.1, 500P → Lv.2, 2,000P → Lv.3, 5,000P → Lv.4, 10,000P → Lv.5
+
+Existing fields reused: `username` (display name), `email`, `created_at` (member since).
+
+#### 4.4.8 `board_posts`
+
+Admin-curated board posts for shop recommendations and massage information.
+
+| Column | Type | Constraints | Notes |
+|---|---|---|---|
+| id | serial | PK | Auto-generated |
+| document_id | varchar | Unique, Not Null | Strapi v5 document identifier |
+| type | varchar(20) | Not Null | Enum: `recommendation`, `info` |
+| title | varchar(255) | Not Null | Localized (i18n) |
+| body | text | Not Null | Rich text, localized |
+| excerpt | varchar(500) | Nullable | Localized. Auto-generated from body if empty. |
+| category | varchar(50) | Nullable | Badge label (e.g., "실전팁", "초보가이드") |
+| author_name | varchar(100) | Not Null | Admin display name (not FK — admins create via Strapi) |
+| is_featured | boolean | Not Null, Default false | Shown in featured banner carousel |
+| is_hot | boolean | Not Null, Default false | Admin-set HOT badge |
+| view_count | integer | Not Null, Default 0 | Incremented on page view |
+| like_count | integer | Not Null, Default 0 | Computed via lifecycle hooks |
+| comment_count | integer | Not Null, Default 0 | Computed via lifecycle hooks |
+| locale | varchar(10) | Not Null | `ko`, `en` |
+| published_at | timestamptz | Nullable | Draft & Publish |
+| created_at | timestamptz | Not Null | Auto |
+| updated_at | timestamptz | Not Null | Auto |
+
+**Relations:**
+- `region_id` → FK to `regions` (many-to-one, nullable — for region filtering)
+- `linked_shop_id` → FK to `shops` (many-to-one, nullable — recommendation posts only)
+- `featured_image` → Strapi media (single)
+
+#### 4.4.9 `community_posts`
+
+User-generated community posts.
+
+| Column | Type | Constraints | Notes |
+|---|---|---|---|
+| id | serial | PK | |
+| document_id | varchar | Unique, Not Null | |
+| content | text | Not Null | 1–2,000 characters (app-level) |
+| hashtags | jsonb | Nullable | Array of strings, max 10, each max 30 chars |
+| location_text | varchar(200) | Nullable | Free-text location (e.g., "강남구 역삼동") |
+| view_count | integer | Not Null, Default 0 | |
+| like_count | integer | Not Null, Default 0 | Computed via lifecycle hooks |
+| comment_count | integer | Not Null, Default 0 | Computed via lifecycle hooks |
+| status | varchar(20) | Not Null, Default 'published' | Enum: `published`, `hidden`, `deleted` |
+| author_id | integer | FK → up_users.id | Not Null |
+| created_at | timestamptz | Not Null | |
+| updated_at | timestamptz | Not Null | |
+
+**Relations:**
+- `photos` → Strapi media (multiple, max 5, max 5MB each, JPG/PNG/WebP)
+- `video` → Strapi media (single, nullable, max 50MB, MP4/MOV)
+
+**No i18n** — community posts are stored in the language they were written (same as reviews).
+
+#### 4.4.10 `comments`
+
+Shared polymorphic comment system for board posts, community posts, and events.
+
+| Column | Type | Constraints | Notes |
+|---|---|---|---|
+| id | serial | PK | |
+| document_id | varchar | Unique, Not Null | |
+| content | text | Not Null | 1–500 characters (app-level) |
+| parent_type | varchar(50) | Not Null | Polymorphic: `board_post`, `community_post`, `event` |
+| parent_id | integer | Not Null | ID of the parent entity |
+| reply_to_id | integer | FK → comments.id, Nullable | For 1-level nested replies only |
+| author_id | integer | FK → up_users.id | Not Null |
+| created_at | timestamptz | Not Null | |
+
+**No i18n** — comments stored in language written.
+
+**Constraint:** `reply_to_id` must reference a comment with the same `parent_type` and `parent_id`. Application-level validation prevents deeper nesting (reply to a reply).
+
+#### 4.4.11 `events`
+
+Admin-managed time-limited events/campaigns.
+
+| Column | Type | Constraints | Notes |
+|---|---|---|---|
+| id | serial | PK | |
+| document_id | varchar | Unique, Not Null | |
+| title | varchar(255) | Not Null | Localized (i18n) |
+| body | text | Not Null | Rich text, localized |
+| category | varchar(30) | Not Null | Enum: `new_opening`, `closing_soon`, `coupon`, `winner_announcement`, `general` |
+| start_date | date | Not Null | Event start (KST) |
+| end_date | date | Not Null | Event end (KST). Used for D-day calculation. |
+| disclaimers | text | Nullable | Localized. Event rules/conditions. |
+| is_featured | boolean | Not Null, Default false | Shown in hero banner carousel |
+| view_count | integer | Not Null, Default 0 | |
+| like_count | integer | Not Null, Default 0 | Computed via lifecycle hooks |
+| author_name | varchar(100) | Not Null | Admin display name |
+| locale | varchar(10) | Not Null | |
+| published_at | timestamptz | Nullable | |
+| created_at | timestamptz | Not Null | |
+| updated_at | timestamptz | Not Null | |
+
+**Relations:**
+- `banner_image` → Strapi media (single) — full-width detail banner
+- `featured_image` → Strapi media (single) — card thumbnail
+
+**D-Day Countdown (computed, not stored):**
+- `end_date > today(KST)` → D-N
+- `end_date = today(KST)` → D-DAY
+- `end_date < today(KST)` → 마감 (Closed)
+
+#### 4.4.12 `notices`
+
+Admin-published announcements.
+
+| Column | Type | Constraints | Notes |
+|---|---|---|---|
+| id | serial | PK | |
+| document_id | varchar | Unique, Not Null | |
+| title | varchar(255) | Not Null | Localized (i18n) |
+| body | text | Not Null | Rich text, localized |
+| category | varchar(20) | Not Null | Enum: `notice`, `general` |
+| is_important | boolean | Not Null, Default false | Pinned to top with 📌 |
+| view_count | integer | Not Null, Default 0 | |
+| locale | varchar(10) | Not Null | |
+| published_at | timestamptz | Nullable | |
+| created_at | timestamptz | Not Null | |
+| updated_at | timestamptz | Not Null | |
+
+No comments, no likes on notices.
+
+#### 4.4.13 `user_bookmarks`
+
+Junction table for user ↔ shop bookmarks.
+
+| Column | Type | Constraints | Notes |
+|---|---|---|---|
+| id | serial | PK | |
+| user_id | integer | FK → up_users.id, Not Null | |
+| shop_id | integer | FK → shops.id, Not Null | |
+| created_at | timestamptz | Not Null | For "most recently bookmarked" sort |
+
+**Unique constraint:** `(user_id, shop_id)` — prevents duplicate bookmarks.
+
+#### 4.4.14 `user_points_log`
+
+Point transaction history for gamification.
+
+| Column | Type | Constraints | Notes |
+|---|---|---|---|
+| id | serial | PK | |
+| user_id | integer | FK → up_users.id, Not Null | |
+| action | varchar(30) | Not Null | Enum: `post_created`, `comment_created`, `like_received` |
+| points | integer | Not Null | +50, +10, or +5 |
+| reference_type | varchar(50) | Not Null | `community_post`, `comment`, `post_like` |
+| reference_id | integer | Not Null | ID of the triggering entity |
+| created_at | timestamptz | Not Null | For daily limit tracking |
+
+**Daily limit enforcement:** `comment_created` actions capped at 10 per user per day (check `COUNT WHERE action='comment_created' AND user_id=X AND created_at >= today`).
+
+#### 4.4.15 `post_likes`
+
+Junction table tracking who liked what (polymorphic).
+
+| Column | Type | Constraints | Notes |
+|---|---|---|---|
+| id | serial | PK | |
+| user_id | integer | FK → up_users.id, Not Null | |
+| target_type | varchar(50) | Not Null | `board_post`, `community_post`, `event` |
+| target_id | integer | Not Null | ID of the liked entity |
+| created_at | timestamptz | Not Null | |
+
+**Unique constraint:** `(user_id, target_type, target_id)` — one like per user per target.
+
 ### 4.5 Indexes
 
 Beyond Strapi's auto-generated indexes (PKs, FKs, unique constraints), the following custom indexes should be created via a Strapi bootstrap script or migration:
@@ -422,6 +629,25 @@ CREATE INDEX idx_reviews_shop_status ON reviews (shop_id, status, created_at DES
 -- District lookup by region
 CREATE INDEX idx_districts_region ON districts (region_id);
 ```
+
+Additional indexes for new tables:
+
+| Table | Columns | Type | Purpose |
+|---|---|---|---|
+| board_posts | `(type, published_at DESC)` | B-tree | Board list queries by type |
+| board_posts | `(region_id, type)` | B-tree | Region filter on recommendations |
+| board_posts | `(is_featured, type)` | Partial (where is_featured=true) | Featured banner query |
+| community_posts | `(author_id, created_at DESC)` | B-tree | "My posts" filter |
+| community_posts | `(status, created_at DESC)` | B-tree | Feed query |
+| comments | `(parent_type, parent_id, created_at)` | B-tree | Comment list for a post |
+| events | `(category, end_date DESC)` | B-tree | Category + active filter |
+| events | `(is_featured, end_date)` | Partial (where is_featured=true) | Hero banner query |
+| notices | `(is_important DESC, published_at DESC)` | B-tree | Pinned-first notice list |
+| user_bookmarks | `(user_id, created_at DESC)` | B-tree | User's bookmark list |
+| user_bookmarks | `(user_id, shop_id)` | Unique | Prevent duplicate bookmarks |
+| user_points_log | `(user_id, action, created_at)` | B-tree | Daily limit check |
+| post_likes | `(user_id, target_type, target_id)` | Unique | Prevent duplicate likes |
+| post_likes | `(target_type, target_id)` | B-tree | Count likes for a target |
 
 ### 4.6 Seed Data
 
