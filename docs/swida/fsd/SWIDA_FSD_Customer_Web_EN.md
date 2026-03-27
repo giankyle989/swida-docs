@@ -955,6 +955,82 @@ Active tab is determined by current route.
 
 ---
 
+## 19. Events & Notices
+
+> UIUX Reference: §9 Pages — Events & Notices
+
+### 19.1 Events & Notices Hub (`/[locale]/events`)
+
+**Feature List**
+
+| # | Feature | Description |
+|---|---|---|
+| F-EVENT-01 | Important Notices | Pinned notice cards in a 2×2 grid at the top. Admin marks notices as "important" in Strapi. |
+| F-EVENT-02 | Ongoing Events Carousel | Horizontal carousel of active events with D-day countdown badges and "전체보기" link to `/[locale]/events/ongoing` |
+| F-EVENT-03 | Notice & Post Table | Combined table of all notices and general posts. Columns: No., Category (공지/일반), Title, Date, View count. Pinned notices (📌) always at top. |
+| F-EVENT-04 | Pagination | Page-based for the notice table |
+
+**Event Card Fields (Carousel)**
+
+| Field | Source | Display |
+|---|---|---|
+| Status badge | Event status | [이벤트] tag |
+| D-day badge | Calculated from end date | D-N / D-DAY / 마감 |
+| Banner image | Event featured image | Card image |
+| Title | Event title | Text |
+| Date range | Event start_date – end_date | `YYYY.MM.DD-MM.DD` format |
+
+### 19.2 All Ongoing Events (`/[locale]/events/ongoing`)
+
+**Feature List**
+
+| # | Feature | Description |
+|---|---|---|
+| F-EVENT-05 | Category Sidebar | Filter by category: 전체이벤트 (All), 신규오픈 (New Opening), 마감임박 (Closing Soon), 쿠폰혜택 (Coupon), 당첨자발표 (Winner Announcement). State in URL `?category=` |
+| F-EVENT-06 | Hero Event Banner | Carousel of featured/highlighted events at the top |
+| F-EVENT-07 | Event Grid | 3-column grid of event cards with status badge, D-day badge, image, title, date, views, likes |
+| F-EVENT-08 | Sort Options | Latest (최신순, default), Popular (인기순). State in URL `?sort=` |
+| F-EVENT-09 | Pagination | Page-based |
+
+### 19.3 Event Detail (`/[locale]/events/[id]`)
+
+**Feature List**
+
+| # | Feature | Description |
+|---|---|---|
+| F-EVENT-10 | Breadcrumb | 이벤트 & 공지사항 > 진행중인 이벤트 > event title |
+| F-EVENT-11 | Event Banner | Full-width banner with status badge + D-day countdown |
+| F-EVENT-12 | Event Header | Title, author, date, view count, like count, comment count |
+| F-EVENT-13 | Event Body | Rich text content with embedded images |
+| F-EVENT-14 | Disclaimers | "이벤트 유의사항" section with bulleted rules |
+| F-EVENT-15 | Like Button | Same pattern as Board (§17.3 F-BOARD-14). Login required, one per user. |
+| F-EVENT-16 | Back to List | "목록으로" returns to `/[locale]/events/ongoing` |
+| F-EVENT-17 | Related Events | Grid of other ongoing events (2 max) |
+
+### 19.4 Notice Detail (`/[locale]/events/notice/[id]`)
+
+**Feature List**
+
+| # | Feature | Description |
+|---|---|---|
+| F-EVENT-18 | Notice Header | Title, date, view count |
+| F-EVENT-19 | Notice Body | Rich text content with embedded images |
+| F-EVENT-20 | Prev/Next Navigation | Links to previous and next notice posts (by date). Display: title + date for each. |
+
+No comment section, no like button, no related posts on notices.
+
+### 19.5 D-Day Countdown Logic
+
+| Condition | Display |
+|---|---|
+| Event end date > today | D-N (where N = days remaining) |
+| Event end date = today | D-DAY |
+| Event end date < today | 마감 (Closed) |
+
+Countdown is calculated server-side using KST (Asia/Seoul), matching global date rules (§1.3).
+
+---
+
 ## Appendix A. Error Message Guide
 
 | Code | Korean | English |
