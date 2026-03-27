@@ -83,8 +83,17 @@ Customers are the primary end users of SWIDA. They do **not** need an account to
 - View detailed shop profiles including location, themes, amenities, images, and reviews
 - Submit reviews and ratings on any shop (no visit verification required, no per-shop or daily limits — abuse is managed via admin account controls)
 - Use GPS-based nearby search to find shops in their immediate vicinity
+- Bookmark/save shops for quick access via a personal dashboard (My Page)
+- View personal profile, submitted reviews, and bookmarked shops on My Page
+- Update profile photo via Edit Profile page
+- Create community posts with text, photos (max 5), video (max 1), and hashtags
+- Comment on board posts and community posts (1-level nested replies)
+- Like board posts, community posts, and events (one like per user per target)
+- Earn points from community actions and progress through user levels (Lv.1–Lv.5)
+- Browse admin-curated board content (shop recommendations, massage info)
+- Browse platform events and notices
 
-**Authentication:** Optional signup/signin via email or social login (Kakao, Naver) — handled by Strapi's Users & Permissions plugin with custom Kakao/Naver providers. Required only for review submission.
+**Authentication:** Optional signup/signin via email or social login (Kakao, Naver) — handled by Strapi's Users & Permissions plugin with custom Kakao/Naver providers. Required for review submission, review reporting, community posting, commenting, liking, and bookmarking.
 
 ---
 
@@ -321,6 +330,10 @@ Simple keyword search by shop name.
 | **Nearby Search** | 📡 | GPS-based nearby shop discovery |
 | **Review** | ⭐ | Recent reviews feed + ability to write reviews |
 | **Partnership** | 🤝 | Landing page explaining how shops can join SWIDA |
+| **Board** | 📋 | Admin-curated shop recommendations and massage info articles |
+| **Community** | 💬 | User-generated social feed for sharing experiences |
+| **Events & Notices** | 🎉 | Platform events, promotions, and announcements |
+| **My Page** | 👤 | Personal dashboard — profile, reviews, bookmarks (logged-in only) |
 
 ### 7.2 Admin-Facing Menus (Admin Web — Next.js)
 
@@ -669,7 +682,6 @@ SWIDA supports two languages using **path-based routing** in Next.js:
 
 These features are intentionally excluded from the initial release but are strong candidates for future iterations:
 
-- **Bookmarks / Favorites:** Customer ability to save/bookmark favorite shops with a dedicated "My Saved Shops" page
 - **Shop Owner Portal:** Self-service dashboard — could leverage Strapi's custom roles/permissions
 - **Booking Integration:** In-app booking/reservation system connected to shop calendars
 - **Paid Tiers:** Premium listing options (featured placement, highlighted badges, top-of-search positioning)
@@ -681,6 +693,13 @@ These features are intentionally excluded from the initial release but are stron
 - **초성 Search:** Korean consonant-based search for faster name lookup (e.g., ㅅㅇㄷ → 스웨디시)
 - **Advanced Korean Search:** Upgrade from `LIKE` to `pg_trgm` (PostgreSQL trigram extension) for fuzzy/typo-tolerant matching. If search demands grow further, introduce Meilisearch with built-in CJK tokenization.
 - **Review Integrity Enhancements:** SMS verification for reviewer signup (via AlimTalk/Solapi), "Verified Customer" badge for receipt-photo reviews, cooldown periods (e.g., one review per shop per week per user), IP/device-level fraud detection, and behavioral pattern analysis to combat review bombing and spam.
+
+> **Moved to MVP:** Bookmarks / Favorites is now included in the MVP scope (FSD §16 My Page).
+
+**Remaining future scope for new features:**
+- Community: post editing/deletion by users, post reporting, points redemption/spending
+- Events: event registration/signup, coupon issuance from events
+- Board: user-created posts, keyword search within board
 
 ---
 
