@@ -39,4 +39,7 @@ Canonical terminology for the SWIDA documentation. When writing or editing docs,
 | Open/Close Tag | 영업중/영업종료 태그 | Per-shop custom labels indicating operating status on Customer Web | 오픈/마감 태그 |
 | Inactive Reason | 비활성 사유 | Reason code recorded when unpublishing a shop (closed, owner_request, violation, stale, other) | 비공개 사유 |
 | Moderation | 검토/관리 | Admin process of reviewing and managing user-generated content (reviews, reports) | 중재 |
+| Bookmark | 북마크 / 찜 | User's saved shop for quick access from My Page | Favorite, Like, Save |
 | Display Name | 닉네임 | Customer's public-facing name shown on reviews | 표시 이름, 사용자명 |
+| My Page | 마이페이지 | Logged-in user's personal dashboard (profile, reviews, bookmarks) | My Account, Dashboard, Profile Page |
+| Profile Photo | 프로필 사진 | User's avatar image displayed on profile card | Avatar, Profile Picture, Profile Image |
