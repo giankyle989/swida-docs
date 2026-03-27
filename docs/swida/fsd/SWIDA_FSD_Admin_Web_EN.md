@@ -40,6 +40,10 @@ The Admin Web is a dedicated web application served at `admin.swida.com`. It con
 | Theme management (CRUD) | Booking system management |
 | Region & district management (CRUD) | |
 | Partnership inquiry management (status workflow) | |
+| Board post management (CRUD) | |
+| Event management (CRUD) | |
+| Notice management (CRUD) | |
+| Community post moderation (view, hide, delete) | |
 | Audit log viewer | |
 | Locale management (Korean/English content) | |
 
@@ -59,6 +63,7 @@ The Admin Web is a dedicated web application served at `admin.swida.com`. It con
 | Responsive | Desktop-primary. Minimum supported width: 1024px |
 | Input Sanitization | All admin-submitted free-text fields (shop descriptions, inactive reason details, theme names, moderation reasons) are sanitized server-side before storage. HTML tags are stripped. Output is escaped on render to prevent stored XSS on Customer Web. |
 | Submit Protection | All form submit and action buttons (Save, Publish, Hide, Delete, Lock, status changes) enter a disabled + loading state on first click until the server responds. Prevents duplicate API calls from rapid clicks. |
+| Conflict Detection | All edit forms include the record's `updatedAt` timestamp in save requests. On `409 Conflict` response (record modified by another session), show a modal dialog: "This record was modified in another session. Please reload and try again." with a Reload button that refreshes the page. The save action is blocked until the admin reloads. See TSD §5.3.1a for server-side implementation. |
 
 ---
 
@@ -76,7 +81,17 @@ The Admin Web is a dedicated web application served at `admin.swida.com`. It con
 | 8 | Locations | `/locations` | Region & district management |
 | 9 | Partnership Inquiries | `/inquiries` | Partnership inquiry management |
 | 10 | Users | `/users` | Customer account management |
-| 11 | Audit Log | `/audit-log` | Change history viewer |
+| 11 | Board Posts | `/board-posts` | Board post management |
+| 12 | Board Post Create | `/board-posts/new` | Create new board post |
+| 13 | Board Post Edit | `/board-posts/[id]` | Edit existing board post |
+| 14 | Events | `/events` | Event management |
+| 15 | Event Create | `/events/new` | Create new event |
+| 16 | Event Edit | `/events/[id]` | Edit existing event |
+| 17 | Notices | `/notices` | Notice management |
+| 18 | Notice Create | `/notices/new` | Create new notice |
+| 19 | Notice Edit | `/notices/[id]` | Edit existing notice |
+| 20 | Community Posts | `/community-posts` | Community post moderation |
+| 21 | Audit Log | `/audit-log` | Change history viewer |
 
 **Access Control**: All pages except Login require an authenticated admin session. Unauthenticated access to any page redirects to `/login`.
 
@@ -196,13 +211,14 @@ The Admin Web is a dedicated web application served at `admin.swida.com`. It con
 | F-SHOP-13 | Basic Info Form | Input fields for all basic information: name, description, address, operating hours, last order time, closed days, holiday exceptions, phone number (PRD §5.1) |
 | F-SHOP-14 | Location Selection | Cascading dropdowns for region (Level 1) → district (Level 2) (PRD §5.1) |
 | F-SHOP-15 | Map Pin Drop | Integrated Kakao Map for selecting the shop's location. Admin clicks on the map to set coordinates. Supports address search to center the map — if address not found, show "주소를 찾을 수 없습니다" toast and allow manual pin drop. Default center: Seoul City Hall. When editing an existing shop, center on saved coordinates. (PRD §3.1, TSD §5.6) |
+| F-SHOP-15a | Coordinate Manual Fallback | Manual latitude/longitude text input fields are always visible below the map. Map pin drop auto-fills the text fields; manual entry overrides pin drop values. If Kakao Map JS SDK fails to load (key expired, quota exceeded, network timeout): hide the map container, show error banner "지도를 불러올 수 없습니다 — 좌표를 직접 입력하세요" / "Map unavailable — enter coordinates manually". Admin can still save the shop using manual coordinate entry. Validation: latitude −90 to 90, longitude −180 to 180, both required for save. |
 | F-SHOP-16 | Theme Selection | Multi-select from all available themes (PRD §5.2) |
 | F-SHOP-17 | Service Menu | Repeatable form component — add/remove service menu items. Each item: service name, duration (minutes), price (KRW), description (PRD §5.2.1) |
 | F-SHOP-18 | Booking Info | Boolean toggle for booking required. Conditional input for booking URL/phone. Gender availability dropdown (PRD §5.2) |
 | F-SHOP-19 | Amenities | Toggle switches for each amenity. Conditional inputs for parking type, parking detail, accessibility detail (PRD §5.3) |
 | F-SHOP-20 | Contact Channels | Optional inputs: phone, KakaoTalk ID, Instagram, website URL, Naver Place URL (PRD §5.4) |
 | F-SHOP-21 | Languages | Multi-select for languages supported (PRD §5.5) |
-| F-SHOP-22 | Image Upload | Upload shop images (min: 1, max: 10). Accepted formats: JPEG, PNG, WebP. Max file size: 5MB per image. Drag-and-drop or file picker. Images are uploaded and stored securely (PRD §5.1) |
+| F-SHOP-22 | Image Upload | Upload shop images (min: 1, max: 10). Accepted formats: JPEG, PNG, WebP. Max file size: 5MB per image. Drag-and-drop or file picker. Images are uploaded and stored securely (PRD §5.1). **MinIO unavailability:** If image upload fails (MinIO unreachable or storage error), show error toast "Image upload failed. Please try again." with a retry button. The shop form can still be saved as a draft without images — the image requirement (min 1) is only enforced on Publish, not on Save as Draft. |
 | F-SHOP-23 | Thumbnail Selection | Select one image as the primary thumbnail for search results (PRD §5.1) |
 | F-SHOP-24 | Open/Close Tags | Optional custom labels for operating status display on Customer Web. Defaults: "영업중" / "영업종료" (PRD §5.6) |
 | F-SHOP-25 | Save as Draft | Save shop without publishing. Creates a draft entry (PRD §7.3) |
@@ -219,9 +235,9 @@ The Admin Web is a dedicated web application served at `admin.swida.com`. It con
 | Address | Yes | Max 500 characters |
 | Region | Yes | Select from available regions |
 | District | Yes | Select from available districts (filtered by region) |
-| Latitude | Yes | Decimal, set via map pin drop |
-| Longitude | Yes | Decimal, set via map pin drop |
-| Operating Hours | Yes | Text (e.g., "10:00–22:00") |
+| Latitude | Yes | Decimal, set via map pin drop or manual entry. Range: −90 to 90 |
+| Longitude | Yes | Decimal, set via map pin drop or manual entry. Range: −180 to 180 |
+| Operating Hours | Yes | Per-day schedule: 7 day rows (Mon–Sun), each with open time and close time selectors, plus a "Closed" checkbox per day. Includes a free-text override field for special notes (e.g., "Holiday hours may vary"). The structured input populates `operating_hours` (JSONB); the text field populates `operating_hours_text`. |
 | Closed Days | Yes | Text (e.g., "매주 일요일") |
 | Themes | Yes | At least one theme selected |
 | Service Menu | Yes | At least one service menu item |
@@ -290,6 +306,17 @@ under_review ──→ deleted (admin soft-delete)
 hidden ──→ published (admin restore)
 deleted ──→ published (admin restore — requires confirmation: "This review was previously deleted. Restoring will make it visible again.")
 ```
+
+**Pre-Restore Validation (deleted → published)**
+
+Before restoring a deleted review to `published` status, the system performs the following checks. The restore is blocked if any check fails:
+
+| # | Check | Failure Condition | Error Message |
+|---|---|---|---|
+| 1 | Author account status | Author's account is locked (`blocked = true`) | "Author account is locked" |
+| 2 | Parent shop status | Parent shop is not published (draft or unpublished) | "Shop is currently unpublished" |
+
+Both checks run before the confirmation dialog is shown. If either check fails, the restore button is disabled and the error message is displayed inline. The admin must resolve the underlying issue (unlock the account or publish the shop) before the review can be restored.
 
 **Rating Recalculation**: Any status change automatically triggers the parent shop's average rating and review count to be recalculated (PRD §8.5).
 
@@ -376,7 +403,7 @@ deleted ──→ published (admin restore — requires confirmation: "This revi
 
 ```
 new ──→ contacted ──→ awaiting_info ──→ approved ──→ published
-  └──→ rejected                          └──→ rejected
+  └──→ rejected       └──→ rejected      └──→ rejected
          └──→ rejected
 ```
 
@@ -422,9 +449,240 @@ new ──→ contacted ──→ awaiting_info ──→ approved ──→ pub
 
 ---
 
-## 11. Audit Log
+## 11. Board Post Management
 
-### 11.1 Audit Log Viewer (`/audit-log`)
+### 11.1 Board Post List (`/board-posts`)
+
+> TSD Reference: §4.4.8 `board_posts`, §5.6 Admin Web Features
+
+**Feature List**
+
+| # | Feature | Description |
+|---|---|---|
+| F-BRD-01 | Post Table | Paginated table of all board posts. Columns: featured image (thumbnail), title, type (recommendation/info), category, status (published/draft), featured, HOT, view count, created date |
+| F-BRD-02 | Filter — Status | Filter by: All / Published / Draft |
+| F-BRD-03 | Filter — Type | Filter by: All / Recommendation / Info |
+| F-BRD-04 | Filter — Category | Filter by category badge (e.g., "실전팁", "초보가이드") |
+| F-BRD-05 | Sort | Sort by: created date (default: newest first), view count, like count |
+| F-BRD-06 | Publish Action | Quick publish button on each row. Post becomes visible on Customer Web immediately |
+| F-BRD-07 | Unpublish Action | Quick unpublish button on each row. Post is hidden from Customer Web |
+| F-BRD-08 | Delete Action | Soft delete post. Requires confirmation dialog |
+| F-BRD-09 | Create Button | Navigate to `/board-posts/new` |
+| F-BRD-10 | Edit Button | Navigate to `/board-posts/[id]` for the selected post |
+| F-BRD-11 | Pagination | Table pagination with configurable page size (10, 20, 50) |
+
+### 11.2 Board Post Create (`/board-posts/new`)
+
+> TSD Reference: §4.4.8 `board_posts`
+
+**Feature List**
+
+| # | Feature | Description |
+|---|---|---|
+| F-BRD-12 | Basic Info Form | Input fields: title, body (rich text editor), excerpt (optional — auto-generated from body if empty), category badge, author name |
+| F-BRD-13 | Type Selection | Dropdown: `recommendation` or `info` (TSD §4.4.8) |
+| F-BRD-14 | Region Selection | Optional region selection for region filtering (recommendation posts) |
+| F-BRD-15 | Linked Shop | Optional shop selector for recommendation posts. Search shops by name to link (FK to `shops`) |
+| F-BRD-16 | Featured Image | Upload a single featured image for the post card thumbnail |
+| F-BRD-17 | Featured Toggle | Boolean toggle to show post in featured banner carousel |
+| F-BRD-18 | HOT Badge Toggle | Boolean toggle to display HOT badge on the post |
+| F-BRD-19 | Save as Draft | Save post without publishing |
+| F-BRD-20 | Save & Publish | Save post and publish immediately |
+| F-BRD-21 | Locale Switcher | Switch between Korean and English content editing. Korean fields must be saved before English editing is enabled (TSD §4.4.8 i18n) |
+
+**Input Constraints**
+
+| Field | Required | Constraints |
+|---|---|---|
+| Title | Yes | Max 255 characters |
+| Body | Yes | Rich text |
+| Excerpt | No | Max 500 characters. Auto-generated from body if empty |
+| Category | No | Max 50 characters |
+| Author Name | Yes | Max 100 characters |
+| Type | Yes | `recommendation` or `info` |
+| Region | No | Select from available regions |
+| Linked Shop | No | Select from existing shops (recommendation type only) |
+| Featured Image | No | Single image |
+
+### 11.3 Board Post Edit (`/board-posts/[id]`)
+
+> TSD Reference: §4.4.8 `board_posts`
+
+| # | Feature | Description |
+|---|---|---|
+| F-BRD-22 | Load Existing Data | Pre-populate all form fields with the post's current data |
+| F-BRD-23 | Edit All Fields | All fields from Board Post Create (F-BRD-12 through F-BRD-21) are editable |
+| F-BRD-24 | Save Changes | Save updated data. If published, changes are reflected on Customer Web immediately |
+| F-BRD-25 | Publish/Unpublish Toggle | Change visibility status from this page (same behavior as F-BRD-06/F-BRD-07) |
+| F-BRD-26 | Locale Switcher | Switch between Korean and English content editing. Shows indicator if English translation is missing |
+
+---
+
+## 12. Event Management
+
+### 12.1 Event List (`/events`)
+
+> TSD Reference: §4.4.11 `events`, §5.6 Admin Web Features
+
+**Feature List**
+
+| # | Feature | Description |
+|---|---|---|
+| F-EVT-01 | Event Table | Paginated table of all events. Columns: featured image (thumbnail), title, category, start date, end date, D-day status, status (published/draft), featured, view count, created date |
+| F-EVT-02 | Filter — Status | Filter by: All / Published / Draft |
+| F-EVT-03 | Filter — Category | Filter by: All / New Opening / Closing Soon / Coupon / Winner Announcement / General |
+| F-EVT-04 | Filter — Date Range | Filter by event date range (start/end overlap) |
+| F-EVT-05 | Filter — Active Status | Filter by: All / Ongoing (end_date >= today) / Ended (end_date < today) |
+| F-EVT-06 | Sort | Sort by: created date (default: newest first), start date, end date, view count |
+| F-EVT-07 | Publish Action | Quick publish button on each row. Event becomes visible on Customer Web immediately |
+| F-EVT-08 | Unpublish Action | Quick unpublish button on each row. Event is hidden from Customer Web |
+| F-EVT-09 | Delete Action | Soft delete event. Requires confirmation dialog |
+| F-EVT-10 | Create Button | Navigate to `/events/new` |
+| F-EVT-11 | Edit Button | Navigate to `/events/[id]` for the selected event |
+| F-EVT-12 | Pagination | Table pagination with configurable page size (10, 20, 50) |
+
+### 12.2 Event Create (`/events/new`)
+
+> TSD Reference: §4.4.11 `events`
+
+**Feature List**
+
+| # | Feature | Description |
+|---|---|---|
+| F-EVT-13 | Basic Info Form | Input fields: title, body (rich text editor), disclaimers (optional), author name |
+| F-EVT-14 | Category Selection | Dropdown: `new_opening`, `closing_soon`, `coupon`, `winner_announcement`, `general` (TSD §4.4.11) |
+| F-EVT-15 | Date Range Picker | Start date and end date pickers (KST). End date must be >= start date. D-day is computed from end date |
+| F-EVT-16 | Banner Image | Upload a single full-width banner image for the event detail page |
+| F-EVT-17 | Featured Image | Upload a single card thumbnail image for event listings |
+| F-EVT-18 | Featured Toggle | Boolean toggle to show event in hero banner carousel |
+| F-EVT-19 | Save as Draft | Save event without publishing |
+| F-EVT-20 | Save & Publish | Save event and publish immediately |
+| F-EVT-21 | Locale Switcher | Switch between Korean and English content editing. Korean fields must be saved before English editing is enabled (TSD §4.4.11 i18n) |
+
+**Input Constraints**
+
+| Field | Required | Constraints |
+|---|---|---|
+| Title | Yes | Max 255 characters |
+| Body | Yes | Rich text |
+| Category | Yes | Enum: `new_opening`, `closing_soon`, `coupon`, `winner_announcement`, `general` |
+| Start Date | Yes | Date (KST) |
+| End Date | Yes | Date (KST), must be >= start date |
+| Disclaimers | No | Text |
+| Author Name | Yes | Max 100 characters |
+| Banner Image | No | Single image |
+| Featured Image | No | Single image |
+
+### 12.3 Event Edit (`/events/[id]`)
+
+> TSD Reference: §4.4.11 `events`
+
+| # | Feature | Description |
+|---|---|---|
+| F-EVT-22 | Load Existing Data | Pre-populate all form fields with the event's current data |
+| F-EVT-23 | Edit All Fields | All fields from Event Create (F-EVT-13 through F-EVT-21) are editable |
+| F-EVT-24 | Save Changes | Save updated data. If published, changes are reflected on Customer Web immediately |
+| F-EVT-25 | Publish/Unpublish Toggle | Change visibility status from this page (same behavior as F-EVT-07/F-EVT-08) |
+| F-EVT-26 | Locale Switcher | Switch between Korean and English content editing. Shows indicator if English translation is missing |
+
+---
+
+## 13. Notice Management
+
+### 13.1 Notice List (`/notices`)
+
+> TSD Reference: §4.4.12 `notices`, §5.6 Admin Web Features
+
+**Feature List**
+
+| # | Feature | Description |
+|---|---|---|
+| F-NTC-01 | Notice Table | Paginated table of all notices. Columns: title, category (notice/general), important (pinned), status (published/draft), view count, created date |
+| F-NTC-02 | Filter — Status | Filter by: All / Published / Draft |
+| F-NTC-03 | Filter — Category | Filter by: All / Notice / General |
+| F-NTC-04 | Filter — Important | Filter by: All / Important (pinned) / Normal |
+| F-NTC-05 | Sort | Sort by: created date (default: newest first), view count |
+| F-NTC-06 | Publish Action | Quick publish button on each row. Notice becomes visible on Customer Web immediately |
+| F-NTC-07 | Unpublish Action | Quick unpublish button on each row. Notice is hidden from Customer Web |
+| F-NTC-08 | Delete Action | Soft delete notice. Requires confirmation dialog |
+| F-NTC-09 | Create Button | Navigate to `/notices/new` |
+| F-NTC-10 | Edit Button | Navigate to `/notices/[id]` for the selected notice |
+| F-NTC-11 | Pagination | Table pagination with configurable page size (10, 20, 50) |
+
+### 13.2 Notice Create (`/notices/new`)
+
+> TSD Reference: §4.4.12 `notices`
+
+**Feature List**
+
+| # | Feature | Description |
+|---|---|---|
+| F-NTC-12 | Basic Info Form | Input fields: title, body (rich text editor) |
+| F-NTC-13 | Category Selection | Dropdown: `notice` or `general` (TSD §4.4.12) |
+| F-NTC-14 | Important Toggle | Boolean toggle to pin the notice to the top of the notice list (displayed with pinned indicator on Customer Web) |
+| F-NTC-15 | Save as Draft | Save notice without publishing |
+| F-NTC-16 | Save & Publish | Save notice and publish immediately |
+| F-NTC-17 | Locale Switcher | Switch between Korean and English content editing. Korean fields must be saved before English editing is enabled (TSD §4.4.12 i18n) |
+
+**Input Constraints**
+
+| Field | Required | Constraints |
+|---|---|---|
+| Title | Yes | Max 255 characters |
+| Body | Yes | Rich text |
+| Category | Yes | Enum: `notice`, `general` |
+
+### 13.3 Notice Edit (`/notices/[id]`)
+
+> TSD Reference: §4.4.12 `notices`
+
+| # | Feature | Description |
+|---|---|---|
+| F-NTC-18 | Load Existing Data | Pre-populate all form fields with the notice's current data |
+| F-NTC-19 | Edit All Fields | All fields from Notice Create (F-NTC-12 through F-NTC-17) are editable |
+| F-NTC-20 | Save Changes | Save updated data. If published, changes are reflected on Customer Web immediately |
+| F-NTC-21 | Publish/Unpublish Toggle | Change visibility status from this page (same behavior as F-NTC-06/F-NTC-07) |
+| F-NTC-22 | Locale Switcher | Switch between Korean and English content editing. Shows indicator if English translation is missing |
+
+---
+
+## 14. Community Moderation
+
+### 14.1 Community Posts (`/community-posts`)
+
+> TSD Reference: §4.4.9 `community_posts`, §5.6 Admin Web Features
+
+**Feature List**
+
+| # | Feature | Description |
+|---|---|---|
+| F-CMT-01 | Post Table | Paginated table of all community posts. Columns: content (truncated), author, hashtags, status (published/hidden/deleted), like count, comment count, view count, created date |
+| F-CMT-02 | Filter — Status | Filter by: All / Published / Hidden / Deleted |
+| F-CMT-03 | Filter — Author | Filter by author display name |
+| F-CMT-04 | Filter — Date | Filter by date range |
+| F-CMT-05 | Sort | Sort by: created date (default: newest first), like count, comment count, view count |
+| F-CMT-06 | Post Detail | Expand/modal to show full post content, photos, video, author info, hashtags, location text |
+| F-CMT-07 | Hide Post | Change status to `hidden`. Post is immediately removed from the Customer Web feed. Requires confirmation dialog |
+| F-CMT-08 | Unhide Post | Change status back to `published`. Post is restored to the Customer Web feed |
+| F-CMT-09 | Delete Post | Change status to `deleted`. Soft delete — preserved in database. Requires confirmation dialog |
+| F-CMT-10 | View Author | Link to user management page for the post's author |
+| F-CMT-11 | View Comments | Expand to show all comments on the post. Admin can hide or delete individual comments |
+| F-CMT-12 | Pagination | Table pagination with configurable page size (10, 20, 50) |
+
+**Status Transitions**
+
+```
+published ──→ hidden (admin hide)
+published ──→ deleted (admin soft-delete)
+hidden ──→ published (admin unhide/restore)
+deleted ──→ published (admin restore — requires confirmation: "This post was previously deleted. Restoring will make it visible again.")
+```
+
+---
+
+## 15. Audit Log
+
+### 15.1 Audit Log Viewer (`/audit-log`)
 
 > PRD Reference: §7.3 Audit Log, TSD §4.4.7, §5.3.4
 
@@ -433,7 +691,7 @@ new ──→ contacted ──→ awaiting_info ──→ approved ──→ pub
 | # | Feature | Description |
 |---|---|---|
 | F-AUDIT-01 | Log Table | Paginated table of all audit entries. Columns: timestamp, admin user, content type, action, document name/ID |
-| F-AUDIT-02 | Filter — Content Type | Filter by: All / Shop / Theme / Region / District / Review / Partnership Inquiry / User |
+| F-AUDIT-02 | Filter — Content Type | Filter by: All / Shop / Theme / Region / District / Review / Partnership Inquiry / User / Board Post / Event / Notice / Community Post |
 | F-AUDIT-03 | Filter — Action | Filter by: All / Create / Update / Delete / Publish / Unpublish / Hide / Restore / Lock / Unlock |
 | F-AUDIT-04 | Filter — Admin User | Filter by admin who made the change |
 | F-AUDIT-05 | Filter — Date | Filter by date range |
@@ -460,6 +718,10 @@ The audit log covers ALL state-changing admin actions, not only shop changes:
 | Review | Hide, Restore, Delete (moderation actions) |
 | Partnership Inquiry | Status changes (New → Contacted → Awaiting Info → Approved → Rejected → Published) |
 | User (Customer) | Lock, Unlock |
+| Board Post | Create, Update, Delete, Publish, Unpublish |
+| Event | Create, Update, Delete, Publish, Unpublish |
+| Notice | Create, Update, Delete, Publish, Unpublish |
+| Community Post | Hide, Restore, Delete (moderation actions) |
 
 **Security Event Log**
 
@@ -477,9 +739,9 @@ In addition to the content audit log, the following security-sensitive events ar
 
 ---
 
-## 12. Global Layout & Navigation
+## 16. Global Layout & Navigation
 
-### 12.1 Admin Sidebar
+### 16.1 Admin Sidebar
 
 | # | Feature | Description |
 |---|---|---|
@@ -491,15 +753,19 @@ In addition to the content audit log, the following security-sensitive events ar
 | F-NAV-06 | Locations Link | Navigate to `/locations` |
 | F-NAV-07 | Inquiries Link | Navigate to `/inquiries`. Badge shows `new` inquiry count |
 | F-NAV-08 | Users Link | Navigate to `/users` |
-| F-NAV-09 | Audit Log Link | Navigate to `/audit-log` |
+| F-NAV-09 | Board Posts Link | Navigate to `/board-posts` |
+| F-NAV-10 | Events Link | Navigate to `/events` |
+| F-NAV-11 | Notices Link | Navigate to `/notices` |
+| F-NAV-12 | Community Posts Link | Navigate to `/community-posts` |
+| F-NAV-13 | Audit Log Link | Navigate to `/audit-log` |
 
-### 12.2 Admin Header
+### 16.2 Admin Header
 
 | # | Feature | Description |
 |---|---|---|
-| F-NAV-10 | Admin User Display | Show currently logged-in admin user name/email |
-| F-NAV-11 | Logout Button | Log out and redirect to `/login` |
-| F-NAV-12 | Customer Web Link | "View Site" button — opens `www.swida.com` in a new tab |
+| F-NAV-14 | Admin User Display | Show currently logged-in admin user name/email |
+| F-NAV-15 | Logout Button | Log out and redirect to `/login` |
+| F-NAV-16 | Customer Web Link | "View Site" button — opens `www.swida.com` in a new tab |
 
 ---
 
@@ -523,8 +789,23 @@ In addition to the content audit log, the following security-sensitive events ar
 | ERR_REGION_DELETE_HAS_DISTRICTS | Cannot delete region. {count} district(s) still exist under this region. |
 | ERR_DISTRICT_DELETE_HAS_SHOPS | Cannot delete district. {count} shop(s) are still registered in this district. |
 | ERR_INQUIRY_STATUS_FAIL | Failed to update inquiry status. Please try again. |
+| ERR_BOARD_SAVE_FAIL | Failed to save board post. Please check required fields and try again. |
+| ERR_BOARD_PUBLISH_FAIL | Failed to publish board post. Please try again. |
+| ERR_BOARD_DELETE_FAIL | Failed to delete board post. Please try again. |
+| ERR_EVENT_SAVE_FAIL | Failed to save event. Please check required fields and try again. |
+| ERR_EVENT_PUBLISH_FAIL | Failed to publish event. Please try again. |
+| ERR_EVENT_DELETE_FAIL | Failed to delete event. Please try again. |
+| ERR_EVENT_DATE_INVALID | End date must be on or after start date. |
+| ERR_NOTICE_SAVE_FAIL | Failed to save notice. Please check required fields and try again. |
+| ERR_NOTICE_PUBLISH_FAIL | Failed to publish notice. Please try again. |
+| ERR_NOTICE_DELETE_FAIL | Failed to delete notice. Please try again. |
+| ERR_COMMUNITY_STATUS_FAIL | Failed to update community post status. Please try again. |
 | ERR_NETWORK | Please check your network connection. |
 | ERR_SERVER | A temporary error occurred. Please try again shortly. |
+| ERR_REVIEW_RESTORE_AUTHOR_LOCKED | Author account is locked |
+| ERR_REVIEW_RESTORE_SHOP_UNPUBLISHED | Shop is currently unpublished |
+| ERR_IMAGE_UPLOAD_MINIO | Image upload failed. Please try again. |
+| ERR_CONFLICT | This record was modified in another session. Please reload and try again. |
 
 ---
 
@@ -574,7 +855,7 @@ In addition to the content audit log, the following security-sensitive events ar
 
 ## Appendix E. Admin API Endpoints Used
 
-The Admin Web communicates with the backend through two API surfaces: one for authentication and admin-level operations, and another for content management (shops, reviews, themes, locations, inquiries, audit logs, users, and image uploads).
+The Admin Web communicates with the backend through two API surfaces: one for authentication and admin-level operations, and another for content management (shops, reviews, themes, locations, inquiries, board posts, events, notices, community posts, audit logs, users, and image uploads).
 
 For the complete list of API endpoints, see TSD §5.2.
 

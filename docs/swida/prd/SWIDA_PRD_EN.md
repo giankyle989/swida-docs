@@ -95,6 +95,8 @@ Customers are the primary end users of SWIDA. They do **not** need an account to
 
 **Authentication:** Optional signup/signin via email or social login (Kakao, Naver) — handled by Strapi's Users & Permissions plugin with custom Kakao/Naver providers. Required for review submission, review reporting, community posting, commenting, liking, and bookmarking.
 
+**Email Verification:** Email registration includes a verification step. After signup, a confirmation email is sent with a verification link. Users can browse the platform immediately (view shops, search, bookmark), but must verify their email before performing write actions: submitting reviews, reporting reviews, posting in the community, commenting, and liking. Unverified users are prompted to check their email when attempting these actions. A "Resend verification email" option is available.
+
 ---
 
 ## 4. Location System
@@ -143,7 +145,7 @@ Each shop profile is defined as a Strapi **collection type** (`shop`) with the f
 | Latitude | Decimal (Float) | Yes | GPS latitude — entered by admin via map pin drop (custom field plugin) |
 | Longitude | Decimal (Float) | Yes | GPS longitude — entered by admin via map pin drop (custom field plugin) |
 | Phone Number | Text (Short) | No | Primary contact phone number |
-| Operating Hours | Text (Short) | Yes | Business hours (e.g., 10:00–22:00) |
+| Operating Hours | JSONB (per-day schedule) + Text (Short) override | Yes | Structured per-day open/close times stored as JSONB (`operating_hours`), plus a free-text field (`operating_hours_text`) for special notes (e.g., "Holiday hours may vary"). See TSD §5.1 for schema details. |
 | Last Order Time | Text (Short) | No | Final booking/walk-in acceptance time |
 | Closed Days | Text (Short) | Yes | Regular closed days (e.g., 매주 일요일, 공휴일) |
 | Holiday Exceptions | Text (Long) | No | Temporary closures or special holiday schedules |
@@ -693,6 +695,7 @@ These features are intentionally excluded from the initial release but are stron
 - **초성 Search:** Korean consonant-based search for faster name lookup (e.g., ㅅㅇㄷ → 스웨디시)
 - **Advanced Korean Search:** Upgrade from `LIKE` to `pg_trgm` (PostgreSQL trigram extension) for fuzzy/typo-tolerant matching. If search demands grow further, introduce Meilisearch with built-in CJK tokenization.
 - **Review Integrity Enhancements:** SMS verification for reviewer signup (via AlimTalk/Solapi), "Verified Customer" badge for receipt-photo reviews, cooldown periods (e.g., one review per shop per week per user), IP/device-level fraud detection, and behavioral pattern analysis to combat review bombing and spam.
+- **Server-Side Review Rate Limits:** Per-user hourly and per-shop daily caps (e.g., 10 reviews/user/hour, 3 reviews/user/shop/day) enforced via Strapi middleware to prevent review flooding beyond Cloudflare WAF limits.
 
 > **Moved to MVP:** Bookmarks is now included in the MVP scope (FSD §16 My Page).
 

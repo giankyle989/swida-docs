@@ -432,6 +432,9 @@ Additional fields on the existing Strapi user model:
 |---|---|---|---|
 | avatar | relation | Nullable | Strapi media (single). Profile photo. Max 5MB, JPG/PNG/WebP. |
 | total_points | integer | Not Null, Default 0 | Computed: SUM of user_points_log.points. Updated via lifecycle hook. |
+| email_verified | boolean | Not Null, Default false | Set to `true` when user clicks the verification link. Social login users are auto-verified. |
+| email_verification_token | varchar | Nullable, Unique | Cryptographically random token sent in verification email. Cleared after verification. |
+| email_verification_sent_at | timestamptz | Nullable | Timestamp of last verification email. Used for resend rate-limiting (1 per minute). |
 
 **Level derivation (computed, not stored):**
 - 0P → Lv.1, 500P → Lv.2, 2,000P → Lv.3, 5,000P → Lv.4, 10,000P → Lv.5
@@ -455,7 +458,7 @@ Admin-curated board posts for shop recommendations and massage information.
 | is_featured | boolean | Not Null, Default false | Shown in featured banner carousel |
 | is_hot | boolean | Not Null, Default false | Admin-set HOT badge |
 | view_count | integer | Not Null, Default 0 | Incremented on page view |
-| like_count | integer | Not Null, Default 0 | Computed via lifecycle hooks |
+| like_count | integer | Not Null, Default 0, CHECK >= 0 | Computed via lifecycle hooks |
 | comment_count | integer | Not Null, Default 0 | Computed via lifecycle hooks |
 | locale | varchar(10) | Not Null | `ko`, `en` |
 | published_at | timestamptz | Nullable | Draft & Publish |
@@ -479,7 +482,7 @@ User-generated community posts.
 | hashtags | jsonb | Nullable | Array of strings, max 10, each max 30 chars |
 | location_text | varchar(200) | Nullable | Free-text location (e.g., "강남구 역삼동") |
 | view_count | integer | Not Null, Default 0 | |
-| like_count | integer | Not Null, Default 0 | Computed via lifecycle hooks |
+| like_count | integer | Not Null, Default 0, CHECK >= 0 | Computed via lifecycle hooks |
 | comment_count | integer | Not Null, Default 0 | Computed via lifecycle hooks |
 | status | varchar(20) | Not Null, Default 'published' | Enum: `published`, `hidden`, `deleted` |
 | author_id | integer | FK → up_users.id | Not Null |
@@ -527,7 +530,7 @@ Admin-managed time-limited events/campaigns.
 | disclaimers | text | Nullable | Localized. Event rules/conditions. |
 | is_featured | boolean | Not Null, Default false | Shown in hero banner carousel |
 | view_count | integer | Not Null, Default 0 | |
-| like_count | integer | Not Null, Default 0 | Computed via lifecycle hooks |
+| like_count | integer | Not Null, Default 0, CHECK >= 0 | Computed via lifecycle hooks |
 | author_name | varchar(100) | Not Null | Admin display name |
 | locale | varchar(10) | Not Null | |
 | published_at | timestamptz | Nullable | |
@@ -606,6 +609,23 @@ Junction table tracking who liked what (polymorphic).
 
 **Unique constraint:** `(user_id, target_type, target_id)` — one like per user per target.
 
+#### 4.4.16 `rating_recalc_queue`
+
+Retry queue for failed shop rating recalculations (see §5.3.3). Ensures a failed recalculation does not leave `average_rating` permanently stale.
+
+| Column | Type | Constraints | Notes |
+|---|---|---|---|
+| id | serial | PK | Auto-generated |
+| shop_id | integer | FK → shops.id, Not Null | Shop whose rating needs recalculation |
+| attempts | integer | Not Null, Default 0 | Number of retry attempts so far |
+| max_attempts | integer | Not Null, Default 5 | Configurable ceiling |
+| last_error | text | Nullable | Most recent error message / stack trace |
+| next_retry_at | timestamptz | Not Null | When the next retry should be attempted |
+| created_at | timestamptz | Not Null | Auto |
+| resolved_at | timestamptz | Nullable | Set when recalculation finally succeeds |
+
+**Index:** `CREATE INDEX idx_recalc_queue_pending ON rating_recalc_queue (next_retry_at) WHERE resolved_at IS NULL;`
+
 ### 4.5 Indexes
 
 Beyond Strapi's auto-generated indexes (PKs, FKs, unique constraints), the following custom indexes should be created via a Strapi bootstrap script or migration:
@@ -648,6 +668,7 @@ Additional indexes for new tables:
 | user_points_log | `(user_id, action, created_at)` | B-tree | Daily limit check |
 | post_likes | `(user_id, target_type, target_id)` | Unique | Prevent duplicate likes |
 | post_likes | `(target_type, target_id)` | B-tree | Count likes for a target |
+| partnership_inquiries | `(shop_name, phone_number, created_at)` | B-tree | Deduplication lookup within time window |
 
 ### 4.6 Seed Data
 
@@ -828,6 +849,16 @@ export default {
 
 The `author` is automatically set from the authenticated user's JWT. Validated by a custom policy that checks if the user's account is locked.
 
+**Authenticated Review Response Enhancement:**
+
+When the requesting user is authenticated, each review object in the `GET /api/reviews` response includes an additional field:
+
+| Field | Type | Description |
+|---|---|---|
+| `reported_by_me` | boolean | `true` if the authenticated user has already reported this review, `false` otherwise |
+
+Computed via `LEFT JOIN` on `review_reports` where `reporter_id = current_user` and `review_id = review.id`. This allows the frontend to disable the report button for already-reported reviews without a separate API call. When the user is not authenticated, this field is omitted.
+
 #### 5.2.3 Themes, Regions, Districts
 
 | Method | Endpoint | Auth | Description |
@@ -845,6 +876,20 @@ These are simple Strapi auto-generated endpoints with no custom controllers need
 | POST | `/api/partnership-inquiries` | Public | Submit inquiry (form) |
 
 Public role permissions: `create` only. No `find`, `findOne`, `update`, `delete` for public role.
+
+**Server-Side Deduplication:** Before creating a new inquiry, the custom controller checks whether an inquiry with the same `shop_name` + `phone_number` combination was created within the last 5 minutes. If a match is found, the server rejects the request with `409 Conflict`:
+
+```json
+{
+  "error": {
+    "status": 409,
+    "name": "ConflictError",
+    "message": "A similar inquiry was recently submitted. Please wait a few minutes before resubmitting."
+  }
+}
+```
+
+**Location:** `src/api/partnership-inquiry/controllers/partnership-inquiry.ts` (override default `create`)
 
 #### 5.2.5 Dashboard Analytics
 
@@ -1201,6 +1246,27 @@ Server auto-sets `user_id` from JWT. Returns 409 if bookmark already exists.
 
 **DELETE `/api/bookmarks/:id`** — Server validates the bookmark belongs to the authenticated user.
 
+**POST `/api/bookmarks/toggle` — Idempotent Toggle:**
+
+Atomic bookmark toggle endpoint. Uses UPSERT/DELETE pattern to avoid race conditions.
+
+Request:
+```json
+{ "shop": "shop001" }
+```
+
+Response (bookmark created):
+```json
+{ "bookmarked": true, "id": 42 }
+```
+
+Response (bookmark removed):
+```json
+{ "bookmarked": false }
+```
+
+Logic: If a bookmark for the given shop + authenticated user exists, delete it and return `{ "bookmarked": false }`. If not, create it and return `{ "bookmarked": true, "id": newId }`. Auth: Customer (JWT).
+
 #### 5.2.11 Likes
 
 | Method | Endpoint | Auth | Description |
@@ -1219,9 +1285,9 @@ Server auto-sets `user_id` from JWT. Returns 409 if bookmark already exists.
 }
 ```
 
-Server auto-sets `user_id` from JWT. Returns 409 if already liked. On success, triggers lifecycle hook to increment `like_count` on the target entity and create a `user_points_log` entry for the target author (+5P `like_received`).
+Server auto-sets `user_id` from JWT. Returns 409 if already liked. On success, the like insert, `like_count` increment, and point award execute within a single transaction (see §5.3.6). If any step fails, the entire operation rolls back.
 
-**DELETE `/api/likes/:id`** — Server validates ownership. Decrements `like_count` on target. Does NOT reverse the point award (points never decrease).
+**DELETE `/api/likes/:id`** — Server validates ownership. The like delete and `like_count` decrement execute within a single transaction (see §5.3.6). Does NOT reverse the point award (points never decrease).
 
 #### 5.2.12 User Profile
 
@@ -1258,7 +1324,27 @@ Server auto-sets `user_id` from JWT. Returns 409 if already liked. On success, t
 **Location:** `src/middlewares/account-lock.ts`
 **Purpose:** Intercepts write requests from locked customer accounts.
 **Behavior:** Checks `up_users.blocked` field (Strapi built-in). If `true`, returns `403 Forbidden` with message: `"계정이 정지되었습니다. 관리자에게 문의해주세요."` / `"Your account has been suspended. Please contact the administrator."`
-**Applied to:** `POST /api/reviews`, `POST /api/reviews/:id/report`
+**Applied to:** `POST /api/reviews`, `POST /api/reviews/:id/report`, `POST /api/community-posts`, `POST /api/comments`, `POST /api/likes`
+
+> **Note:** Bookmarks (`POST /api/bookmarks`) are exempt — bookmarking is a passive action that does not generate user-visible content.
+
+#### 5.3.1a Middleware: `optimistic-lock`
+
+**Location:** `src/middlewares/optimistic-lock.ts`
+**Purpose:** Prevents concurrent editing conflicts in the Admin Web by enforcing optimistic locking on all admin write operations.
+**Behavior:** All admin `PUT` and `PATCH` requests must include the `updatedAt` field from the record being modified. The middleware compares the submitted `updatedAt` with the current record's `updatedAt` in the database. If they do not match (indicating another session modified the record), the server returns `409 Conflict` with the response:
+
+```json
+{
+  "error": {
+    "status": 409,
+    "name": "ConflictError",
+    "message": "This record was modified in another session. Please reload and try again."
+  }
+}
+```
+
+**Applied to:** All admin API `PUT` and `PATCH` endpoints (shops, reviews, themes, regions, districts, inquiries, board posts, events, notices, community posts, users).
 
 #### 5.3.2 Policy: `is-active-shop`
 
@@ -1311,7 +1397,50 @@ await strapi.db.connection.raw('SELECT pg_advisory_xact_lock(hashtext(?))', [sho
 // ... then read reviews, compute average, update shop (within the same transaction)
 ```
 
-**Error handling:** If the recalculation fails (e.g., database connection error), the review CRUD operation should still succeed — the lifecycle hook must not block the user. Log the failure and enqueue a retry. The admin dashboard should surface shops where `average_rating` may be stale (last recalculation failed).
+**Error handling:** If the recalculation fails (e.g., database connection error), the review CRUD operation should still succeed — the lifecycle hook must not block the user. Log the failure and insert a row into the `rating_recalc_queue` table (§4.4.16) with `next_retry_at = now() + interval '5 minutes'`.
+
+**Retry mechanism (Strapi cron job):**
+
+A Strapi cron task registered in `config/cron-tasks.ts` runs every 5 minutes and processes the retry queue:
+
+```typescript
+// config/cron-tasks.ts (simplified)
+export default {
+  '*/5 * * * *': async ({ strapi }) => {
+    const pending = await strapi.db.connection('rating_recalc_queue')
+      .where('next_retry_at', '<=', new Date())
+      .whereNull('resolved_at')
+      .where('attempts', '<', strapi.db.connection.ref('max_attempts'));
+
+    for (const entry of pending) {
+      try {
+        await recalculateShopRating(entry.shop_id);
+        await strapi.db.connection('rating_recalc_queue')
+          .where('id', entry.id)
+          .update({ resolved_at: new Date() });
+      } catch (err) {
+        const nextAttempt = entry.attempts + 1;
+        await strapi.db.connection('rating_recalc_queue')
+          .where('id', entry.id)
+          .update({
+            attempts: nextAttempt,
+            last_error: err.message,
+            next_retry_at: new Date(Date.now() + nextAttempt * 5 * 60_000),
+          });
+      }
+    }
+  },
+};
+```
+
+Key behaviors:
+- **Exponential backoff:** Each successive retry waits `attempts * 5 minutes` (5 min, 10 min, 15 min, 20 min, 25 min).
+- **On success:** `resolved_at` is set; the row remains for auditing.
+- **On exhaustion:** When `attempts >= max_attempts` (default 5), the entry is no longer retried. An admin alert is raised (see below).
+
+**Admin alert:** The admin dashboard must surface an alert when any `rating_recalc_queue` entry reaches `attempts >= max_attempts` with `resolved_at IS NULL`. Display: _"Shop ID {X} rating recalculation failed after {max_attempts} attempts — last error: {last_error}"_. The admin can manually trigger a recalculation or investigate the root cause.
+
+> **Note:** A shop publish and concurrent review creation may briefly show a stale rating due to ISR cache timing. The advisory lock on recalculation and 60-second ISR revalidation mitigate this. No additional safeguard is required for MVP.
 
 #### 5.3.4 Lifecycle Hooks: Audit Log
 
@@ -1325,11 +1454,20 @@ On `comment` `afterCreate`: increment `comment_count` on the parent entity (dete
 
 #### 5.3.6 Lifecycle Hooks: Like Count Recalculation
 
-On `post_like` `afterCreate`: increment `like_count` on the target entity (determined by `target_type` — `board_post`, `community_post`, or `event`).
+On `post_like` creation, the following operations MUST execute within a single database transaction:
+1. Insert the `post_like` row
+2. Atomic increment `like_count` on the target entity (determined by `target_type` — `board_post`, `community_post`, or `event`)
+3. Insert `user_points_log` entry for the target author (+5P `like_received`, see §5.3.7)
 
-On `post_like` `afterDelete`: decrement `like_count` on the target entity.
+If any step fails, the entire transaction rolls back — no partial state.
 
-Both use atomic increment/decrement queries.
+On `post_like` deletion, the following operations MUST execute within a single database transaction:
+1. Delete the `post_like` row
+2. Atomic decrement `like_count` on the target entity
+
+If the decrement would violate the `CHECK (like_count >= 0)` constraint, the transaction aborts.
+
+**Rapid-click protection:** The unique constraint on `(user_id, target_type, target_id)` in `post_likes` prevents duplicate likes at the database level. Combined with transaction wrapping, this ensures count consistency even under concurrent requests.
 
 #### 5.3.7 Lifecycle Hooks: Points Calculation
 
@@ -1358,6 +1496,8 @@ Increments `view_count` atomically for the specified content type and document. 
 **Applies to:** `board-posts`, `community-posts`, `events`, `notices`
 
 **Response:** `{ "data": { "view_count": 1243 } }`
+
+> **Note:** Cookie-based rate limiting is bypassable via incognito mode or cookie clearing. For MVP this is acceptable — view counts are informational, not used for ranking or monetization. Future enhancement: IP + fingerprint-based deduplication or analytics pipeline.
 
 #### 5.3.9 Custom Controller: Notice Prev/Next
 
@@ -1389,6 +1529,22 @@ Custom controller that extends the default Strapi `findOne` with `prev` and `nex
 - **Token lifetime:** 7 days (configurable via `plugins.ts`)
 
 **Custom provider location:** `src/extensions/users-permissions/`
+
+**Email verification flow:**
+
+1. On email registration (`POST /api/auth/local/register`), a lifecycle hook generates a cryptographic token, stores it in `email_verification_token`, and sends a verification email via the existing email service.
+2. `POST /api/auth/verify-email` — Public endpoint. Accepts `{ token: string }`. Looks up the user by token, sets `email_verified = true`, clears the token. Returns `200` on success, `400` on invalid/expired token.
+3. `POST /api/auth/resend-verification` — Authenticated endpoint. Generates a new token and resends the verification email. Rate-limited to 1 request per minute per user (checked via `email_verification_sent_at`). Returns `429` if rate-limited, `400` if already verified.
+4. Social login users (Kakao, Naver) have `email_verified` set to `true` automatically on first login.
+
+**Email verification middleware:** A custom Strapi policy (`is-email-verified`) checks `ctx.state.user.email_verified` before allowing write operations. Applied to:
+- `POST /api/reviews` (review creation)
+- `POST /api/community-posts` (community post creation)
+- `POST /api/comments` (comment creation)
+- `POST /api/likes` (like creation)
+- `POST /api/review-reports` (review reporting)
+
+Unverified users receive `403 { error: "EMAIL_NOT_VERIFIED", message: "Please verify your email address to perform this action." }`.
 
 #### 5.4.2 Admin Auth
 
@@ -1662,6 +1818,8 @@ export async function fetchStrapi<T>(
 3. Renders results with distance labels
 
 **Open/Close tag:** The `OpenCloseTag` component compares the shop's `operating_hours` JSON against the current time in KST (using `Intl.DateTimeFormat` with `timeZone: 'Asia/Seoul'`) to display the appropriate tag. If `operating_hours_text` is set, it is displayed as-is instead of computing from the JSON schedule.
+
+> **Rendering ownership (OWNER-01):** `OpenCloseTag` is a **server component** — the tag is computed server-side during SSR/ISR using KST via `Intl.DateTimeFormat`. On shop cards in search results (SSR) and shop detail pages (ISR), the tag is included in the rendered HTML. Because both server and client use the same KST logic, there is no hydration mismatch. For ISR-cached pages, the tag may be up to 60 seconds stale (the ISR revalidation interval), which is acceptable for operating-hours granularity.
 
 **`operating_hours` JSON format:**
 ```json
@@ -2064,6 +2222,34 @@ docker system prune -f
 echo "Deployment complete at $(date)"
 ```
 
+### 7.7 Backup Strategy
+
+#### PostgreSQL Backup
+
+| Item | Spec |
+|---|---|
+| Method | `pg_dump --format=custom` via cron |
+| Schedule | Daily at 03:00 KST |
+| Storage | Off-site S3-compatible storage (separate from MinIO) |
+| Retention | 30 days rolling |
+| Verification | Weekly test restore to staging database |
+
+**Restore procedure:**
+
+1. Stop application containers: `docker compose stop strapi customer-web admin-web`
+2. Restore: `pg_restore --clean --if-exists -d swida backup.dump`
+3. Verify: `psql -c "SELECT count(*) FROM shops;"`
+4. Restart: `docker compose up -d`
+
+#### MinIO Backup
+
+| Item | Spec |
+|---|---|
+| Method | `rsync` of MinIO data directory |
+| Schedule | Daily at 04:00 KST |
+| Storage | Off-site S3-compatible storage |
+| Retention | 30 days rolling |
+
 ---
 
 ## 8. Security Architecture
@@ -2171,6 +2357,10 @@ Tier 2: Redis (Origin Cache)
 Tier 3: PostgreSQL (Source of Truth)
   └── All data
 ```
+
+### 9.1.1 Redis Failure Fallback
+
+The cache middleware MUST treat Redis as optional. On Redis connection failure, the middleware bypasses the cache and queries PostgreSQL directly. Redis connection errors are logged at `warn` level and must not block requests. No circuit breaker is needed for MVP — a simple try/catch around Redis operations is sufficient.
 
 ### 9.2 Cache Invalidation
 
@@ -2334,6 +2524,11 @@ Test-Driven Development (TDD) — tests written before implementation.
 | Redis | `redis-cli ping` | PONG |
 | MinIO | `mc ready local` | Exit code 0 |
 
+**MinIO Storage Monitoring:**
+
+- **Healthcheck endpoint:** MinIO exposes a built-in health endpoint at `/minio/health/live` (HTTP 200 when healthy). The Docker Compose healthcheck uses `mc ready local` (equivalent).
+- **Disk space alert:** Configure a disk usage alert at **80% capacity** on the MinIO data volume. When the threshold is exceeded, trigger a warning notification to the ops channel. At **90% capacity**, trigger a critical alert. Monitor via `mc admin info` or the MinIO Console dashboard at port `9001`.
+
 ### 13.2 Logging
 
 - **Strapi:** Built-in logger (`strapi.log`) → stdout → Docker logs
@@ -2342,10 +2537,75 @@ Test-Driven Development (TDD) — tests written before implementation.
 - **Nginx:** Access and error logs → Docker logs
 - **Centralized logging:** Forward Docker logs to a log aggregator (e.g., Loki + Grafana) post-MVP
 
+#### Nginx Access Log Format
+
+```nginx
+log_format json_combined escape=json '{'
+  '"time":"$time_iso8601",'
+  '"remote_addr":"$http_cf_connecting_ip",'
+  '"request_id":"$request_id",'
+  '"method":"$request_method",'
+  '"uri":"$request_uri",'
+  '"status":$status,'
+  '"body_bytes_sent":$body_bytes_sent,'
+  '"request_time":$request_time,'
+  '"upstream_response_time":"$upstream_response_time",'
+  '"user_agent":"$http_user_agent"'
+'}';
+access_log /var/log/nginx/access.log json_combined;
+```
+
+- Pass `X-Request-ID` header to upstream services via `proxy_set_header X-Request-ID $request_id;`
+
+#### Strapi Request Logging
+
+| Status Range | Log Level | Details |
+|---|---|---|
+| 2xx | `debug` | Route, response time |
+| 4xx | `warn` | Route, status, request ID, client IP |
+| 5xx | `error` | Route, status, request ID, client IP, stack trace |
+
+- Correlate logs using the `X-Request-ID` header from Nginx
+
+#### Log Rotation
+
+| Item | Spec |
+|---|---|
+| Tool | `logrotate` |
+| Retention | 90 days |
+| Rotation | Daily, compressed (`gzip`) |
+| Format | JSON for machine parsing |
+
 ### 13.3 Uptime Monitoring
 
 - **Cloudflare Health Checks:** Monitor origin server availability from Cloudflare edge
 - **External uptime monitor:** UptimeRobot (free tier, 5-minute intervals) pinging `https://{{DOMAIN}}/ko`, `https://{{ADMIN_DOMAIN}}/api/health`, and `https://{{API_DOMAIN}}/api/themes`
+
+### 13.4 Error Tracking
+
+- **Tool:** Sentry (self-hosted or cloud)
+- **Strapi:** `@sentry/node` — capture unhandled exceptions and 5xx responses
+- **Customer Web (Next.js):** `@sentry/nextjs` with source maps uploaded at build time
+- **Admin Web (Next.js):** `@sentry/nextjs` with source maps uploaded at build time
+- **Environment tags:** `production`, `staging`
+
+### 13.5 Key Metrics & Alerting
+
+| Metric | Source | Threshold (Warning) | Threshold (Critical) |
+|---|---|---|---|
+| API response time p95 | Nginx access log | > 1 s | > 2 s |
+| Error rate (5xx / total) | Nginx access log | > 2 % | > 5 % |
+| Health check failure | UptimeRobot | — | Any failure |
+| Active users (concurrent) | Nginx access log | Informational | — |
+| Disk usage | `df` via cron | > 80 % | > 90 % |
+| PostgreSQL connections | `pg_stat_activity` | > 80 % of `max_connections` | > 90 % |
+
+**Alert channel:** Dedicated Slack channel (`#swida-alerts`).
+
+**Alert delivery:**
+- UptimeRobot → Slack webhook (health check failures)
+- Sentry → Slack integration (application errors)
+- Cron scripts → Slack webhook (disk, DB connection threshold breaches)
 
 ---
 
@@ -2523,6 +2783,12 @@ export interface StrapiResponse<T> {
 | D-011 | PostGIS raw SQL over ORM geospatial | Strapi's Knex doesn't natively support PostGIS. Raw SQL via `strapi.db.connection.raw()` is the recommended approach. | 2026-03-24 |
 | D-012 | Redis for API cache over in-memory | Persistent across Strapi restarts, shared if scaled to multiple instances | 2026-03-24 |
 | D-013 | React 19.2.4 pinned | Patches all RSC CVEs including CVE-2026-23864. All frontends share same version. | 2026-03-24 |
+
+### 14.5 Deferred Items
+
+| Item | Description | Depends On |
+|---|---|---|
+| Server-Side Review Rate Limits | Per-user hourly and per-shop daily caps (e.g., 10 reviews/user/hour, 3 reviews/user/shop/day) enforced via Strapi middleware to prevent review flooding beyond Cloudflare WAF limits (~400+/day per user passthrough). Requires Redis-backed counters in a custom `review-rate-limit` middleware. | Strapi custom middleware + Redis |
 
 ---
 

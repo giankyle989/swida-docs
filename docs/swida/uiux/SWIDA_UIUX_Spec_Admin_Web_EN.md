@@ -446,7 +446,9 @@ Used for all destructive actions:
 | Default center | Seoul City Hall (37.5666, 126.9784), zoom 12 |
 | Address search | Input above map → auto-center. If not found → toast "주소를 찾을 수 없습니다" + allow manual pin |
 | Pin placement | Click map to place/move pin. Pin is draggable |
-| Coordinate fields | Auto-populated from pin. Also manually editable |
+| Coordinate fields | Auto-populated from pin. Also manually editable. Manual entry overrides pin drop values |
+| SDK load failure | If Kakao Map JS SDK fails (key expired, quota exceeded, network timeout): hide map container, show error banner "지도를 불러올 수 없습니다 — 좌표를 직접 입력하세요" / "Map unavailable — enter coordinates manually". Lat/lng text fields remain functional for manual entry |
+| Coordinate validation | Latitude: −90 to 90. Longitude: −180 to 180. Both required for save |
 | Edit mode | Center on saved coordinates |
 
 #### Locale Switcher (F-SHOP-27)
@@ -476,6 +478,8 @@ Used for all destructive actions:
     [3a] Admin enters address in search → map centers + pin placed
     [3b] Admin clicks map to adjust pin → lat/lng fields update
     [3c] Address not found → toast + manual pin placement
+    [3d] Kakao Map SDK fails to load → map hidden, error banner shown,
+         admin enters lat/lng manually in text fields below map area
 
 [4] Image upload:
     [4a] Drag-and-drop or file picker → image preview + upload to server

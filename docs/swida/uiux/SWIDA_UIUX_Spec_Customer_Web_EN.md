@@ -1699,7 +1699,7 @@ All conflicts between Figma designs and FSD are resolved with **FSD as source of
 | # | Item | Figma | FSD | Resolution | Notes |
 |---|---|---|---|---|---|
 | C-01 | Review character limit | 0/1000 | 10–500 characters | **Use FSD: 10–500** | Figma limit appears to be placeholder |
-| C-02 | Favorites / heart icon | ♡ on shop cards + detail | PRD §12: "Future" | **Included in MVP (revised)** | Bookmarks moved to MVP scope for My Page. Heart icon on shop cards + detail + My Page bookmarks tab. |
+| C-02 | Bookmarks / heart icon | ♡ on shop cards + detail | PRD §12: "Future" | **Included in MVP (revised)** | Bookmarks moved to MVP scope for My Page. Heart icon on shop cards + detail + My Page bookmarks tab. |
 | C-03 | Price range slider filter | 0~20만원+ slider | Not in FSD filter list | **Deferred** | Note as future enhancement |
 | C-04 | PREMIUM / BEST badges | On shop card thumbnails | Not specified | **Deferred** | Requires admin-side badge assignment |
 | C-05 | Member pricing (회원가) | Original→member price | FSD: `price_range` text only | **Use FSD** | Display price_range text as-is |

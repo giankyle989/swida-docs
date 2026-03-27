@@ -432,6 +432,9 @@ Post Like targets (polymorphic):
 |---|---|---|---|
 | avatar | relation | Nullable | Strapi 미디어 (단일). 프로필 사진. 최대 5MB, JPG/PNG/WebP. |
 | total_points | integer | Not Null, 기본값 0 | 계산값: SUM of user_points_log.points. 라이프사이클 훅으로 업데이트. |
+| email_verified | boolean | Not Null, 기본값 false | 사용자가 인증 링크를 클릭하면 `true`로 설정. 소셜 로그인 사용자는 자동 인증. |
+| email_verification_token | varchar | Nullable, Unique | 인증 이메일에 포함되는 암호학적 랜덤 토큰. 인증 완료 후 삭제. |
+| email_verification_sent_at | timestamptz | Nullable | 마지막 인증 이메일 발송 시각. 재발송 속도 제한용 (1분당 1회). |
 
 **레벨 산출 (계산값, 저장하지 않음):**
 - 0P → Lv.1, 500P → Lv.2, 2,000P → Lv.3, 5,000P → Lv.4, 10,000P → Lv.5
@@ -455,7 +458,7 @@ Post Like targets (polymorphic):
 | is_featured | boolean | Not Null, 기본값 false | 추천 배너 캐러셀에 표시 |
 | is_hot | boolean | Not Null, 기본값 false | 관리자 설정 HOT 뱃지 |
 | view_count | integer | Not Null, 기본값 0 | 페이지 조회 시 증가 |
-| like_count | integer | Not Null, 기본값 0 | 라이프사이클 훅으로 계산 |
+| like_count | integer | Not Null, 기본값 0, CHECK >= 0 | 라이프사이클 훅으로 계산 |
 | comment_count | integer | Not Null, 기본값 0 | 라이프사이클 훅으로 계산 |
 | locale | varchar(10) | Not Null | `ko`, `en` |
 | published_at | timestamptz | Nullable | 초안 & 게시 |
@@ -479,7 +482,7 @@ Post Like targets (polymorphic):
 | hashtags | jsonb | Nullable | 문자열 배열, 최대 10개, 각 최대 30자 |
 | location_text | varchar(200) | Nullable | 자유 텍스트 위치 (예: "강남구 역삼동") |
 | view_count | integer | Not Null, 기본값 0 | |
-| like_count | integer | Not Null, 기본값 0 | 라이프사이클 훅으로 계산 |
+| like_count | integer | Not Null, 기본값 0, CHECK >= 0 | 라이프사이클 훅으로 계산 |
 | comment_count | integer | Not Null, 기본값 0 | 라이프사이클 훅으로 계산 |
 | status | varchar(20) | Not Null, 기본값 'published' | 열거형: `published`, `hidden`, `deleted` |
 | author_id | integer | FK → up_users.id | Not Null |
@@ -527,7 +530,7 @@ Post Like targets (polymorphic):
 | disclaimers | text | Nullable | 다국어. 이벤트 규칙/조건. |
 | is_featured | boolean | Not Null, 기본값 false | 히어로 배너 캐러셀에 표시 |
 | view_count | integer | Not Null, 기본값 0 | |
-| like_count | integer | Not Null, 기본값 0 | 라이프사이클 훅으로 계산 |
+| like_count | integer | Not Null, 기본값 0, CHECK >= 0 | 라이프사이클 훅으로 계산 |
 | author_name | varchar(100) | Not Null | 관리자 표시 이름 |
 | locale | varchar(10) | Not Null | |
 | published_at | timestamptz | Nullable | |
@@ -565,16 +568,16 @@ Post Like targets (polymorphic):
 
 #### 4.4.13 `user_bookmarks`
 
-사용자 ↔ 업체 즐겨찾기를 위한 조인 테이블.
+사용자 ↔ 업체 북마크를 위한 조인 테이블.
 
 | 컬럼 | 타입 | 제약 조건 | 비고 |
 |---|---|---|---|
 | id | serial | PK | |
 | user_id | integer | FK → up_users.id, Not Null | |
 | shop_id | integer | FK → shops.id, Not Null | |
-| created_at | timestamptz | Not Null | "최근 즐겨찾기 순" 정렬용 |
+| created_at | timestamptz | Not Null | "최근 북마크 순" 정렬용 |
 
-**유니크 제약 조건:** `(user_id, shop_id)` — 중복 즐겨찾기 방지.
+**유니크 제약 조건:** `(user_id, shop_id)` — 중복 북마크 방지.
 
 #### 4.4.14 `user_points_log`
 
@@ -605,6 +608,23 @@ Post Like targets (polymorphic):
 | created_at | timestamptz | Not Null | |
 
 **유니크 제약 조건:** `(user_id, target_type, target_id)` — 대상당 사용자당 좋아요 1회.
+
+#### 4.4.16 `rating_recalc_queue`
+
+업체 평점 재계산 실패에 대한 재시도 대기열 (§5.3.3 참조). 재계산 실패 시 `average_rating`이 영구적으로 오래된 상태로 남지 않도록 보장합니다.
+
+| 컬럼 | 타입 | 제약 조건 | 비고 |
+|---|---|---|---|
+| id | serial | PK | 자동 생성 |
+| shop_id | integer | FK → shops.id, Not Null | 평점 재계산이 필요한 업체 |
+| attempts | integer | Not Null, Default 0 | 현재까지의 재시도 횟수 |
+| max_attempts | integer | Not Null, Default 5 | 설정 가능한 상한값 |
+| last_error | text | Nullable | 가장 최근의 오류 메시지 / 스택 트레이스 |
+| next_retry_at | timestamptz | Not Null | 다음 재시도 예정 시각 |
+| created_at | timestamptz | Not Null | 자동 |
+| resolved_at | timestamptz | Nullable | 재계산이 최종 성공하면 설정 |
+
+**인덱스:** `CREATE INDEX idx_recalc_queue_pending ON rating_recalc_queue (next_retry_at) WHERE resolved_at IS NULL;`
 
 ### 4.5 인덱스
 
@@ -643,11 +663,12 @@ CREATE INDEX idx_districts_region ON districts (region_id);
 | events | `(category, end_date DESC)` | B-tree | 카테고리 + 진행 중 필터 |
 | events | `(is_featured, end_date)` | Partial (where is_featured=true) | 히어로 배너 쿼리 |
 | notices | `(is_important DESC, published_at DESC)` | B-tree | 고정 우선 공지 목록 |
-| user_bookmarks | `(user_id, created_at DESC)` | B-tree | 사용자 즐겨찾기 목록 |
-| user_bookmarks | `(user_id, shop_id)` | Unique | 중복 즐겨찾기 방지 |
+| user_bookmarks | `(user_id, created_at DESC)` | B-tree | 사용자 북마크 목록 |
+| user_bookmarks | `(user_id, shop_id)` | Unique | 중복 북마크 방지 |
 | user_points_log | `(user_id, action, created_at)` | B-tree | 일일 한도 확인 |
 | post_likes | `(user_id, target_type, target_id)` | Unique | 중복 좋아요 방지 |
 | post_likes | `(target_type, target_id)` | B-tree | 대상별 좋아요 수 조회 |
+| partnership_inquiries | `(shop_name, phone_number, created_at)` | B-tree | 시간 윈도우 내 중복 제거 조회 |
 
 ### 4.6 시드 데이터
 
@@ -828,6 +849,16 @@ export default {
 
 `author`는 인증된 사용자의 JWT에서 자동으로 설정됩니다. 사용자 계정 잠금 여부를 확인하는 커스텀 정책으로 검증됩니다.
 
+**인증된 리뷰 응답 확장:**
+
+요청 사용자가 인증된 경우, `GET /api/reviews` 응답의 각 리뷰 객체에 추가 필드가 포함됩니다:
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `reported_by_me` | boolean | 인증된 사용자가 이미 해당 리뷰를 신고한 경우 `true`, 아닌 경우 `false` |
+
+`review_reports` 테이블에 대한 `LEFT JOIN`으로 계산 (`reporter_id = current_user` AND `review_id = review.id`). 이를 통해 프론트엔드에서 별도의 API 호출 없이 이미 신고한 리뷰의 신고 버튼을 비활성화할 수 있습니다. 사용자가 인증되지 않은 경우 이 필드는 생략됩니다.
+
 #### 5.2.3 테마, 지역, 구/군
 
 | 메서드 | 엔드포인트 | 인증 | 설명 |
@@ -845,6 +876,20 @@ export default {
 | POST | `/api/partnership-inquiries` | 공개 | 문의 제출 (폼) |
 
 공개 역할 권한: `create`만 허용. 공개 역할에는 `find`, `findOne`, `update`, `delete` 불허.
+
+**서버 측 중복 제거:** 새 문의를 생성하기 전에 커스텀 컨트롤러가 동일한 `shop_name` + `phone_number` 조합으로 최근 5분 이내에 생성된 문의가 있는지 확인합니다. 일치하는 항목이 있으면 `409 Conflict`로 요청을 거부합니다:
+
+```json
+{
+  "error": {
+    "status": 409,
+    "name": "ConflictError",
+    "message": "A similar inquiry was recently submitted. Please wait a few minutes before resubmitting."
+  }
+}
+```
+
+**위치:** `src/api/partnership-inquiry/controllers/partnership-inquiry.ts` (기본 `create` 오버라이드)
 
 #### 5.2.5 대시보드 분석(Dashboard Analytics)
 
@@ -1146,13 +1191,13 @@ export default {
 }
 ```
 
-#### 5.2.10 즐겨찾기(Bookmarks)
+#### 5.2.10 북마크(Bookmarks)
 
 | 메서드 | 엔드포인트 | 인증 | 설명 |
 |---|---|---|---|
-| GET | `/api/bookmarks` | 고객 (JWT) | 사용자의 즐겨찾기 업체 목록 (페이지네이션) |
-| POST | `/api/bookmarks` | 고객 (JWT) | 즐겨찾기 추가 |
-| DELETE | `/api/bookmarks/:id` | 고객 (JWT) | 즐겨찾기 제거 |
+| GET | `/api/bookmarks` | 고객 (JWT) | 사용자의 북마크 업체 목록 (페이지네이션) |
+| POST | `/api/bookmarks` | 고객 (JWT) | 북마크 추가 |
+| DELETE | `/api/bookmarks/:id` | 고객 (JWT) | 북마크 제거 |
 
 **GET `/api/bookmarks` — 쿼리 파라미터:**
 
@@ -1197,9 +1242,30 @@ export default {
 { "data": { "shop": "shop001" } }
 ```
 
-서버가 JWT에서 `user_id`를 자동으로 설정합니다. 즐겨찾기가 이미 존재하면 409를 반환합니다.
+서버가 JWT에서 `user_id`를 자동으로 설정합니다. 북마크가 이미 존재하면 409를 반환합니다.
 
-**DELETE `/api/bookmarks/:id`** — 서버가 해당 즐겨찾기가 인증된 사용자의 것인지 검증합니다.
+**DELETE `/api/bookmarks/:id`** — 서버가 해당 북마크가 인증된 사용자의 것인지 검증합니다.
+
+**POST `/api/bookmarks/toggle` — 멱등성 토글:**
+
+원자적 북마크 토글 엔드포인트. UPSERT/DELETE 패턴을 사용하여 경합 조건을 방지합니다.
+
+요청:
+```json
+{ "shop": "shop001" }
+```
+
+응답 (북마크 생성):
+```json
+{ "bookmarked": true, "id": 42 }
+```
+
+응답 (북마크 제거):
+```json
+{ "bookmarked": false }
+```
+
+로직: 해당 업체 + 인증된 사용자의 북마크가 존재하면 삭제하고 `{ "bookmarked": false }`를 반환합니다. 존재하지 않으면 생성하고 `{ "bookmarked": true, "id": newId }`를 반환합니다. 인증: 고객 (JWT).
 
 #### 5.2.11 좋아요(Likes)
 
@@ -1219,9 +1285,9 @@ export default {
 }
 ```
 
-서버가 JWT에서 `user_id`를 자동으로 설정합니다. 이미 좋아요한 경우 409를 반환합니다. 성공 시, 라이프사이클 훅이 대상 엔티티의 `like_count`를 증가시키고 대상 작성자에게 `user_points_log` 항목을 생성합니다 (+5P `like_received`).
+서버가 JWT에서 `user_id`를 자동으로 설정합니다. 이미 좋아요한 경우 409를 반환합니다. 성공 시, 좋아요 삽입, `like_count` 증가, 포인트 보상이 단일 트랜잭션 내에서 실행됩니다 (§5.3.6 참조). 어떤 단계라도 실패하면 전체 작업이 롤백됩니다.
 
-**DELETE `/api/likes/:id`** — 서버가 소유권을 검증합니다. 대상의 `like_count`를 감소시킵니다. 포인트 보상은 취소되지 않습니다(포인트는 절대 감소하지 않음).
+**DELETE `/api/likes/:id`** — 서버가 소유권을 검증합니다. 좋아요 삭제와 `like_count` 감소가 단일 트랜잭션 내에서 실행됩니다 (§5.3.6 참조). 포인트 보상은 취소되지 않습니다(포인트는 절대 감소하지 않음).
 
 #### 5.2.12 사용자 프로필(User Profile)
 
@@ -1258,7 +1324,27 @@ export default {
 **위치:** `src/middlewares/account-lock.ts`
 **목적:** 잠긴 고객 계정의 쓰기 요청 차단.
 **동작:** Strapi 내장 필드인 `up_users.blocked`를 확인합니다. `true`이면 메시지와 함께 `403 Forbidden` 반환: `"계정이 정지되었습니다. 관리자에게 문의해주세요."` / `"Your account has been suspended. Please contact the administrator."`
-**적용 대상:** `POST /api/reviews`, `POST /api/reviews/:id/report`
+**적용 대상:** `POST /api/reviews`, `POST /api/reviews/:id/report`, `POST /api/community-posts`, `POST /api/comments`, `POST /api/likes`
+
+> **참고:** 북마크(`POST /api/bookmarks`)는 제외됩니다 — 북마크는 사용자에게 표시되는 콘텐츠를 생성하지 않는 수동적 행위입니다.
+
+#### 5.3.1a 미들웨어: `optimistic-lock`
+
+**위치:** `src/middlewares/optimistic-lock.ts`
+**목적:** 낙관적 잠금을 적용하여 Admin Web에서의 동시 편집 충돌을 방지한다.
+**동작:** 모든 관리자 `PUT` 및 `PATCH` 요청은 수정 대상 레코드의 `updatedAt` 필드를 포함해야 한다. 미들웨어는 제출된 `updatedAt`를 데이터베이스의 현재 레코드 `updatedAt`와 비교한다. 일치하지 않으면(다른 세션에서 레코드가 수정된 경우) 서버는 다음 응답과 함께 `409 Conflict`를 반환한다:
+
+```json
+{
+  "error": {
+    "status": 409,
+    "name": "ConflictError",
+    "message": "이 항목이 다른 세션에서 수정되었습니다. 새로고침 후 다시 시도하세요."
+  }
+}
+```
+
+**적용 대상:** 모든 관리자 API `PUT` 및 `PATCH` 엔드포인트 (업체, 리뷰, 테마, 지역, 구역, 문의, 게시판 게시글, 이벤트, 공지사항, 커뮤니티 게시글, 사용자).
 
 #### 5.3.2 정책: `is-active-shop`
 
@@ -1311,7 +1397,50 @@ await strapi.db.connection.raw('SELECT pg_advisory_xact_lock(hashtext(?))', [sho
 // ... 그런 다음 리뷰 조회, 평균 계산, 업체 업데이트 (동일 트랜잭션 내에서)
 ```
 
-**오류 처리:** 재계산에 실패하더라도(예: 데이터베이스 연결 오류) 리뷰 CRUD 작업은 성공해야 합니다 — 라이프사이클 훅이 사용자를 차단해서는 안 됩니다. 실패를 기록하고 재시도를 대기열에 추가합니다. 관리자 대시보드에서 `average_rating`이 오래되었을 수 있는 업체(마지막 재계산 실패)를 표시해야 합니다.
+**오류 처리:** 재계산에 실패하더라도(예: 데이터베이스 연결 오류) 리뷰 CRUD 작업은 성공해야 합니다 — 라이프사이클 훅이 사용자를 차단해서는 안 됩니다. 실패를 기록하고 `rating_recalc_queue` 테이블(§4.4.16 참조)에 `next_retry_at = now() + interval '5 minutes'`로 행을 삽입합니다.
+
+**재시도 메커니즘 (Strapi 크론 작업):**
+
+`config/cron-tasks.ts`에 등록된 Strapi 크론 태스크가 5분마다 실행되어 재시도 대기열을 처리합니다:
+
+```typescript
+// config/cron-tasks.ts (단순화된 코드)
+export default {
+  '*/5 * * * *': async ({ strapi }) => {
+    const pending = await strapi.db.connection('rating_recalc_queue')
+      .where('next_retry_at', '<=', new Date())
+      .whereNull('resolved_at')
+      .where('attempts', '<', strapi.db.connection.ref('max_attempts'));
+
+    for (const entry of pending) {
+      try {
+        await recalculateShopRating(entry.shop_id);
+        await strapi.db.connection('rating_recalc_queue')
+          .where('id', entry.id)
+          .update({ resolved_at: new Date() });
+      } catch (err) {
+        const nextAttempt = entry.attempts + 1;
+        await strapi.db.connection('rating_recalc_queue')
+          .where('id', entry.id)
+          .update({
+            attempts: nextAttempt,
+            last_error: err.message,
+            next_retry_at: new Date(Date.now() + nextAttempt * 5 * 60_000),
+          });
+      }
+    }
+  },
+};
+```
+
+주요 동작:
+- **지수 백오프:** 각 재시도는 `attempts * 5분`만큼 대기합니다 (5분, 10분, 15분, 20분, 25분).
+- **성공 시:** `resolved_at`이 설정되며, 감사를 위해 행은 유지됩니다.
+- **소진 시:** `attempts >= max_attempts`(기본값 5)에 도달하면 더 이상 재시도하지 않습니다. 관리자 알림이 발생합니다(아래 참조).
+
+**관리자 알림:** `rating_recalc_queue`에서 `attempts >= max_attempts`이고 `resolved_at IS NULL`인 항목이 있으면 관리자 대시보드에 알림을 표시해야 합니다. 표시 내용: _"업체 ID {X} 평점 재계산이 {max_attempts}회 시도 후 실패 — 마지막 오류: {last_error}"_. 관리자는 수동으로 재계산을 트리거하거나 근본 원인을 조사할 수 있습니다.
+
+> **참고:** 업체 게시와 리뷰 생성이 동시에 발생하면 ISR 캐시 타이밍으로 인해 잠시 오래된 평점이 표시될 수 있습니다. 재계산의 어드바이저리 락과 60초 ISR 재검증이 이를 완화합니다. MVP에서는 추가 안전장치가 필요하지 않습니다.
 
 #### 5.3.4 라이프사이클 훅: 감사 로그
 
@@ -1325,11 +1454,20 @@ await strapi.db.connection.raw('SELECT pg_advisory_xact_lock(hashtext(?))', [sho
 
 #### 5.3.6 라이프사이클 훅: 좋아요 수 재계산
 
-`post_like`의 `afterCreate` 시: 대상 엔티티(`target_type`으로 결정 — `board_post`, `community_post`, 또는 `event`)의 `like_count`를 증가시킵니다.
+`post_like` 생성 시, 다음 작업을 반드시 단일 데이터베이스 트랜잭션 내에서 실행해야 합니다:
+1. `post_like` 행 삽입
+2. 대상 엔티티(`target_type`으로 결정 — `board_post`, `community_post`, 또는 `event`)의 `like_count` 원자적 증가
+3. 대상 작성자에게 `user_points_log` 항목 삽입 (+5P `like_received`, §5.3.7 참조)
 
-`post_like`의 `afterDelete` 시: 대상 엔티티의 `like_count`를 감소시킵니다.
+어떤 단계라도 실패하면 전체 트랜잭션이 롤백됩니다 — 부분적 상태 없음.
 
-둘 다 원자적 증가/감소 쿼리를 사용합니다.
+`post_like` 삭제 시, 다음 작업을 반드시 단일 데이터베이스 트랜잭션 내에서 실행해야 합니다:
+1. `post_like` 행 삭제
+2. 대상 엔티티의 `like_count` 원자적 감소
+
+감소 시 `CHECK (like_count >= 0)` 제약 조건을 위반하면 트랜잭션이 중단됩니다.
+
+**빠른 클릭 보호:** `post_likes`의 `(user_id, target_type, target_id)` 유니크 제약 조건이 데이터베이스 수준에서 중복 좋아요를 방지합니다. 트랜잭션 래핑과 결합하여 동시 요청에서도 카운트 일관성을 보장합니다.
 
 #### 5.3.7 라이프사이클 훅: 포인트 계산
 
@@ -1358,6 +1496,8 @@ await strapi.db.connection.raw('SELECT pg_advisory_xact_lock(hashtext(?))', [sho
 **적용 대상:** `board-posts`, `community-posts`, `events`, `notices`
 
 **응답:** `{ "data": { "view_count": 1243 } }`
+
+> **참고:** 쿠키 기반 속도 제한은 시크릿 모드 또는 쿠키 삭제를 통해 우회 가능합니다. MVP에서는 허용 가능합니다 — 조회수는 정보 제공 목적이며 랭킹이나 수익화에 사용되지 않습니다. 향후 개선: IP + 핑거프린트 기반 중복 제거 또는 분석 파이프라인.
 
 #### 5.3.9 커스텀 컨트롤러: 공지사항 이전/다음
 
@@ -1389,6 +1529,22 @@ await strapi.db.connection.raw('SELECT pg_advisory_xact_lock(hashtext(?))', [sho
 - **토큰 유효 기간:** 7일 (`plugins.ts`를 통해 설정 가능)
 
 **커스텀 제공자 위치:** `src/extensions/users-permissions/`
+
+**이메일 인증 흐름:**
+
+1. 이메일 회원가입(`POST /api/auth/local/register`) 시, 라이프사이클 훅이 암호학적 토큰을 생성하고 `email_verification_token`에 저장한 뒤, 기존 이메일 서비스를 통해 인증 이메일을 발송합니다.
+2. `POST /api/auth/verify-email` — 공개 엔드포인트. `{ token: string }`을 받아 토큰으로 사용자를 조회하고 `email_verified = true`로 설정, 토큰을 삭제합니다. 성공 시 `200`, 유효하지 않거나 만료된 토큰 시 `400` 반환.
+3. `POST /api/auth/resend-verification` — 인증 필요 엔드포인트. 새 토큰을 생성하고 인증 이메일을 재발송합니다. 사용자당 1분에 1회로 속도 제한(`email_verification_sent_at`으로 확인). 속도 제한 시 `429`, 이미 인증 완료 시 `400` 반환.
+4. 소셜 로그인 사용자(카카오, 네이버)는 최초 로그인 시 `email_verified`가 자동으로 `true`로 설정됩니다.
+
+**이메일 인증 미들웨어:** 커스텀 Strapi 정책(`is-email-verified`)이 쓰기 작업 전에 `ctx.state.user.email_verified`를 확인합니다. 적용 대상:
+- `POST /api/reviews` (리뷰 작성)
+- `POST /api/community-posts` (커뮤니티 게시글 작성)
+- `POST /api/comments` (댓글 작성)
+- `POST /api/likes` (좋아요)
+- `POST /api/review-reports` (리뷰 신고)
+
+미인증 사용자는 `403 { error: "EMAIL_NOT_VERIFIED", message: "이 작업을 수행하려면 이메일 인증을 완료해 주세요." }` 응답을 받습니다.
 
 #### 5.4.2 관리자 인증
 
@@ -1662,6 +1818,8 @@ export async function fetchStrapi<T>(
 3. 거리 레이블과 함께 결과 렌더링
 
 **영업/종료 태그:** `OpenCloseTag` 컴포넌트가 업체의 `operating_hours` JSON을 `Intl.DateTimeFormat`의 `timeZone: 'Asia/Seoul'`을 사용하여 현재 KST 시간과 비교하여 적절한 태그를 표시합니다. `operating_hours_text`가 설정된 경우 JSON 스케줄 계산 대신 해당 텍스트가 그대로 표시됩니다.
+
+> **렌더링 소유권 (OWNER-01):** `OpenCloseTag`는 **서버 컴포넌트**로, SSR/ISR 시 `Intl.DateTimeFormat`을 통해 KST 기준으로 서버 측에서 태그를 계산합니다. 검색 결과의 업체 카드(SSR)와 업체 상세 페이지(ISR) 모두에서 태그가 렌더링된 HTML에 포함됩니다. 서버와 클라이언트 모두 동일한 KST 로직을 사용하므로 하이드레이션 불일치가 발생하지 않습니다. ISR 캐시 페이지의 경우 태그가 최대 60초까지 오래된 상태일 수 있으며(ISR 재검증 주기), 영업 시간 단위에서는 허용 가능한 수준입니다.
 
 **`operating_hours` JSON 형식:**
 ```json
@@ -2064,6 +2222,34 @@ docker system prune -f
 echo "배포 완료: $(date)"
 ```
 
+### 7.7 백업 전략
+
+#### PostgreSQL 백업
+
+| 항목 | 사양 |
+|---|---|
+| 방법 | cron을 통한 `pg_dump --format=custom` |
+| 일정 | 매일 03:00 KST |
+| 저장소 | 외부 S3 호환 스토리지 (MinIO와 별도) |
+| 보존 기간 | 30일 롤링 |
+| 검증 | 주간 스테이징 데이터베이스 테스트 복원 |
+
+**복원 절차:**
+
+1. 애플리케이션 컨테이너 중지: `docker compose stop strapi customer-web admin-web`
+2. 복원: `pg_restore --clean --if-exists -d swida backup.dump`
+3. 검증: `psql -c "SELECT count(*) FROM shops;"`
+4. 재시작: `docker compose up -d`
+
+#### MinIO 백업
+
+| 항목 | 사양 |
+|---|---|
+| 방법 | MinIO 데이터 디렉터리 `rsync` |
+| 일정 | 매일 04:00 KST |
+| 저장소 | 외부 S3 호환 스토리지 |
+| 보존 기간 | 30일 롤링 |
+
 ---
 
 ## 8. 보안 아키텍처
@@ -2172,6 +2358,10 @@ export default [
   └── 모든 데이터
 ```
 
+### 9.1.1 Redis 장애 폴백
+
+캐시 미들웨어는 Redis를 선택적(optional)으로 취급해야 합니다(MUST). Redis 연결 실패 시 캐시를 우회하고 PostgreSQL에 직접 쿼리합니다. Redis 연결 오류는 `warn` 레벨로 기록하며, 요청을 차단해서는 안 됩니다. MVP에서는 서킷 브레이커가 필요하지 않습니다 — Redis 작업 주위의 간단한 try/catch로 충분합니다.
+
 ### 9.2 캐시 무효화
 
 캐시 무효화는 Strapi 라이프사이클 훅에 의해 트리거됩니다:
@@ -2188,7 +2378,7 @@ export default [
 | event | publish, update, unpublish | 이벤트 허브, 진행 중 이벤트, 이벤트 상세 |
 | notice | publish, update, unpublish | 이벤트 허브, 공지 상세 |
 
-커뮤니티 게시글과 댓글은 SSR(캐시 없음)이므로 웹훅 재검증이 필요하지 않습니다. 즐겨찾기와 좋아요 작업은 사용자별 CSR 호출이므로 캐시에 영향을 미치지 않습니다.
+커뮤니티 게시글과 댓글은 SSR(캐시 없음)이므로 웹훅 재검증이 필요하지 않습니다. 북마크와 좋아요 작업은 사용자별 CSR 호출이므로 캐시에 영향을 미치지 않습니다.
 
 ### 9.3 Next.js 캐싱
 
@@ -2334,6 +2524,11 @@ TDD(테스트 주도 개발) — 구현 전에 테스트를 먼저 작성합니�
 | Redis | `redis-cli ping` | PONG |
 | MinIO | `mc ready local` | 종료 코드 0 |
 
+**MinIO 스토리지 모니터링:**
+
+- **헬스체크 엔드포인트:** MinIO는 `/minio/health/live`에 내장 헬스 엔드포인트를 제공한다 (정상 시 HTTP 200). Docker Compose 헬스체크는 `mc ready local`을 사용한다 (동등 기능).
+- **디스크 공간 경고:** MinIO 데이터 볼륨에 **80% 용량** 디스크 사용량 경고를 설정한다. 임계치를 초과하면 운영 채널에 경고 알림을 발송한다. **90% 용량**에서는 긴급 경고를 발송한다. `mc admin info` 또는 포트 `9001`의 MinIO 콘솔 대시보드를 통해 모니터링한다.
+
 ### 13.2 로깅
 
 - **Strapi:** 내장 로거(`strapi.log`) → stdout → Docker 로그
@@ -2342,10 +2537,75 @@ TDD(테스트 주도 개발) — 구현 전에 테스트를 먼저 작성합니�
 - **Nginx:** 접근 및 오류 로그 → Docker 로그
 - **중앙 집중식 로깅:** MVP 이후 Docker 로그를 로그 수집기(예: Loki + Grafana)로 전달
 
+#### Nginx 접근 로그 형식
+
+```nginx
+log_format json_combined escape=json '{'
+  '"time":"$time_iso8601",'
+  '"remote_addr":"$http_cf_connecting_ip",'
+  '"request_id":"$request_id",'
+  '"method":"$request_method",'
+  '"uri":"$request_uri",'
+  '"status":$status,'
+  '"body_bytes_sent":$body_bytes_sent,'
+  '"request_time":$request_time,'
+  '"upstream_response_time":"$upstream_response_time",'
+  '"user_agent":"$http_user_agent"'
+'}';
+access_log /var/log/nginx/access.log json_combined;
+```
+
+- `proxy_set_header X-Request-ID $request_id;`를 통해 업스트림 서비스에 `X-Request-ID` 헤더 전달
+
+#### Strapi 요청 로깅
+
+| 상태 범위 | 로그 레벨 | 상세 |
+|---|---|---|
+| 2xx | `debug` | 라우트, 응답 시간 |
+| 4xx | `warn` | 라우트, 상태, 요청 ID, 클라이언트 IP |
+| 5xx | `error` | 라우트, 상태, 요청 ID, 클라이언트 IP, 스택 트레이스 |
+
+- Nginx의 `X-Request-ID` 헤더를 사용하여 로그 상관관계 추적
+
+#### 로그 로테이션
+
+| 항목 | 사양 |
+|---|---|
+| 도구 | `logrotate` |
+| 보존 기간 | 90일 |
+| 로테이션 | 일별, 압축 (`gzip`) |
+| 형식 | 머신 파싱을 위한 JSON |
+
 ### 13.3 업타임 모니터링
 
 - **Cloudflare 헬스 체크:** Cloudflare 엣지에서 오리진 서버 가용성 모니터링
 - **외부 업타임 모니터:** UptimeRobot (무료 티어, 5분 간격) `https://{{DOMAIN}}/ko`, `https://{{ADMIN_DOMAIN}}/api/health`, `https://{{API_DOMAIN}}/api/themes` 핑
+
+### 13.4 오류 추적
+
+- **도구:** Sentry (셀프 호스팅 또는 클라우드)
+- **Strapi:** `@sentry/node` — 미처리 예외 및 5xx 응답 캡처
+- **Customer Web (Next.js):** `@sentry/nextjs`, 빌드 시 소스맵 업로드
+- **Admin Web (Next.js):** `@sentry/nextjs`, 빌드 시 소스맵 업로드
+- **환경 태그:** `production`, `staging`
+
+### 13.5 주요 메트릭 및 알림
+
+| 메트릭 | 소스 | 임계값 (경고) | 임계값 (심각) |
+|---|---|---|---|
+| API 응답 시간 p95 | Nginx 접근 로그 | > 1 s | > 2 s |
+| 오류율 (5xx / 전체) | Nginx 접근 로그 | > 2 % | > 5 % |
+| 헬스 체크 실패 | UptimeRobot | — | 모든 실패 |
+| 활성 사용자 (동시 접속) | Nginx 접근 로그 | 정보성 | — |
+| 디스크 사용량 | cron을 통한 `df` | > 80 % | > 90 % |
+| PostgreSQL 연결 수 | `pg_stat_activity` | `max_connections`의 > 80 % | > 90 % |
+
+**알림 채널:** 전용 Slack 채널 (`#swida-alerts`).
+
+**알림 전달:**
+- UptimeRobot → Slack 웹훅 (헬스 체크 실패)
+- Sentry → Slack 연동 (애플리케이션 오류)
+- Cron 스크립트 → Slack 웹훅 (디스크, DB 연결 임계값 초과)
 
 ---
 
@@ -2523,6 +2783,12 @@ export interface StrapiResponse<T> {
 | D-011 | ORM 지리 공간 대신 PostGIS 원시 SQL | Strapi의 Knex는 PostGIS를 네이티브 지원하지 않음. `strapi.db.connection.raw()`를 통한 원시 SQL이 권장 접근법. | 2026-03-24 |
 | D-012 | 인메모리 대신 Redis API 캐시 | Strapi 재시작 시에도 영속, 다중 인스턴스로 확장 시 공유 가능 | 2026-03-24 |
 | D-013 | React 19.2.4 고정 | CVE-2026-23864를 포함한 모든 RSC CVE 패치. 모든 프론트엔드가 동일 버전 공유. | 2026-03-24 |
+
+### 14.5 연기된 항목
+
+| 항목 | 설명 | 의존 항목 |
+|---|---|---|
+| 서버 측 리뷰 속도 제한 | Cloudflare WAF 제한(사용자당 일 ~400건 이상 통과) 외에 리뷰 도배를 방지하기 위해 Strapi 미들웨어로 사용자별 시간당 및 업체별 일일 제한(예: 10건/사용자/시간, 3건/사용자/업체/일)을 적용. Redis 기반 카운터를 사용하는 커스텀 `review-rate-limit` 미들웨어 필요. | Strapi 커스텀 미들웨어 + Redis |
 
 ---
 

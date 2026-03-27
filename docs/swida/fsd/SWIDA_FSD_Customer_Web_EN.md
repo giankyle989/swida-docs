@@ -38,7 +38,7 @@ This document defines the page list and functional specifications for the SWIDA 
 | Multi-language (Korean / English) | SMS Verification for Reviews |
 | Review Reporting | |
 | My Page (profile, reviews, bookmarks) | |
-| Bookmarks / Favorites | |
+| Bookmarks | |
 | Board System (shop recommendations, info posts) | Board: user-created posts |
 | Board comments with nested replies | Board: keyword search |
 | Community posts with photos/video | Community: post editing/deletion |
@@ -85,6 +85,7 @@ This document defines the page list and functional specifications for the SWIDA 
 | 11 | Sign Up | `/[locale]/auth/signup` | Guest Only | Email registration with consent |
 | 12 | Forgot Password | `/[locale]/auth/forgot-password` | Guest Only | Password reset request (email input) |
 | 13 | Reset Password | `/[locale]/auth/reset-password` | Guest Only | Set new password (token-based) |
+| 13a | Verify Email | `/[locale]/auth/verify-email` | Public | Email verification landing (token-based) |
 | 14 | My Page | `/[locale]/mypage` | Required | User dashboard with profile + tabbed content |
 | 15 | Edit Profile | `/[locale]/mypage/edit` | Required | Profile photo change |
 | 16 | Shop Recommendation Board | `/[locale]/board/recommendation` | Public | Editorial shop recommendation posts |
@@ -191,8 +192,11 @@ This document defines the page list and functional specifications for the SWIDA 
 | F-AUTH-11 | Consent Agreement | "Select All" checkbox + individual required checkboxes for Terms of Service and Privacy Policy. Both must be checked to submit. |
 | F-AUTH-12 | Client-Side Validation | Real-time field validation: email format, password min 6 chars, password match, display name 2–20 chars |
 | F-AUTH-13 | Server-Side Validation | Duplicate email/display name checks per existing F-AUTH-04 constraints |
-| F-AUTH-14 | Sign Up Success Modal | On successful registration: celebration modal with personalized greeting, CTAs to homepage and nearby search |
+| F-AUTH-14 | Sign Up Success Modal | On successful registration: celebration modal with personalized greeting, CTAs to homepage and nearby search. Includes message: "인증 이메일을 발송했습니다. 이메일을 확인해 주세요." / "We've sent a verification email. Please check your inbox." |
 | F-AUTH-15 | Post-Signup Auto-Login | User is automatically logged in after successful registration (session created immediately) |
+| F-AUTH-22 | Email Verification Banner | Unverified users see a persistent banner ("이메일 인증을 완료해 주세요" / "Please verify your email") when attempting to write a review, community post, or comment. Banner includes a "Resend verification email" link. |
+| F-AUTH-23 | Resend Verification Email | "인증 이메일 재발송" / "Resend verification email" link calls `POST /api/auth/resend-verification`. Shows success toast on send, error toast if rate-limited (1 per minute). |
+| F-AUTH-24 | Verification Landing | `/[locale]/auth/verify-email?token=xxx` page. On load, calls `POST /api/auth/verify-email`. Shows success message + auto-redirect to homepage on valid token, or error message + "Resend" link on invalid/expired token. |
 
 **Input Fields**
 
@@ -234,10 +238,12 @@ This document defines the page list and functional specifications for the SWIDA 
 [3] User checks required consent checkboxes (Terms of Service, Privacy Policy).
 [4] User clicks "Sign Up". Client-side validation runs first.
 [5] On validation pass → submit to server. Server checks email/display name uniqueness.
-[6a] Success → auto-login → show success modal with greeting and CTAs.
+[6a] Success → auto-login → show success modal with greeting, CTAs, and verification email notice.
 [6b] Server error → display inline error message under the relevant field.
 [6c] Registration succeeds but auto-login fails → show success modal with message "회원가입이 완료되었습니다. 로그인 페이지로 이동합니다." / "Registration complete. Redirecting to login." CTA: "Go to Login" instead of homepage/nearby CTAs.
 [7] User dismisses modal or clicks a CTA → navigate to chosen page.
+[8] User clicks verification link in email → /[locale]/auth/verify-email?token=xxx → token validated → email_verified set to true → success message shown.
+[9] Unverified user attempts write action (review, post, comment) → verification banner shown with "Resend verification email" link.
 ```
 
 ### 3.6 Password Reset
@@ -272,6 +278,10 @@ This document defines the page list and functional specifications for the SWIDA 
 | Condition | Message |
 |---|---|
 | Submit (always) | "비밀번호 재설정 링크가 이메일로 발송되었습니다. 이메일을 확인해주세요." / "A password reset link has been sent to your email. Please check your inbox." |
+
+**Email Delivery Failure Recovery**
+
+After the confirmation message is shown, a "Didn't receive the email? Resend" link ("이메일을 받지 못하셨나요? 다시 보내기") appears after **60 seconds**. Clicking the link resends the password reset email to the same address. This resend action is rate-limited to a maximum of **3 attempts per hour** (shared with the initial request limit). If the rate limit is exceeded, show: "요청 횟수를 초과했습니다. 잠시 후 다시 시도해주세요." / "Too many requests. Please try again later."
 
 #### 3.6.2 Reset Password (`/[locale]/auth/reset-password?token=XXX`)
 
@@ -371,6 +381,9 @@ The homepage fetches the list of service themes (sorted by display order) and a 
 | Average Rating | Displayed as star rating (e.g., ★ 4.5) |
 | Review Count | Displayed as count (e.g., "리뷰 23개") |
 | Open/Close Tag | The system determines open/closed status based on the shop's operating hours and the current time in Korea (KST) |
+| Bookmark Icon | Heart icon (&#9825;/&#9829;) indicating bookmark state. Tap toggles bookmark (login required) |
+
+> **Note:** Open/Close tag is computed server-side at render time using the shop's `operating_hours` JSONB schedule (TSD §6.4). For ISR pages, the tag reflects the state at cache time (max 60s staleness).
 
 **Data Source**
 
@@ -442,6 +455,8 @@ The page fetches: (1) all Level 1 regions, (2) Level 2 districts for the selecte
 | F-NEAR-06 | Radius Control | Allow user to adjust search radius via preset buttons: 1km, 3km, 5km (default), 10km |
 | F-NEAR-07 | Loading State | Display loading indicator while GPS is resolving (timeout: 10 seconds — show error with retry button if GPS fails or times out) and API is fetching |
 | F-NEAR-08 | Pagination | Page-based |
+| F-NEAR-09 | Refresh Location | "Refresh location" button that re-triggers `getCurrentPosition` and refreshes the shop list with the updated coordinates |
+| F-NEAR-10 | Location Timestamp | Display timestamp of last GPS fix (e.g., "Location updated: 2 min ago"). Updates in real time so users know if their position data is stale |
 
 **Data Source**
 
@@ -492,6 +507,7 @@ Name Search is implemented as a subset of Detail Search (§5). When a user enter
 | F-SHOP-15 | Review Pagination | Page-based pagination for reviews on the shop detail page |
 | F-SHOP-16 | Review Submission | Inline review form on the shop detail page (login required). See §11 for details |
 | F-SHOP-17 | Review Report | Report button on each review (login required). See §11.3 for details |
+| F-SHOP-18 | Bookmark Toggle | Heart icon (&#9825;/&#9829;) on shop detail page. Tap toggles bookmark state via `POST /api/bookmarks` (add) / `DELETE /api/bookmarks/:id` (remove). Requires login — show login gate if not authenticated. Optimistic UI: toggle icon immediately, revert on API failure |
 
 **Gender Availability Display Labels**
 
@@ -525,7 +541,7 @@ Shop detail pages include SEO metadata for search engines, including structured 
 | F-REV-01 | Login Gate | Review form is visible only to logged-in users. Non-logged-in users see a CTA to log in (PRD §8.2) |
 | F-REV-02 | Star Rating Input | 1–5 star scale, required. Interactive star selector (PRD §8.2) |
 | F-REV-03 | Comment Input | Free-text, required. 10–500 characters. Display character count. Client-side validation (PRD §8.2) |
-| F-REV-04 | Submit Review | On success, review appears in list and shop rating/count updates automatically (via lifecycle hook — see TSD §5.3.3). If rating recalculation fails, the review is still saved; rating updates on next successful recalculation. Display success toast |
+| F-REV-04 | Submit Review | On success, review appears in list and shop rating/count updates automatically (via lifecycle hook — see TSD §5.3.3). If rating recalculation fails, the review is still saved; rating updates on next successful recalculation. Display success toast. **Stale-rating mitigation:** After successful review submission, the client updates the displayed shop rating and review count optimistically using the new review data, independent of the ISR-cached page. This ensures the user sees their contribution reflected immediately even if navigating back within the 60-second ISR window |
 | F-REV-05 | Locked Account | If user's account is locked, display error message and prevent submission (PRD §8.5) |
 | F-REV-06 | Validation Error | Display inline error if comment is < 10 or > 500 characters |
 
@@ -625,6 +641,7 @@ Submits the partnership inquiry form data to the server.
 | Missing required field | "필수 항목을 입력해주세요." / "Please fill in all required fields." |
 | Invalid email format | "올바른 이메일 형식을 입력해주세요." / "Please enter a valid email address." |
 | Rate limited | "잠시 후 다시 시도해주세요." / "Please try again later." |
+| Duplicate inquiry (409) | "이미 동일한 문의가 접수되었습니다. 잠시 후 다시 시도해 주세요." / "A similar inquiry was recently submitted. Please wait a few minutes." |
 
 ---
 
@@ -717,6 +734,7 @@ Submits the partnership inquiry form data to the server.
 | F-MYPAGE-07 | Unbookmark Toggle | Heart icon removes bookmark. Optimistic UI: heart unfills immediately. On failure: reverts with toast error. Card remains visible until next page load. |
 | F-MYPAGE-08 | Bookmarks Empty State | "아직 찜한 업체가 없습니다." / "No bookmarked shops yet." with CTA link to shop discovery |
 | F-MYPAGE-09 | Bookmarks Pagination | Page-based, 12 items per page |
+| F-MYPAGE-10A | Unavailable Shop Bookmark | When a bookmarked shop is unpublished (`shop.published_at` is null), the bookmark card shows muted styling with the message: "This shop is currently unavailable" / "이 업체는 현재 비공개입니다". A "Remove bookmark" button is displayed on unavailable shop cards. The bookmark API already returns shop data — if `published_at` is null, render the unavailable state instead of the normal shop card. |
 
 **Profile Card**
 
@@ -921,6 +939,7 @@ Active tab is determined by current route.
 | F-COMM-11 | Comment Section | Same comment system as Board (§17.4, F-BOARD-18 through F-BOARD-21) |
 | F-COMM-12 | User Profile Sidebar | Same as feed (desktop only) |
 | F-COMM-13 | Popular Shops Sidebar | Same as feed (desktop only) |
+| F-COMM-14 | Delete Own Post | Author sees a delete button on their own posts. Confirmation dialog: "Delete this post? This action cannot be undone." / "삭제하시겠습니까? 이 작업은 취소할 수 없습니다." On confirm, `POST` sets post status to `deleted`. Post disappears from feed. Comments under deleted posts are also hidden. Satisfies PIPA §36 (right to request deletion of personal data). |
 
 ### 18.3 User Levels & Points
 
@@ -1117,6 +1136,7 @@ The following features are defined in the UI/UX Specification but deferred from 
 | Phone/SMS Verification | Not in PRD MVP scope | SMS service integration |
 | Welcome Coupon (3,000 KRW on signup) | Coupon system not in PRD MVP scope | Coupon content type + admin management |
 | Stronger Password Rules (8+ chars, alphanumeric + special) | Current FSD/PRD specifies min 6 chars only | PRD update to strengthen requirements |
+| Server-Side Review Rate Limits (10/user/hr, 3/user/shop/day via Strapi middleware) | Cloudflare WAF allows ~400+/day per user; app-level caps needed to prevent review flooding | Strapi custom middleware + Redis counter |
 
 > These features should be added to the FSD when their dependencies are resolved and the PRD scope is updated.
 
