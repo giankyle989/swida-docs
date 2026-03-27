@@ -1707,9 +1707,9 @@ All conflicts between Figma designs and FSD are resolved with **FSD as source of
 | C-07 | Sort options | 추천순, 가격 낮은순 | Rating, Review count, Newest | **Use FSD** | 3 sort options as specified |
 | C-08 | Signup phone + SMS verification | Phone field + 인증요청 | Email + password + display name | **Use FSD** | Phone/SMS deferred |
 | C-09 | Password requirements | 영문/숫자/특수문자 8자+ | Min 6 characters (backend default) | **Use FSD** | Recommend upgrading to Figma's rule in future |
-| C-10 | Review points (500P) | Review success modal shows points | Not in PRD/FSD | **Excluded from MVP** | Point system is future scope |
+| C-10 | Review points (500P) | Review success modal shows points | Not in PRD/FSD | **Partially included** | Community points system in MVP (FSD §18.3), but review-specific points remain excluded. |
 | C-11 | Welcome coupon (3,000 KRW) | Signup success modal shows coupon | Not in PRD/FSD | **Excluded from MVP** | Coupon system is future scope |
-| C-12 | User level/points | Lv.3, 보유 포인트 3200P | Not in PRD customer model | **Excluded from MVP** | Gamification is future scope |
+| C-12 | User level/points | Lv.3, 보유 포인트 3200P | Not in PRD customer model | **Included in MVP (revised)** | User levels (Lv.1–Lv.5) and points system included for Community (FSD §18.3). |
 | C-13 | Navigation structure | Header dropdowns (업체검색▾, 게시판▾) | FSD §15.2 has 6 inline nav items | **Use Figma nav pattern** | Dropdown nav is cleaner for header; Tab Bar provides inline access. Exception to FSD-first rule — layout decision. |
 | C-14 | "비회원 예약 조회" | On login page | Not in FSD | **Deferred** | Non-member booking lookup is future scope |
 | C-15 | App download promo | In community sidebar | Not in FSD | **Deferred** | No mobile app in MVP |
