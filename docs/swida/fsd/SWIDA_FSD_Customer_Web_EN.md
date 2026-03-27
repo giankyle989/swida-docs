@@ -39,6 +39,14 @@ This document defines the page list and functional specifications for the SWIDA 
 | Review Reporting | |
 | My Page (profile, reviews, bookmarks) | |
 | Bookmarks / Favorites | |
+| Board System (shop recommendations, info posts) | Board: user-created posts |
+| Board comments with nested replies | Board: keyword search |
+| Community posts with photos/video | Community: post editing/deletion |
+| Community user levels & points | Community: reporting posts |
+| Community feed filters | Community: points redemption |
+| Events & Notices hub + detail pages | Events: registration/signup |
+| Event D-day countdown + category filtering | Events: coupon issuance |
+| Notices with prev/next navigation | Events: push notifications |
 
 ### 1.3 Global Rules
 
@@ -79,6 +87,15 @@ This document defines the page list and functional specifications for the SWIDA 
 | 13 | Reset Password | `/[locale]/auth/reset-password` | Guest Only | Set new password (token-based) |
 | 14 | My Page | `/[locale]/mypage` | Required | User dashboard with profile + tabbed content |
 | 15 | Edit Profile | `/[locale]/mypage/edit` | Required | Profile photo change |
+| 16 | Shop Recommendation Board | `/[locale]/board/recommendation` | Public | Editorial shop recommendation posts |
+| 17 | Massage Info Board | `/[locale]/board/info` | Public | Forum-style info articles |
+| 18 | Board Post Detail | `/[locale]/board/[type]/[id]` | Public | Individual board post with comments |
+| 19 | Community Feed | `/[locale]/community` | Public | Social feed with user-generated posts |
+| 20 | Community Post Detail | `/[locale]/community/[id]` | Public | Individual community post |
+| 21 | Events & Notices Hub | `/[locale]/events` | Public | Combined notices + events landing |
+| 22 | All Ongoing Events | `/[locale]/events/ongoing` | Public | Filterable event grid |
+| 23 | Event Detail | `/[locale]/events/[id]` | Public | Individual event page |
+| 24 | Notice Detail | `/[locale]/events/notice/[id]` | Public | Individual notice page |
 
 **Auth Legend**: Public = anyone can access (no login required) / Guest Only = only non-authenticated users (logged-in users redirect to homepage)
 
@@ -86,9 +103,9 @@ This document defines the page list and functional specifications for the SWIDA 
 
 | User State | Accessible Pages | Restricted Action Behavior |
 |---|---|---|
-| Not logged in | All public pages (browse only) | Review submission / report → redirect to login. My Page / Edit Profile → redirect to login. |
-| Logged in (active) | All pages + review submission + My Page | Login / Sign Up / Forgot Password / Reset Password → redirect to homepage |
-| Logged in (locked/suspended) | All pages (browse only) + My Page (view only) | Review submission / report → error message. |
+| Not logged in | All public pages (browse only) | Review submission / report → redirect to login. My Page / Edit Profile → redirect to login. Community post creation / commenting → redirect to login. |
+| Logged in (active) | All pages + review submission + My Page + community post creation + commenting | Login / Sign Up / Forgot Password / Reset Password → redirect to homepage |
+| Logged in (locked/suspended) | All pages (browse only) + My Page (view only) | Review submission / report → error message. Community post creation / commenting → error message. |
 
 ---
 
