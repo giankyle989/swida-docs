@@ -240,15 +240,40 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm;  -- 향후 퍼지 검색용
                               │ 1:N
                         ┌─────▼─────┐      M:N     ┌─────────┐
                         │   Shop    │──────────────│  Theme  │
-                        └─────┬─────┘              └─────────┘
-                              │ 1:N
-                        ┌─────▼─────┐
-                        │  Review   │
-                        └─────┬─────┘
-                              │ N:1
-                        ┌─────▼─────────────┐
-                        │  User (customer)  │
-                        └───────────────────┘
+                        └──┬──┬─────┘              └─────────┘
+                           │  │ 1:N
+              ┌────────────┘  └──────────────┐
+              │ 1:N                          │ M:N
+        ┌─────▼─────┐               ┌───────▼───────┐
+        │  Review   │               │ User Bookmark │
+        └─────┬─────┘               └───────┬───────┘
+              │ N:1                          │ N:1
+        ┌─────▼─────────────┐────────────────┘
+        │  User (customer)  │
+        └──┬──┬──┬──────────┘
+           │  │  │ 1:N
+   ┌───────┘  │  └───────────────┐
+   │ 1:N      │ 1:N              │ 1:N
+┌──▼──────┐ ┌─▼──────┐  ┌───────▼──────┐
+│Community│ │Comment │  │  Post Like   │
+│  Post   │ │(poly)  │  │  (poly)      │
+└─────────┘ └────────┘  └──────────────┘
+
+Comment targets (polymorphic):
+  Board Post, Community Post, Event
+
+Post Like targets (polymorphic):
+  Board Post, Community Post, Event
+
+┌──────────────┐     ┌──────────────┐
+│  Board Post  │     │    Event     │
+│ (admin)      │     │  (admin)     │
+└──────────────┘     └──────────────┘
+
+┌──────────────┐     ┌──────────────────┐
+│    Notice    │     │ User Points Log  │
+│ (admin)      │     │                  │
+└──────────────┘     └──────────────────┘
 
 ┌───────────────────────┐
 │  Partnership Inquiry  │ ──(선택적)──→ Shop
@@ -399,6 +424,188 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm;  -- 향후 퍼지 검색용
 | field_diffs | jsonb | Nullable | `{ field: { before, after } }` |
 | created_at | timestamptz | Not Null | |
 
+#### `up_users` 확장 (Strapi Users & Permissions)
+
+기존 Strapi 사용자 모델에 추가되는 필드:
+
+| 컬럼 | 타입 | 제약 조건 | 비고 |
+|---|---|---|---|
+| avatar | relation | Nullable | Strapi 미디어 (단일). 프로필 사진. 최대 5MB, JPG/PNG/WebP. |
+| total_points | integer | Not Null, 기본값 0 | 계산값: SUM of user_points_log.points. 라이프사이클 훅으로 업데이트. |
+
+**레벨 산출 (계산값, 저장하지 않음):**
+- 0P → Lv.1, 500P → Lv.2, 2,000P → Lv.3, 5,000P → Lv.4, 10,000P → Lv.5
+
+재사용되는 기존 필드: `username` (표시 이름), `email`, `created_at` (가입일).
+
+#### 4.4.8 `board_posts`
+
+관리자 작성 게시판 게시글 — 업체 추천 및 마사지 정보용.
+
+| 컬럼 | 타입 | 제약 조건 | 비고 |
+|---|---|---|---|
+| id | serial | PK | 자동 생성 |
+| document_id | varchar | Unique, Not Null | Strapi v5 문서 식별자 |
+| type | varchar(20) | Not Null | 열거형: `recommendation`, `info` |
+| title | varchar(255) | Not Null | 다국어 (i18n) |
+| body | text | Not Null | 리치 텍스트, 다국어 |
+| excerpt | varchar(500) | Nullable | 다국어. 비어 있으면 body에서 자동 생성. |
+| category | varchar(50) | Nullable | 뱃지 레이블 (예: "실전팁", "초보가이드") |
+| author_name | varchar(100) | Not Null | 관리자 표시 이름 (FK 아님 — 관리자가 Strapi를 통해 작성) |
+| is_featured | boolean | Not Null, 기본값 false | 추천 배너 캐러셀에 표시 |
+| is_hot | boolean | Not Null, 기본값 false | 관리자 설정 HOT 뱃지 |
+| view_count | integer | Not Null, 기본값 0 | 페이지 조회 시 증가 |
+| like_count | integer | Not Null, 기본값 0 | 라이프사이클 훅으로 계산 |
+| comment_count | integer | Not Null, 기본값 0 | 라이프사이클 훅으로 계산 |
+| locale | varchar(10) | Not Null | `ko`, `en` |
+| published_at | timestamptz | Nullable | 초안 & 게시 |
+| created_at | timestamptz | Not Null | 자동 |
+| updated_at | timestamptz | Not Null | 자동 |
+
+**관계:**
+- `region_id` → `regions`로의 FK (다대일, nullable — 지역 필터링용)
+- `linked_shop_id` → `shops`로의 FK (다대일, nullable — 추천 게시글 전용)
+- `featured_image` → Strapi 미디어 (단일)
+
+#### 4.4.9 `community_posts`
+
+사용자 작성 커뮤니티 게시글.
+
+| 컬럼 | 타입 | 제약 조건 | 비고 |
+|---|---|---|---|
+| id | serial | PK | |
+| document_id | varchar | Unique, Not Null | |
+| content | text | Not Null | 1–2,000자 (앱 레벨) |
+| hashtags | jsonb | Nullable | 문자열 배열, 최대 10개, 각 최대 30자 |
+| location_text | varchar(200) | Nullable | 자유 텍스트 위치 (예: "강남구 역삼동") |
+| view_count | integer | Not Null, 기본값 0 | |
+| like_count | integer | Not Null, 기본값 0 | 라이프사이클 훅으로 계산 |
+| comment_count | integer | Not Null, 기본값 0 | 라이프사이클 훅으로 계산 |
+| status | varchar(20) | Not Null, 기본값 'published' | 열거형: `published`, `hidden`, `deleted` |
+| author_id | integer | FK → up_users.id | Not Null |
+| created_at | timestamptz | Not Null | |
+| updated_at | timestamptz | Not Null | |
+
+**관계:**
+- `photos` → Strapi 미디어 (다수, 최대 5개, 각 최대 5MB, JPG/PNG/WebP)
+- `video` → Strapi 미디어 (단일, nullable, 최대 50MB, MP4/MOV)
+
+**i18n 없음** — 커뮤니티 게시글은 작성된 언어로 저장됩니다 (리뷰와 동일).
+
+#### 4.4.10 `comments`
+
+게시판 게시글, 커뮤니티 게시글, 이벤트를 위한 공유 다형성 댓글 시스템.
+
+| 컬럼 | 타입 | 제약 조건 | 비고 |
+|---|---|---|---|
+| id | serial | PK | |
+| document_id | varchar | Unique, Not Null | |
+| content | text | Not Null | 1–500자 (앱 레벨) |
+| parent_type | varchar(50) | Not Null | 다형성: `board_post`, `community_post`, `event` |
+| parent_id | integer | Not Null | 부모 엔티티의 ID |
+| reply_to_id | integer | FK → comments.id, Nullable | 1단계 중첩 답글 전용 |
+| author_id | integer | FK → up_users.id | Not Null |
+| created_at | timestamptz | Not Null | |
+
+**i18n 없음** — 댓글은 작성된 언어로 저장됩니다.
+
+**제약 조건:** `reply_to_id`는 동일한 `parent_type` 및 `parent_id`를 가진 댓글을 참조해야 합니다. 애플리케이션 레벨 유효성 검사가 더 깊은 중첩(답글에 대한 답글)을 방지합니다.
+
+#### 4.4.11 `events`
+
+관리자가 관리하는 기간 한정 이벤트/캠페인.
+
+| 컬럼 | 타입 | 제약 조건 | 비고 |
+|---|---|---|---|
+| id | serial | PK | |
+| document_id | varchar | Unique, Not Null | |
+| title | varchar(255) | Not Null | 다국어 (i18n) |
+| body | text | Not Null | 리치 텍스트, 다국어 |
+| category | varchar(30) | Not Null | 열거형: `new_opening`, `closing_soon`, `coupon`, `winner_announcement`, `general` |
+| start_date | date | Not Null | 이벤트 시작 (KST) |
+| end_date | date | Not Null | 이벤트 종료 (KST). D-day 계산에 사용. |
+| disclaimers | text | Nullable | 다국어. 이벤트 규칙/조건. |
+| is_featured | boolean | Not Null, 기본값 false | 히어로 배너 캐러셀에 표시 |
+| view_count | integer | Not Null, 기본값 0 | |
+| like_count | integer | Not Null, 기본값 0 | 라이프사이클 훅으로 계산 |
+| author_name | varchar(100) | Not Null | 관리자 표시 이름 |
+| locale | varchar(10) | Not Null | |
+| published_at | timestamptz | Nullable | |
+| created_at | timestamptz | Not Null | |
+| updated_at | timestamptz | Not Null | |
+
+**관계:**
+- `banner_image` → Strapi 미디어 (단일) — 전체 너비 상세 배너
+- `featured_image` → Strapi 미디어 (단일) — 카드 썸네일
+
+**D-Day 카운트다운 (계산값, 저장하지 않음):**
+- `end_date > today(KST)` → D-N
+- `end_date = today(KST)` → D-DAY
+- `end_date < today(KST)` → 마감 (Closed)
+
+#### 4.4.12 `notices`
+
+관리자가 게시하는 공지사항.
+
+| 컬럼 | 타입 | 제약 조건 | 비고 |
+|---|---|---|---|
+| id | serial | PK | |
+| document_id | varchar | Unique, Not Null | |
+| title | varchar(255) | Not Null | 다국어 (i18n) |
+| body | text | Not Null | 리치 텍스트, 다국어 |
+| category | varchar(20) | Not Null | 열거형: `notice`, `general` |
+| is_important | boolean | Not Null, 기본값 false | 📌와 함께 상단 고정 |
+| view_count | integer | Not Null, 기본값 0 | |
+| locale | varchar(10) | Not Null | |
+| published_at | timestamptz | Nullable | |
+| created_at | timestamptz | Not Null | |
+| updated_at | timestamptz | Not Null | |
+
+공지사항에는 댓글, 좋아요가 없습니다.
+
+#### 4.4.13 `user_bookmarks`
+
+사용자 ↔ 업체 즐겨찾기를 위한 조인 테이블.
+
+| 컬럼 | 타입 | 제약 조건 | 비고 |
+|---|---|---|---|
+| id | serial | PK | |
+| user_id | integer | FK → up_users.id, Not Null | |
+| shop_id | integer | FK → shops.id, Not Null | |
+| created_at | timestamptz | Not Null | "최근 즐겨찾기 순" 정렬용 |
+
+**유니크 제약 조건:** `(user_id, shop_id)` — 중복 즐겨찾기 방지.
+
+#### 4.4.14 `user_points_log`
+
+게이미피케이션을 위한 포인트 거래 내역.
+
+| 컬럼 | 타입 | 제약 조건 | 비고 |
+|---|---|---|---|
+| id | serial | PK | |
+| user_id | integer | FK → up_users.id, Not Null | |
+| action | varchar(30) | Not Null | 열거형: `post_created`, `comment_created`, `like_received` |
+| points | integer | Not Null | +50, +10, 또는 +5 |
+| reference_type | varchar(50) | Not Null | `community_post`, `comment`, `post_like` |
+| reference_id | integer | Not Null | 트리거 엔티티의 ID |
+| created_at | timestamptz | Not Null | 일일 한도 추적용 |
+
+**일일 한도 적용:** `comment_created` 액션은 사용자당 하루 10회로 제한 (`COUNT WHERE action='comment_created' AND user_id=X AND created_at >= today`로 확인).
+
+#### 4.4.15 `post_likes`
+
+누가 무엇에 좋아요를 눌렀는지 추적하는 조인 테이블 (다형성).
+
+| 컬럼 | 타입 | 제약 조건 | 비고 |
+|---|---|---|---|
+| id | serial | PK | |
+| user_id | integer | FK → up_users.id, Not Null | |
+| target_type | varchar(50) | Not Null | `board_post`, `community_post`, `event` |
+| target_id | integer | Not Null | 좋아요 대상 엔티티의 ID |
+| created_at | timestamptz | Not Null | |
+
+**유니크 제약 조건:** `(user_id, target_type, target_id)` — 대상당 사용자당 좋아요 1회.
+
 ### 4.5 인덱스
 
 Strapi가 자동 생성하는 인덱스(PK, FK, 고유 제약) 외에, 다음 커스텀 인덱스를 Strapi 부트스트랩 스크립트 또는 마이그레이션을 통해 생성해야 합니다:
@@ -423,6 +630,25 @@ CREATE INDEX idx_reviews_shop_status ON reviews (shop_id, status, created_at DES
 CREATE INDEX idx_districts_region ON districts (region_id);
 ```
 
+신규 테이블을 위한 추가 인덱스:
+
+| 테이블 | 컬럼 | 타입 | 목적 |
+|---|---|---|---|
+| board_posts | `(type, published_at DESC)` | B-tree | 타입별 게시판 목록 쿼리 |
+| board_posts | `(region_id, type)` | B-tree | 추천 게시글 지역 필터 |
+| board_posts | `(is_featured, type)` | Partial (where is_featured=true) | 추천 배너 쿼리 |
+| community_posts | `(author_id, created_at DESC)` | B-tree | "내 게시글" 필터 |
+| community_posts | `(status, created_at DESC)` | B-tree | 피드 쿼리 |
+| comments | `(parent_type, parent_id, created_at)` | B-tree | 게시글별 댓글 목록 |
+| events | `(category, end_date DESC)` | B-tree | 카테고리 + 진행 중 필터 |
+| events | `(is_featured, end_date)` | Partial (where is_featured=true) | 히어로 배너 쿼리 |
+| notices | `(is_important DESC, published_at DESC)` | B-tree | 고정 우선 공지 목록 |
+| user_bookmarks | `(user_id, created_at DESC)` | B-tree | 사용자 즐겨찾기 목록 |
+| user_bookmarks | `(user_id, shop_id)` | Unique | 중복 즐겨찾기 방지 |
+| user_points_log | `(user_id, action, created_at)` | B-tree | 일일 한도 확인 |
+| post_likes | `(user_id, target_type, target_id)` | Unique | 중복 좋아요 방지 |
+| post_likes | `(target_type, target_id)` | B-tree | 대상별 좋아요 수 조회 |
+
 ### 4.6 시드 데이터
 
 Strapi 부트스트랩 스크립트(`database/seeds/`)를 통해 출시 시 미리 시드됩니다:
@@ -446,6 +672,14 @@ Strapi 부트스트랩 스크립트(`database/seeds/`)를 통해 출시 시 미�
 | District | `api::district.district` | 컬렉션 | 예 | 예 |
 | Partnership Inquiry | `api::partnership-inquiry.partnership-inquiry` | 컬렉션 | 아니오 | 아니오 |
 | Audit Log | `api::audit-log.audit-log` | 컬렉션 | 아니오 | 아니오 |
+| Board Post | `api::board-post.board-post` | 컬렉션 | 예 | 예 |
+| Community Post | `api::community-post.community-post` | 컬렉션 | 아니오 | 아니오 |
+| Comment | `api::comment.comment` | 컬렉션 | 아니오 | 아니오 |
+| Event | `api::event.event` | 컬렉션 | 예 | 예 |
+| Notice | `api::notice.notice` | 컬렉션 | 예 | 예 |
+| User Bookmark | `api::user-bookmark.user-bookmark` | 컬렉션 | 아니오 | 아니오 |
+| User Points Log | `api::user-points-log.user-points-log` | 컬렉션 | 아니오 | 아니오 |
+| Post Like | `api::post-like.post-like` | 컬렉션 | 아니오 | 아니오 |
 
 **컴포넌트:**
 
@@ -639,6 +873,384 @@ export default {
 
 **구현:** Strapi Document Service API를 사용하여 업체, 리뷰, 사용자, 파트너십 문의에 대한 집계 쿼리(`strapi.documents().count()`)를 실행합니다. `recent_activity` 필드는 `audit-log` 컬렉션 타입에서 최근 10개 항목을 쿼리합니다. 이 엔드포인트는 관리자 API JWT를 통해 인증된 관리자 사용자만 접근 가능합니다.
 
+#### 5.2.6 게시판 게시글(Board Posts)
+
+| 메서드 | 엔드포인트 | 인증 | 설명 |
+|---|---|---|---|
+| GET | `/api/board-posts` | 공개 | 게시판 게시글 목록 (페이지네이션, 필터, 정렬 가능) |
+| GET | `/api/board-posts/:documentId` | 공개 | 단일 게시판 게시글 상세 |
+
+**GET `/api/board-posts` — 쿼리 파라미터:**
+
+```
+?locale=ko
+&filters[type][$eq]=recommendation
+&filters[region][documentId][$eq]=abc123
+&filters[is_featured][$eq]=true
+&sort=created_at:desc
+&pagination[page]=1
+&pagination[pageSize]=12
+&populate[featured_image][fields][0]=url
+&populate[featured_image][fields][1]=alternativeText
+&populate[linked_shop][fields][0]=name
+&populate[linked_shop][fields][1]=slug
+&populate[region][fields][0]=name
+```
+
+**응답 형식 (목록):**
+
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "documentId": "bp001",
+      "type": "recommendation",
+      "title": "이번 주 가장 핫한 강남 스웨디시 샵",
+      "excerpt": "전문가가 추천하는 최고의...",
+      "category": "에디터 픽",
+      "author_name": "SWIDA 에디터",
+      "is_featured": true,
+      "is_hot": false,
+      "view_count": 1242,
+      "like_count": 84,
+      "comment_count": 23,
+      "created_at": "2026-03-19T10:00:00Z",
+      "featured_image": { "url": "/uploads/board1.jpg", "alternativeText": "..." },
+      "linked_shop": { "name": "더 힐 테라피", "slug": "the-hill-therapy" },
+      "region": { "name": "서울" }
+    }
+  ],
+  "meta": { "pagination": { "page": 1, "pageSize": 12, "pageCount": 3, "total": 30 } }
+}
+```
+
+**GET `/api/board-posts/:documentId` — 응답 (단일):**
+
+목록 항목과 동일한 형태이나, `excerpt` 대신 전체 `body`(리치 텍스트)가 포함되며, `linked_shop`은 전체 업체 카드 필드(name, slug, address, operating_hours, amenities)로 populate됩니다.
+
+#### 5.2.7 커뮤니티 게시글(Community Posts)
+
+| 메서드 | 엔드포인트 | 인증 | 설명 |
+|---|---|---|---|
+| GET | `/api/community-posts` | 공개 | 커뮤니티 게시글 목록 (피드) |
+| GET | `/api/community-posts/:documentId` | 공개 | 단일 게시글 상세 |
+| POST | `/api/community-posts` | 고객 (JWT) | 커뮤니티 게시글 작성 |
+
+**GET `/api/community-posts` — 쿼리 파라미터:**
+
+```
+?filters[author][id][$eq]=42          // "내 게시글" 필터
+&filters[status][$eq]=published
+&sort=created_at:desc                  // 또는 like_count:desc (월간 베스트)
+&pagination[page]=1
+&pagination[pageSize]=10
+&populate[photos][fields][0]=url
+&populate[author][fields][0]=username
+&populate[author][fields][1]=total_points
+```
+
+**응답 형식 (목록):**
+
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "documentId": "cp001",
+      "content": "강남 역삼동에 새로 오픈한 스웨디시 샵 다녀왔어요...",
+      "hashtags": ["#강남마사지", "#스웨디시"],
+      "location_text": "강남구 역삼동",
+      "view_count": 320,
+      "like_count": 24,
+      "comment_count": 8,
+      "created_at": "2026-03-27T08:15:00Z",
+      "photos": [{ "url": "/uploads/photo1.jpg" }],
+      "author": {
+        "id": 42,
+        "username": "힐링마스터",
+        "total_points": 3200,
+        "level": 3
+      }
+    }
+  ],
+  "meta": { "pagination": { "page": 1, "pageSize": 10, "pageCount": 5, "total": 48 } }
+}
+```
+
+> **참고:** `level`은 `total_points`에서 응답 시점에 계산되며, 저장되지 않습니다.
+
+**POST `/api/community-posts` — 요청 본문:**
+
+```json
+{
+  "data": {
+    "content": "오늘 방문한 마사지 샵 후기...",
+    "hashtags": ["#마사지후기", "#강남"],
+    "location_text": "강남구 역삼동"
+  }
+}
+```
+
+사진과 영상은 Strapi의 미디어 업로드 엔드포인트를 통해 별도로 업로드된 후, 후속 PUT 요청에서 연결됩니다 (표준 Strapi 미디어 워크플로우).
+
+#### 5.2.8 댓글(Comments)
+
+| 메서드 | 엔드포인트 | 인증 | 설명 |
+|---|---|---|---|
+| GET | `/api/comments` | 공개 | 부모 엔티티의 댓글 목록 |
+| POST | `/api/comments` | 고객 (JWT) | 댓글 또는 중첩 답글 작성 |
+
+**GET `/api/comments` — 쿼리 파라미터:**
+
+```
+?filters[parent_type][$eq]=board_post
+&filters[parent_id][$eq]=1
+&filters[reply_to_id][$null]=true      // 최상위 댓글만
+&sort=created_at:asc
+&pagination[page]=1
+&pagination[pageSize]=20
+&populate[author][fields][0]=username
+&populate[author][fields][1]=total_points
+&populate[replies][populate][author][fields][0]=username
+```
+
+**응답 형식:**
+
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "documentId": "cm001",
+      "content": "와 여기 가보고 싶었는데 상세한 리뷰 감사합니다!",
+      "parent_type": "board_post",
+      "parent_id": 1,
+      "reply_to_id": null,
+      "created_at": "2026-03-27T10:30:00Z",
+      "author": { "id": 10, "username": "마사지매니아", "total_points": 800, "level": 2 },
+      "replies": [
+        {
+          "id": 2,
+          "content": "저도 갈만한지 알려주세요!",
+          "reply_to_id": 1,
+          "created_at": "2026-03-27T11:00:00Z",
+          "author": { "id": 15, "username": "쉬다", "total_points": 100, "level": 1 }
+        }
+      ]
+    }
+  ],
+  "meta": { "pagination": { "page": 1, "pageSize": 20, "pageCount": 2, "total": 24 } }
+}
+```
+
+**POST `/api/comments` — 요청 본문:**
+
+```json
+{
+  "data": {
+    "content": "좋은 정보 감사합니다!",
+    "parent_type": "board_post",
+    "parent_id": 1,
+    "reply_to_id": null
+  }
+}
+```
+
+답글의 경우: `reply_to_id`를 부모 댓글의 ID로 설정합니다. 서버는 참조된 댓글이 동일한 `parent_type` 및 `parent_id`를 공유하는지 검증합니다.
+
+#### 5.2.9 이벤트 및 공지사항(Events & Notices)
+
+| 메서드 | 엔드포인트 | 인증 | 설명 |
+|---|---|---|---|
+| GET | `/api/events` | 공개 | 이벤트 목록 (카테고리 필터, 정렬 가능) |
+| GET | `/api/events/:documentId` | 공개 | 단일 이벤트 상세 |
+| GET | `/api/notices` | 공개 | 공지사항 목록 (고정 우선) |
+| GET | `/api/notices/:documentId` | 공개 | 이전/다음이 포함된 단일 공지 상세 |
+
+**GET `/api/events` — 쿼리 파라미터:**
+
+```
+?locale=ko
+&filters[category][$eq]=new_opening
+&filters[end_date][$gte]=2026-03-27    // 진행 중/예정 이벤트만
+&sort=end_date:asc                      // 또는 like_count:desc (인기순)
+&pagination[page]=1
+&pagination[pageSize]=12
+&populate[featured_image][fields][0]=url
+```
+
+**응답 형식 (이벤트 목록):**
+
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "documentId": "ev001",
+      "title": "신규 가입하고 1만원 즉시 할인!",
+      "category": "coupon",
+      "start_date": "2026-05-01",
+      "end_date": "2026-05-31",
+      "is_featured": true,
+      "view_count": 4521,
+      "like_count": 128,
+      "author_name": "SWIDA",
+      "dday": "D-12",
+      "featured_image": { "url": "/uploads/event1.jpg" }
+    }
+  ],
+  "meta": { "pagination": { "page": 1, "pageSize": 12, "pageCount": 1, "total": 8 } }
+}
+```
+
+> **참고:** `dday`는 KST 기준으로 응답 시점에 계산되며, 저장되지 않습니다.
+
+**GET `/api/notices` — 응답에 고정 정렬을 위한 `is_important` 포함:**
+
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "documentId": "nt001",
+      "title": "쉬다 리뉴얼 기념 포인트 2배 적립",
+      "category": "notice",
+      "is_important": true,
+      "view_count": 1245,
+      "published_at": "2026-05-15T00:00:00Z"
+    }
+  ],
+  "meta": { "pagination": { "page": 1, "pageSize": 20, "pageCount": 1, "total": 15 } }
+}
+```
+
+**GET `/api/notices/:documentId` — 이전/다음이 포함된 단일 공지:**
+
+커스텀 컨트롤러가 기본 Strapi `findOne`에 `prev` 및 `next` 필드를 추가합니다:
+
+```json
+{
+  "data": {
+    "id": 1,
+    "documentId": "nt001",
+    "title": "쉬다 리뉴얼 기념 포인트 2배 적립",
+    "body": "<p>Rich text content...</p>",
+    "category": "notice",
+    "is_important": true,
+    "view_count": 1246,
+    "published_at": "2026-05-15T00:00:00Z"
+  },
+  "prev": { "documentId": "nt002", "title": "서비스 정기 점검 안내", "published_at": "2026-05-28T00:00:00Z" },
+  "next": { "documentId": "nt003", "title": "부적절한 리뷰 작성 시 제재 안내", "published_at": "2026-05-10T00:00:00Z" }
+}
+```
+
+#### 5.2.10 즐겨찾기(Bookmarks)
+
+| 메서드 | 엔드포인트 | 인증 | 설명 |
+|---|---|---|---|
+| GET | `/api/bookmarks` | 고객 (JWT) | 사용자의 즐겨찾기 업체 목록 (페이지네이션) |
+| POST | `/api/bookmarks` | 고객 (JWT) | 즐겨찾기 추가 |
+| DELETE | `/api/bookmarks/:id` | 고객 (JWT) | 즐겨찾기 제거 |
+
+**GET `/api/bookmarks` — 쿼리 파라미터:**
+
+```
+?sort=created_at:desc
+&pagination[page]=1
+&pagination[pageSize]=12
+&populate[shop][populate][thumbnail][fields][0]=url
+&populate[shop][fields][0]=name
+&populate[shop][fields][1]=slug
+&populate[shop][fields][2]=address
+&populate[shop][populate][themes][fields][0]=name
+&populate[shop][populate][district][fields][0]=name
+```
+
+**응답 형식:**
+
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "shop": {
+        "documentId": "shop001",
+        "name": "힐링스파 강남",
+        "slug": "healing-spa-gangnam",
+        "address": "서울 강남구 ...",
+        "thumbnail": { "url": "/uploads/thumb.jpg" },
+        "themes": [{ "name": "스웨디시" }],
+        "district": { "name": "강남구" }
+      },
+      "created_at": "2026-03-27T14:00:00Z"
+    }
+  ],
+  "meta": { "pagination": { "page": 1, "pageSize": 12, "pageCount": 1, "total": 5 } }
+}
+```
+
+**POST `/api/bookmarks` — 요청:**
+
+```json
+{ "data": { "shop": "shop001" } }
+```
+
+서버가 JWT에서 `user_id`를 자동으로 설정합니다. 즐겨찾기가 이미 존재하면 409를 반환합니다.
+
+**DELETE `/api/bookmarks/:id`** — 서버가 해당 즐겨찾기가 인증된 사용자의 것인지 검증합니다.
+
+#### 5.2.11 좋아요(Likes)
+
+| 메서드 | 엔드포인트 | 인증 | 설명 |
+|---|---|---|---|
+| POST | `/api/likes` | 고객 (JWT) | 대상에 좋아요 |
+| DELETE | `/api/likes/:id` | 고객 (JWT) | 좋아요 취소 |
+
+**POST `/api/likes` — 요청:**
+
+```json
+{
+  "data": {
+    "target_type": "board_post",
+    "target_id": 1
+  }
+}
+```
+
+서버가 JWT에서 `user_id`를 자동으로 설정합니다. 이미 좋아요한 경우 409를 반환합니다. 성공 시, 라이프사이클 훅이 대상 엔티티의 `like_count`를 증가시키고 대상 작성자에게 `user_points_log` 항목을 생성합니다 (+5P `like_received`).
+
+**DELETE `/api/likes/:id`** — 서버가 소유권을 검증합니다. 대상의 `like_count`를 감소시킵니다. 포인트 보상은 취소되지 않습니다(포인트는 절대 감소하지 않음).
+
+#### 5.2.12 사용자 프로필(User Profile)
+
+| 메서드 | 엔드포인트 | 인증 | 설명 |
+|---|---|---|---|
+| GET | `/api/users/me` | 고객 (JWT) | 계산된 레벨이 포함된 현재 사용자 프로필 |
+| PUT | `/api/users/me/avatar` | 고객 (JWT) | 프로필 사진 업로드/변경 |
+| DELETE | `/api/users/me/avatar` | 고객 (JWT) | 프로필 사진 제거 |
+
+**GET `/api/users/me` — 응답:**
+
+```json
+{
+  "id": 42,
+  "username": "힐링마스터",
+  "email": "user@example.com",
+  "total_points": 3200,
+  "level": 3,
+  "avatar": { "url": "/uploads/avatar42.jpg" },
+  "created_at": "2026-01-15T00:00:00Z"
+}
+```
+
+> `level`은 응답 시점에 `total_points`에서 계산됩니다.
+
+**PUT `/api/users/me/avatar`** — 멀티파트 폼 업로드. 서버가 파일 타입(JPG/PNG/WebP) 및 크기(최대 5MB)를 검증합니다. 기존 아바타를 교체합니다.
+
+**DELETE `/api/users/me/avatar`** — 아바타 미디어 관계를 제거합니다. 프로필은 클라이언트에서 기본 아바타로 되돌아갑니다.
+
 ### 5.3 커스텀 미들웨어, 정책 및 라이프사이클 훅
 
 #### 5.3.1 미들웨어: `account-lock`
@@ -707,6 +1319,66 @@ await strapi.db.connection.raw('SELECT pg_advisory_xact_lock(hashtext(?))', [sho
 **트리거:** `beforeUpdate`(이전 값 캡처용), `afterUpdate`, `afterCreate`, `afterDelete`
 **동작:** 필드 수준 차이를 캡처하고, `strapi.requestContext`의 관리 API JWT에서 추출한 관리자 사용자 정보와 함께 `audit-log` 컬렉션 타입에 기록합니다.
 
+#### 5.3.5 라이프사이클 훅: 댓글 수 재계산
+
+`comment`의 `afterCreate` 시: 부모 엔티티(`parent_type` 필드로 결정 — `board_post`, `community_post`, 또는 `event`)의 `comment_count`를 증가시킵니다. 원자적 `UPDATE SET comment_count = comment_count + 1` 쿼리를 사용합니다.
+
+#### 5.3.6 라이프사이클 훅: 좋아요 수 재계산
+
+`post_like`의 `afterCreate` 시: 대상 엔티티(`target_type`으로 결정 — `board_post`, `community_post`, 또는 `event`)의 `like_count`를 증가시킵니다.
+
+`post_like`의 `afterDelete` 시: 대상 엔티티의 `like_count`를 감소시킵니다.
+
+둘 다 원자적 증가/감소 쿼리를 사용합니다.
+
+#### 5.3.7 라이프사이클 훅: 포인트 계산
+
+`community_post`의 `afterCreate` 시:
+1. `user_points_log` 항목 삽입: `{ action: 'post_created', points: 50, reference_type: 'community_post', reference_id: post.id }`
+2. 작성자의 `total_points`를 50 증가
+
+`comment`의 `afterCreate` 시:
+1. 일일 한도 확인: `SELECT COUNT(*) FROM user_points_log WHERE user_id = author.id AND action = 'comment_created' AND created_at >= today_start(KST)`
+2. 카운트 < 10인 경우: `user_points_log` 항목 `{ action: 'comment_created', points: 10 }` 삽입 및 작성자의 `total_points`를 10 증가
+3. 카운트 >= 10인 경우: 포인트 보상 건너뜀 (일일 한도 도달)
+
+`post_like`의 `afterCreate` 시:
+1. 좋아요 대상 엔티티의 작성자를 조회
+2. 해당 작성자에 대한 `user_points_log` 삽입: `{ action: 'like_received', points: 5, reference_type: 'post_like', reference_id: like.id }`
+3. 해당 작성자의 `total_points`를 5 증가
+
+> **참고:** 포인트는 절대 감소하지 않습니다. 좋아요 취소(좋아요 삭제)는 포인트 보상을 되돌리지 않습니다.
+
+#### 5.3.8 커스텀 컨트롤러: 조회수 증가
+
+**라우트:** `POST /api/:contentType/:documentId/view`
+
+지정된 콘텐츠 타입과 문서의 `view_count`를 원자적으로 증가시킵니다. 인위적 조작 방지를 위해 사용자 세션(쿠키 기반)당 문서당 30분에 1회로 제한됩니다.
+
+**적용 대상:** `board-posts`, `community-posts`, `events`, `notices`
+
+**응답:** `{ "data": { "view_count": 1243 } }`
+
+#### 5.3.9 커스텀 컨트롤러: 공지사항 이전/다음
+
+**라우트:** `GET /api/notices/:documentId`
+
+기본 Strapi `findOne`을 확장하여 동일 로케일 내 `published_at` 순서에 따른 `prev` 및 `next` 공지 참조를 추가하는 커스텀 컨트롤러입니다.
+
+**로직:**
+- `prev`: 현재 공지보다 `published_at`가 가장 가까운 이후(더 새로운) 공지
+- `next`: 현재 공지보다 `published_at`가 가장 가까운 이전(더 오래된) 공지
+- 이전/다음이 없는 경우 해당 필드는 `null`
+
+**응답에 추가되는 필드:**
+```json
+{
+  "data": { ... },
+  "prev": { "documentId": "nt002", "title": "...", "published_at": "..." },
+  "next": { "documentId": "nt003", "title": "...", "published_at": "..." }
+}
+```
+
 ### 5.4 인증
 
 #### 5.4.1 고객 인증 (Strapi Users & Permissions)
@@ -748,6 +1420,11 @@ await strapi.db.connection.raw('SELECT pg_advisory_xact_lock(hashtext(?))', [sho
 | 콘텐츠 관리 | 테마, 지역, 구/군, 편의시설 옵션 관리. |
 | 로케일 관리 | Admin Web의 로케일 전환기를 통해 Strapi i18n API를 호출하여 현지화된 콘텐츠(한국어/영어) 생성 및 관리. |
 | 감사 로그 뷰어 | 모든 목록 변경 내역의 검색 가능하고 필터 가능한 테이블. |
+| **게시판 게시글** | 타입 필터, 추천 토글, HOT 뱃지 관리가 포함된 게시판 게시글 CRUD 인터페이스 |
+| **이벤트** | 날짜 선택기, 카테고리, 추천 토글이 포함된 이벤트 CRUD |
+| **공지사항** | 중요/고정 토글이 포함된 공지사항 CRUD |
+| **커뮤니티 모더레이션** | 커뮤니티 게시글 조회, 숨김 또는 삭제. 사용자 활동 조회. |
+| **사용자 포인트** | 사용자 포인트 내역 및 현재 레벨 조회 (읽기 전용) |
 
 > **참고:** Strapi의 내장 관리자 패널은 이러한 운영 기능에 사용하지 않습니다. 개발자의 모니터링 및 디버깅 목적으로만 제한됩니다.
 
@@ -786,7 +1463,31 @@ apps/customer-web/
 │       │   │   └── page.tsx         # 로그인 페이지
 │       │   └── callback/
 │       │       └── page.tsx         # OAuth 콜백
-│       └── not-found.tsx
+│       ├── mypage/
+│       │   ├── page.tsx              # 마이 페이지 대시보드 (CSR)
+│       │   └── edit/
+│       │       └── page.tsx          # 프로필 수정 (CSR)
+│       ├── board/
+│       │   ├── recommendation/
+│       │   │   └── page.tsx          # 업체 추천 게시판 (SSR)
+│       │   ├── info/
+│       │   │   └── page.tsx          # 마사지 정보 게시판 (SSR)
+│       │   └── [type]/
+│       │       └── [id]/
+│       │           └── page.tsx      # 게시판 게시글 상세 (ISR)
+│       ├── community/
+│       │   ├── page.tsx              # 커뮤니티 피드 (SSR)
+│       │   └── [id]/
+│       │       └── page.tsx          # 커뮤니티 게시글 상세 (SSR)
+│       └── events/
+│           ├── page.tsx              # 이벤트 및 공지 허브 (ISR)
+│           ├── ongoing/
+│           │   └── page.tsx          # 진행 중 이벤트 전체 (SSR)
+│           ├── [id]/
+│           │   └── page.tsx          # 이벤트 상세 (ISR)
+│           └── notice/
+│               └── [id]/
+│                   └── page.tsx      # 공지 상세 (SSG)
 ├── components/
 │   ├── layout/
 │   │   ├── Header.tsx
@@ -817,13 +1518,37 @@ apps/customer-web/
 │   ├── nearby/
 │   │   ├── NearbySearch.tsx         # 클라이언트 컴포넌트 (GPS)
 │   │   └── DistanceLabel.tsx
-│   └── ui/
-│       ├── Button.tsx
-│       ├── Input.tsx
-│       ├── Select.tsx
-│       ├── Modal.tsx
-│       ├── Toast.tsx
-│       └── Skeleton.tsx
+│   ├── ui/
+│   │   ├── Button.tsx
+│   │   ├── Input.tsx
+│   │   ├── Select.tsx
+│   │   ├── Modal.tsx
+│   │   ├── Toast.tsx
+│   │   └── Skeleton.tsx
+│   ├── board/
+│   │   ├── BoardPostCard.tsx
+│   │   ├── BoardPostList.tsx
+│   │   ├── BoardSubNav.tsx
+│   │   └── RegionFilter.tsx
+│   ├── community/
+│   │   ├── CommunityPostCard.tsx
+│   │   ├── CommunityPostForm.tsx
+│   │   ├── ProfileSidebar.tsx
+│   │   └── PopularShopsSidebar.tsx
+│   ├── events/
+│   │   ├── EventCard.tsx
+│   │   ├── NoticeCard.tsx
+│   │   ├── DdayBadge.tsx
+│   │   └── CategorySidebar.tsx
+│   ├── mypage/
+│   │   ├── ProfileCard.tsx
+│   │   ├── MyReviewList.tsx
+│   │   ├── BookmarkGrid.tsx
+│   │   └── TabNav.tsx
+│   └── shared/
+│       ├── CommentSection.tsx
+│       ├── CommentInput.tsx
+│       └── LikeButton.tsx
 ├── lib/
 │   ├── strapi.ts                    # Strapi API 클라이언트 래퍼
 │   ├── api/
@@ -831,7 +1556,13 @@ apps/customer-web/
 │   │   ├── themes.ts
 │   │   ├── regions.ts
 │   │   ├── reviews.ts
-│   │   └── partnership.ts
+│   │   ├── partnership.ts
+│   │   ├── board.ts
+│   │   ├── community.ts
+│   │   ├── events.ts
+│   │   ├── bookmarks.ts
+│   │   ├── likes.ts
+│   │   └── profile.ts
 │   ├── hooks/
 │   │   ├── useGeolocation.ts
 │   │   └── useAuth.ts
@@ -861,6 +1592,17 @@ apps/customer-web/
 | 리뷰 피드 | SSR | N/A | 최신 리뷰 반영 필요 |
 | 제휴 | SSG | 온디맨드 | 정적 콘텐츠 페이지 |
 | 로그인/콜백 | CSR | N/A | 인증 흐름, SEO 가치 없음 |
+| 마이 페이지 | CSR | N/A | 인증 필요, 개인화, SEO 가치 없음 |
+| 프로필 수정 | CSR | N/A | 인증 필요 폼 |
+| 게시판 추천 | SSR | N/A | 동적 지역 필터링 |
+| 게시판 정보 | SSR | N/A | 동적 정렬 |
+| 게시판 게시글 상세 | ISR | 60초 | 콘텐츠 안정적, 댓글은 클라이언트에서 동적 |
+| 커뮤니티 피드 | SSR | N/A | 고도로 동적인 사용자 콘텐츠 |
+| 커뮤니티 게시글 상세 | SSR | N/A | 동적 댓글/좋아요 |
+| 이벤트 허브 | ISR | 300초 (5분) | 정적 공지와 시간에 민감한 이벤트 혼합 |
+| 진행 중 이벤트 | SSR | N/A | 동적 카테고리 필터링/정렬 |
+| 이벤트 상세 | ISR | 60초 | 콘텐츠 안정적, D-day에 최신 데이터 필요 |
+| 공지 상세 | SSG | 온디맨드 (웹훅) | 정적 관리자 콘텐츠 |
 
 **온디맨드 재검증:** Strapi 웹훅이 콘텐츠 게시/업데이트 시 Next.js 재검증을 트리거합니다.
 
@@ -1437,6 +2179,16 @@ export default [
 - **업체 게시/수정/게시 취소** → 영향받는 업체, 검색 결과, 관련 테마/위치 캐시에 대한 Redis 키 무효화. 항상 Cloudflare API(`POST /client/v4/zones/{zone_id}/purge_cache`)를 통해 해당 업체 URL(`/ko/shop/{slug}` 및 `/en/shop/{slug}`) 캐시 제거 트리거.
 - **리뷰 생성/수정/삭제** → 상위 업체의 Redis 캐시 무효화(평점 변경).
 - **테마/지역/구군 변경** → 해당 Redis 키 및 Cloudflare 캐시 무효화.
+
+**신규 콘텐츠 타입을 위한 추가 웹훅 트리거:**
+
+| 콘텐츠 타입 | 웹훅 이벤트 | 재검증 대상 |
+|---|---|---|
+| board_post | publish, update, unpublish | 게시판 목록 페이지, 게시글 상세 |
+| event | publish, update, unpublish | 이벤트 허브, 진행 중 이벤트, 이벤트 상세 |
+| notice | publish, update, unpublish | 이벤트 허브, 공지 상세 |
+
+커뮤니티 게시글과 댓글은 SSR(캐시 없음)이므로 웹훅 재검증이 필요하지 않습니다. 즐겨찾기와 좋아요 작업은 사용자별 CSR 호출이므로 캐시에 영향을 미치지 않습니다.
 
 ### 9.3 Next.js 캐싱
 
