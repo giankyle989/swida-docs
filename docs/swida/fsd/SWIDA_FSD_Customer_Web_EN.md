@@ -865,6 +865,96 @@ Active tab is determined by current route.
 
 ---
 
+## 18. Community
+
+> UIUX Reference: §8 Pages — Community
+
+### 18.1 Community Feed (`/[locale]/community`)
+
+**Feature List**
+
+| # | Feature | Description |
+|---|---|---|
+| F-COMM-01 | Post Feed | Paginated feed of user-generated posts, newest first by default |
+| F-COMM-02 | Post Card | Each card shows: author (with level badge), location, content text, image(s), like count, comment count |
+| F-COMM-03 | Post Creation Box | Inline form above feed (desktop/tablet) or FAB → Bottom Sheet (mobile). Login required. |
+| F-COMM-04 | Feed Filters | 전체글 (all posts, default), 내글 (my posts, login required), 이달 베스트 (monthly best by likes) |
+| F-COMM-05 | User Profile Sidebar | Left sidebar (desktop): profile photo, level, display name, points, post count, like count, feed filter links |
+| F-COMM-06 | Popular Shops Sidebar | Right sidebar (desktop): "이번 주 인기샵" list of top shops |
+| F-COMM-07 | Pagination | Page-based |
+
+**Post Creation Input Constraints**
+
+| Field | Required | Constraints |
+|---|---|---|
+| Text content | Yes | 1–2,000 characters |
+| Photos | No | Max 5 photos, each max 5MB, JPG/PNG/WebP |
+| Video | No | Max 1 video, max 50MB, MP4/MOV |
+| Hashtags | No | Max 10 hashtags, each max 30 characters |
+
+**Server Validation Errors (Post Creation)**
+
+| Condition | Error |
+|---|---|
+| Empty content | "내용을 입력해주세요." / "Please enter content." |
+| Content too long | "내용은 2,000자 이하로 작성해주세요." / "Content must be 2,000 characters or less." |
+| Too many photos | "사진은 최대 5장까지 업로드할 수 있습니다." / "You can upload up to 5 photos." |
+| Photo too large | "파일 크기가 5MB를 초과합니다." / "File size exceeds 5MB." |
+| Invalid photo type | "지원하지 않는 파일 형식입니다. JPG, PNG, WebP만 가능합니다." / "Unsupported file type. Only JPG, PNG, and WebP are allowed." |
+| Video too large | "동영상 크기가 50MB를 초과합니다." / "Video size exceeds 50MB." |
+| Invalid video type | "지원하지 않는 동영상 형식입니다. MP4, MOV만 가능합니다." / "Unsupported video format. Only MP4 and MOV are allowed." |
+| Too many hashtags | "해시태그는 최대 10개까지 가능합니다." / "You can add up to 10 hashtags." |
+| Not logged in | Redirect to login page |
+
+### 18.2 Community Post Detail (`/[locale]/community/[id]`)
+
+**Feature List**
+
+| # | Feature | Description |
+|---|---|---|
+| F-COMM-08 | Post Content | Full post text, photos, video, hashtags |
+| F-COMM-09 | Author Info | Profile photo, display name, level badge |
+| F-COMM-10 | Like Button | Like counter. Login required. One like per user per post. |
+| F-COMM-11 | Comment Section | Same comment system as Board (§17.4, F-BOARD-18 through F-BOARD-21) |
+| F-COMM-12 | User Profile Sidebar | Same as feed (desktop only) |
+| F-COMM-13 | Popular Shops Sidebar | Same as feed (desktop only) |
+
+### 18.3 User Levels & Points
+
+**Point Earning Rules**
+
+| Action | Points | Limit |
+|---|---|---|
+| Create community post | +50P | No daily limit |
+| Post a comment (Board or Community) | +10P | Max 10 comments/day earn points |
+| Receive a like on your post | +5P | No limit |
+
+**Level Thresholds**
+
+| Level | Points Required | Badge |
+|---|---|---|
+| Lv.1 | 0P | Lv.1 |
+| Lv.2 | 500P | Lv.2 |
+| Lv.3 | 2,000P | Lv.3 |
+| Lv.4 | 5,000P | Lv.4 |
+| Lv.5 | 10,000P | Lv.5 |
+
+**Display Locations**
+
+| Location | What's Shown |
+|---|---|
+| Community profile sidebar | Level badge, total points, post count, like count |
+| Community post cards | Author name + level badge |
+| Community post detail | Author name + level badge |
+
+**Rules:**
+- Points are display-only in MVP — no spending or redeeming
+- Points are cumulative and never decrease
+- Level is derived from total points (not stored separately)
+- Points are earned immediately on action (no approval delay)
+
+---
+
 ## Appendix A. Error Message Guide
 
 | Code | Korean | English |
