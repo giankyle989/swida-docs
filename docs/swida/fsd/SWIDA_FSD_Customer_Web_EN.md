@@ -684,6 +684,9 @@ Submits the partnership inquiry form data to the server.
 | F-NAV-08 | Nearby Search | Link to `/[locale]/nearby` (PRD §7.1) |
 | F-NAV-09 | Review | Link to `/[locale]/reviews` (PRD §7.1) |
 | F-NAV-10 | Partnership | Link to `/[locale]/partnership` (PRD §7.1) |
+| F-NAV-15 | Board | Link to `/[locale]/board/recommendation` (PRD §7.1) |
+| F-NAV-16 | Community | Link to `/[locale]/community` (PRD §7.1) |
+| F-NAV-17 | Events & Notices | Link to `/[locale]/events` (PRD §7.1) |
 
 ### 15.3 Footer
 
@@ -1053,6 +1056,14 @@ Countdown is calculated server-side using KST (Asia/Seoul), matching global date
 | ERR_INVALID_FILE_TYPE | 지원하지 않는 파일 형식입니다. JPG, PNG, WebP만 가능합니다. | Unsupported file type. Only JPG, PNG, and WebP are allowed. |
 | ERR_UPLOAD_FAILED | 업로드에 실패했습니다. 다시 시도해주세요. | Upload failed. Please try again. |
 | ERR_BOOKMARK_FAILED | 북마크 해제에 실패했습니다. 다시 시도해주세요. | Failed to remove bookmark. Please try again. |
+| ERR_COMMENT_EMPTY | 댓글을 입력해주세요. | Please enter a comment. |
+| ERR_COMMENT_LENGTH | 댓글은 500자 이하로 작성해주세요. | Comments must be 500 characters or less. |
+| ERR_POST_EMPTY | 내용을 입력해주세요. | Please enter content. |
+| ERR_POST_LENGTH | 내용은 2,000자 이하로 작성해주세요. | Content must be 2,000 characters or less. |
+| ERR_PHOTO_LIMIT | 사진은 최대 5장까지 업로드할 수 있습니다. | You can upload up to 5 photos. |
+| ERR_VIDEO_TOO_LARGE | 동영상 크기가 50MB를 초과합니다. | Video size exceeds 50MB. |
+| ERR_INVALID_VIDEO_TYPE | 지원하지 않는 동영상 형식입니다. MP4, MOV만 가능합니다. | Unsupported video format. Only MP4 and MOV are allowed. |
+| ERR_HASHTAG_LIMIT | 해시태그는 최대 10개까지 가능합니다. | You can add up to 10 hashtags. |
 
 ---
 
