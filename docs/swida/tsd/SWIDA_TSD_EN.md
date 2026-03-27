@@ -1463,7 +1463,31 @@ apps/customer-web/
 │       │   │   └── page.tsx         # Login page
 │       │   └── callback/
 │       │       └── page.tsx         # OAuth callback
-│       └── not-found.tsx
+│       ├── mypage/
+│       │   ├── page.tsx              # My Page dashboard (CSR)
+│       │   └── edit/
+│       │       └── page.tsx          # Edit profile (CSR)
+│       ├── board/
+│       │   ├── recommendation/
+│       │   │   └── page.tsx          # Shop recommendation board (SSR)
+│       │   ├── info/
+│       │   │   └── page.tsx          # Massage info board (SSR)
+│       │   └── [type]/
+│       │       └── [id]/
+│       │           └── page.tsx      # Board post detail (ISR)
+│       ├── community/
+│       │   ├── page.tsx              # Community feed (SSR)
+│       │   └── [id]/
+│       │       └── page.tsx          # Community post detail (SSR)
+│       └── events/
+│           ├── page.tsx              # Events & notices hub (ISR)
+│           ├── ongoing/
+│           │   └── page.tsx          # All ongoing events (SSR)
+│           ├── [id]/
+│           │   └── page.tsx          # Event detail (ISR)
+│           └── notice/
+│               └── [id]/
+│                   └── page.tsx      # Notice detail (SSG)
 ├── components/
 │   ├── layout/
 │   │   ├── Header.tsx
@@ -1494,13 +1518,37 @@ apps/customer-web/
 │   ├── nearby/
 │   │   ├── NearbySearch.tsx         # Client component (GPS)
 │   │   └── DistanceLabel.tsx
-│   └── ui/
-│       ├── Button.tsx
-│       ├── Input.tsx
-│       ├── Select.tsx
-│       ├── Modal.tsx
-│       ├── Toast.tsx
-│       └── Skeleton.tsx
+│   ├── ui/
+│   │   ├── Button.tsx
+│   │   ├── Input.tsx
+│   │   ├── Select.tsx
+│   │   ├── Modal.tsx
+│   │   ├── Toast.tsx
+│   │   └── Skeleton.tsx
+│   ├── board/
+│   │   ├── BoardPostCard.tsx
+│   │   ├── BoardPostList.tsx
+│   │   ├── BoardSubNav.tsx
+│   │   └── RegionFilter.tsx
+│   ├── community/
+│   │   ├── CommunityPostCard.tsx
+│   │   ├── CommunityPostForm.tsx
+│   │   ├── ProfileSidebar.tsx
+│   │   └── PopularShopsSidebar.tsx
+│   ├── events/
+│   │   ├── EventCard.tsx
+│   │   ├── NoticeCard.tsx
+│   │   ├── DdayBadge.tsx
+│   │   └── CategorySidebar.tsx
+│   ├── mypage/
+│   │   ├── ProfileCard.tsx
+│   │   ├── MyReviewList.tsx
+│   │   ├── BookmarkGrid.tsx
+│   │   └── TabNav.tsx
+│   └── shared/
+│       ├── CommentSection.tsx
+│       ├── CommentInput.tsx
+│       └── LikeButton.tsx
 ├── lib/
 │   ├── strapi.ts                    # Strapi API client wrapper
 │   ├── api/
@@ -1508,7 +1556,13 @@ apps/customer-web/
 │   │   ├── themes.ts
 │   │   ├── regions.ts
 │   │   ├── reviews.ts
-│   │   └── partnership.ts
+│   │   ├── partnership.ts
+│   │   ├── board.ts
+│   │   ├── community.ts
+│   │   ├── events.ts
+│   │   ├── bookmarks.ts
+│   │   ├── likes.ts
+│   │   └── profile.ts
 │   ├── hooks/
 │   │   ├── useGeolocation.ts
 │   │   └── useAuth.ts
@@ -1538,6 +1592,17 @@ apps/customer-web/
 | Review Feed | SSR | N/A | Must reflect latest reviews |
 | Partnership | SSG | On-demand | Static content page |
 | Login/Callback | CSR | N/A | Auth flow, no SEO value |
+| My Page | CSR | N/A | Auth-required, personalized, no SEO value |
+| Edit Profile | CSR | N/A | Auth-required form |
+| Board Recommendation | SSR | N/A | Dynamic region filtering |
+| Board Info | SSR | N/A | Dynamic sorting |
+| Board Post Detail | ISR | 60s | Content stable, comments dynamic via client |
+| Community Feed | SSR | N/A | Highly dynamic user content |
+| Community Post Detail | SSR | N/A | Dynamic comments/likes |
+| Events Hub | ISR | 300s (5 min) | Mixed static notices + time-sensitive events |
+| Ongoing Events | SSR | N/A | Dynamic category filtering/sorting |
+| Event Detail | ISR | 60s | Content stable, D-day needs freshness |
+| Notice Detail | SSG | On-demand (webhook) | Static admin content |
 
 **On-demand revalidation:** Strapi webhooks trigger Next.js revalidation when content is published/updated.
 
@@ -2114,6 +2179,16 @@ Cache invalidation is triggered by Strapi lifecycle hooks:
 - **Shop publish/update/unpublish** → Invalidate Redis keys for affected shop, search results, and relevant theme/location caches. Always trigger Cloudflare cache purge via API (`POST /client/v4/zones/{zone_id}/purge_cache`) for the specific shop URL (both `/ko/shop/{slug}` and `/en/shop/{slug}`).
 - **Review create/update/delete** → Invalidate Redis cache for the parent shop (rating change).
 - **Theme/Region/District changes** → Invalidate respective Redis keys and Cloudflare cache.
+
+**Additional webhook triggers for new content types:**
+
+| Content Type | Webhook Event | Revalidation Target |
+|---|---|---|
+| board_post | publish, update, unpublish | Board list pages, post detail |
+| event | publish, update, unpublish | Events hub, ongoing events, event detail |
+| notice | publish, update, unpublish | Events hub, notice detail |
+
+Community posts and comments are SSR (no cache), so no webhook revalidation needed. Bookmark and like operations are user-specific CSR calls — no cache implications.
 
 ### 9.3 Next.js Caching
 
