@@ -1661,9 +1661,9 @@ Desktop
 
 | State | Header Display | Accessible Pages | Restricted Action |
 |---|---|---|---|
-| Guest | 로그인 / 회원가입 buttons | All pages (browse only) | Review submit/report → redirect to login |
-| Active (logged in) | User avatar 👤 | All pages + review submission | Login/signup → redirect to homepage |
-| Locked/Suspended | User avatar 👤 | All pages (browse only) | Review submit/report → error: "계정이 정지되었습니다." |
+| Guest | 로그인 / 회원가입 buttons | All pages (browse only) | Review submit/report → redirect to login. My Page / Edit Profile → redirect to login. |
+| Active (logged in) | User avatar 👤 | All pages + review submission + My Page | Login/signup → redirect to homepage |
+| Locked/Suspended | User avatar 👤 | All pages (browse only) + My Page (view only) | Review submit/report → error: "계정이 정지되었습니다." |
 
 #### Storyboard: Guest → Protected Action
 
