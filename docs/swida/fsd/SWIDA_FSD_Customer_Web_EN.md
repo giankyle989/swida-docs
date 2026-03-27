@@ -772,6 +772,99 @@ Bookmark toggle (heart icon) also appears on shop detail page and shop cards sit
 
 ---
 
+## 17. Board System
+
+> UIUX Reference: §7 Pages — Board System
+
+### 17.1 Shop Recommendation Board (`/[locale]/board/recommendation`)
+
+**Feature List**
+
+| # | Feature | Description |
+|---|---|---|
+| F-BOARD-01 | Featured Banner | Carousel of editor's pick posts at the top of the page |
+| F-BOARD-02 | Post Grid | 3-column grid of recommendation post cards (image, title, location, date, excerpt) |
+| F-BOARD-03 | Region Filter | Tab-style filter by region (전체, 서울, 경기, 부산, 대구, 기타). Filter state in URL query param `?region=` |
+| F-BOARD-04 | Pagination | Page-based, same pattern as existing list pages |
+
+**Post Card Fields**
+
+| Field | Source | Display |
+|---|---|---|
+| Image | Post featured image | Card thumbnail |
+| Title | Post title | Linked text to post detail |
+| Location | Post region tag | Text below title |
+| Date | Post published_at | `YYYY.MM.DD` format |
+| Excerpt | Post body | Truncated to 2 lines |
+
+### 17.2 Massage Info Board (`/[locale]/board/info`)
+
+**Feature List**
+
+| # | Feature | Description |
+|---|---|---|
+| F-BOARD-05 | Post List | Forum-style list layout (no image cards), paginated |
+| F-BOARD-06 | Sort Options | Latest (최신순, default), Popular (인기순), Most Commented (댓글많은순). Sort state in URL `?sort=` |
+| F-BOARD-07 | Category Badge | Each post displays a category badge (e.g., [실전팁]) |
+| F-BOARD-08 | Post Metadata | Each post shows: author, views, likes, comments count, date |
+| F-BOARD-09 | HOT Badge | Posts exceeding a threshold (admin-configurable) display a 🔥HOT indicator |
+
+### 17.3 Board Post Detail (`/[locale]/board/[type]/[id]`)
+
+**Feature List**
+
+| # | Feature | Description |
+|---|---|---|
+| F-BOARD-10 | Breadcrumb | Navigation breadcrumb showing board type > post title |
+| F-BOARD-11 | Post Header | Category badge, title, author, date, view count, like count, comment count |
+| F-BOARD-12 | Post Body | Rich text content with embedded images |
+| F-BOARD-13 | Embedded Shop Card | For shop recommendation posts only: shop logo, name, location, hours, amenity tags, link to shop detail |
+| F-BOARD-14 | Like Button | "이 글이 도움이 되셨나요?" + like counter. Login required. One like per user per post. |
+| F-BOARD-15 | Back to List | "목록으로" button returns to the board list page |
+| F-BOARD-16 | Comment Section | Comment input (login required) + comment list with nested replies (1 level deep) |
+| F-BOARD-17 | Related Posts | Grid of related posts (shop recommendation type only). 3 posts max. |
+
+### 17.4 Comment System
+
+Shared comment system used by Board (§17) and Community (§18).
+
+**Feature List**
+
+| # | Feature | Description |
+|---|---|---|
+| F-BOARD-18 | Comment Input | Text input + submit button. Login required. Placeholder: "따뜻한 댓글을 남겨주세요." |
+| F-BOARD-19 | Comment Display | Author, relative time ("2시간 전"), comment text |
+| F-BOARD-20 | Nested Replies | 1 level deep. Reply button on each comment opens inline reply input. |
+| F-BOARD-21 | Comment Pagination | "댓글 더보기 (N)" button loads additional comments |
+
+**Comment Input Constraints**
+
+| Field | Required | Constraints |
+|---|---|---|
+| Comment text | Yes | 1–500 characters, trimmed whitespace |
+
+**Server Validation Errors (Comments)**
+
+| Condition | Error |
+|---|---|
+| Empty comment | "댓글을 입력해주세요." / "Please enter a comment." |
+| Comment too long | "댓글은 500자 이하로 작성해주세요." / "Comments must be 500 characters or less." |
+| Not logged in | Redirect to login page |
+
+### 17.5 Sub-Navigation
+
+Shared sub-nav bar across Board and Community pages:
+
+| Tab | Label (KO) | Label (EN) | Route |
+|---|---|---|---|
+| Shop Recommendations | 샵추천 | Shop Picks | `/[locale]/board/recommendation` |
+| Massage Info | 마사지정보 | Massage Info | `/[locale]/board/info` |
+| Community | 커뮤니티 | Community | `/[locale]/community` |
+
+Active tab is determined by current route.
+
+---
+
 ## Appendix A. Error Message Guide
 
 | Code | Korean | English |
