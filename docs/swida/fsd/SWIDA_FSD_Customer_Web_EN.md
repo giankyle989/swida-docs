@@ -26,17 +26,19 @@ This document defines the page list and functional specifications for the SWIDA 
 
 | Included | Not Included (Future) |
 |---|---|
-| Homepage (featured shops/themes) | Bookmarks / Favorites |
-| Detail Search (advanced multi-filter) | Map View (visual map with pins) |
-| Theme Search (browse by service type) | Booking Integration |
-| Location Search (browse by region/district) | Push Notifications |
-| Nearby Search (GPS-based discovery) | Coupon / Deals System |
-| Shop Detail Page (full profile + reviews) | Chat / Messaging |
-| Review Feed + Review Submission | 초성 Search (consonant-based) |
-| Partnership Page + Inquiry Form | Advanced Fuzzy Search |
-| Customer Authentication (Email, Kakao, Naver) | Shop Owner Portal |
-| Multi-language (Korean / English) | Analytics for Shops |
-| Review Reporting | SMS Verification for Reviews |
+| Homepage (featured shops/themes) | Map View (visual map with pins) |
+| Detail Search (advanced multi-filter) | Booking Integration |
+| Theme Search (browse by service type) | Push Notifications |
+| Location Search (browse by region/district) | Coupon / Deals System |
+| Nearby Search (GPS-based discovery) | Chat / Messaging |
+| Shop Detail Page (full profile + reviews) | 초성 Search (consonant-based) |
+| Review Feed + Review Submission | Advanced Fuzzy Search |
+| Partnership Page + Inquiry Form | Shop Owner Portal |
+| Customer Authentication (Email, Kakao, Naver) | Analytics for Shops |
+| Multi-language (Korean / English) | SMS Verification for Reviews |
+| Review Reporting | |
+| My Page (profile, reviews, bookmarks) | |
+| Bookmarks / Favorites | |
 
 ### 1.3 Global Rules
 
@@ -75,6 +77,8 @@ This document defines the page list and functional specifications for the SWIDA 
 | 11 | Sign Up | `/[locale]/auth/signup` | Guest Only | Email registration with consent |
 | 12 | Forgot Password | `/[locale]/auth/forgot-password` | Guest Only | Password reset request (email input) |
 | 13 | Reset Password | `/[locale]/auth/reset-password` | Guest Only | Set new password (token-based) |
+| 14 | My Page | `/[locale]/mypage` | Required | User dashboard with profile + tabbed content |
+| 15 | Edit Profile | `/[locale]/mypage/edit` | Required | Profile photo change |
 
 **Auth Legend**: Public = anyone can access (no login required) / Guest Only = only non-authenticated users (logged-in users redirect to homepage)
 
@@ -82,9 +86,9 @@ This document defines the page list and functional specifications for the SWIDA 
 
 | User State | Accessible Pages | Restricted Action Behavior |
 |---|---|---|
-| Not logged in | All pages (browse only) | Review submission / report → redirect to login page |
-| Logged in (active) | All pages + review submission | Login / Sign Up / Forgot Password / Reset Password → redirect to homepage |
-| Logged in (locked/suspended) | All pages (browse only) | Review submission / report → error message: "계정이 정지되었습니다. 관리자에게 문의해주세요." |
+| Not logged in | All public pages (browse only) | Review submission / report → redirect to login. My Page / Edit Profile → redirect to login. |
+| Logged in (active) | All pages + review submission + My Page | Login / Sign Up / Forgot Password / Reset Password → redirect to homepage |
+| Logged in (locked/suspended) | All pages (browse only) + My Page (view only) | Review submission / report → error message. |
 
 ---
 
