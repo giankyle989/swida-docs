@@ -677,6 +677,83 @@ Submits the partnership inquiry form data to the server.
 
 ---
 
+## 16. My Page
+
+### 16.1 My Page Dashboard (`/[locale]/mypage`)
+
+> Design Spec Reference: My Page Design Spec (2026-03-27)
+
+**Feature List**
+
+| # | Feature | Description |
+|---|---|---|
+| F-MYPAGE-01 | Review List | Paginated list of reviews written by the logged-in user, newest first |
+| F-MYPAGE-02 | Review Card Display | Each review shows: shop name (linked to shop detail), star rating, review text (truncated to 2 lines), date written, photo thumbnail (if photos exist) |
+| F-MYPAGE-03 | Reviews Empty State | "아직 작성한 리뷰가 없습니다." / "You haven't written any reviews yet." with CTA link to shop discovery |
+| F-MYPAGE-04 | Reviews Pagination | Page-based, 10 items per page |
+| F-MYPAGE-05 | Bookmark Grid | Paginated grid of bookmarked shops, most recently bookmarked first |
+| F-MYPAGE-06 | Shop Card Display | Matches existing shop card pattern: thumbnail, shop name (linked), region/district, theme badges, unbookmark button (heart icon) |
+| F-MYPAGE-07 | Unbookmark Toggle | Heart icon removes bookmark. Optimistic UI: heart unfills immediately. On failure: reverts with toast error. Card remains visible until next page load. |
+| F-MYPAGE-08 | Bookmarks Empty State | "아직 찜한 업체가 없습니다." / "No bookmarked shops yet." with CTA link to shop discovery |
+| F-MYPAGE-09 | Bookmarks Pagination | Page-based, 12 items per page |
+
+**Profile Card**
+
+| Element | Display |
+|---|---|
+| Profile photo | Circular, fallback to default avatar |
+| Display name | Read-only text |
+| Email | Read-only text |
+| Member since | `YYYY.MM.DD` format |
+| Edit Profile button | Navigates to `/[locale]/mypage/edit` |
+
+**Tab Configuration**
+
+| Tab | Label (KO) | Label (EN) | URL Param |
+|---|---|---|---|
+| My Reviews | 내 리뷰 | My Reviews | `?tab=reviews` (default, omittable) |
+| Bookmarked Shops | 찜한 업체 | Bookmarked Shops | `?tab=bookmarks` |
+
+### 16.2 Edit Profile (`/[locale]/mypage/edit`)
+
+| # | Feature | Description |
+|---|---|---|
+| F-MYPAGE-10 | Photo Upload | Upload or change profile photo |
+| F-MYPAGE-11 | Photo Remove | Remove current profile photo (reverts to default avatar) |
+| F-MYPAGE-12 | Read-Only Fields | Display name, email, and member since displayed but not editable |
+| F-MYPAGE-13 | Save | Validates photo, uploads, redirects to `/[locale]/mypage` |
+| F-MYPAGE-14 | Cancel | Discards changes, returns to `/[locale]/mypage` |
+
+**Photo Constraints**
+
+| Constraint | Rule |
+|---|---|
+| File types | JPG, PNG, WebP |
+| Max file size | 5 MB |
+| Validation | Client-side: file type + size check before upload. Server-side: re-validate. |
+
+**Server Validation Errors**
+
+| Condition | Error |
+|---|---|
+| File too large | "파일 크기가 5MB를 초과합니다." / "File size exceeds 5MB." |
+| Invalid file type | "지원하지 않는 파일 형식입니다. JPG, PNG, WebP만 가능합니다." / "Unsupported file type. Only JPG, PNG, and WebP are allowed." |
+| Upload failed | "업로드에 실패했습니다. 다시 시도해주세요." / "Upload failed. Please try again." |
+
+### 16.3 Bookmark API
+
+Minimum bookmark API surface required for My Page:
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/bookmarks` | Add bookmark (shop ID) |
+| DELETE | `/bookmarks/:id` | Remove bookmark |
+| GET | `/bookmarks?user=me&page=N` | List user's bookmarks (paginated) |
+
+Bookmark toggle (heart icon) also appears on shop detail page and shop cards site-wide.
+
+---
+
 ## Appendix A. Error Message Guide
 
 | Code | Korean | English |
