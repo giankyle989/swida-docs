@@ -694,7 +694,7 @@ These features are intentionally excluded from the initial release but are stron
 - **Advanced Korean Search:** Upgrade from `LIKE` to `pg_trgm` (PostgreSQL trigram extension) for fuzzy/typo-tolerant matching. If search demands grow further, introduce Meilisearch with built-in CJK tokenization.
 - **Review Integrity Enhancements:** SMS verification for reviewer signup (via AlimTalk/Solapi), "Verified Customer" badge for receipt-photo reviews, cooldown periods (e.g., one review per shop per week per user), IP/device-level fraud detection, and behavioral pattern analysis to combat review bombing and spam.
 
-> **Moved to MVP:** Bookmarks / Favorites is now included in the MVP scope (FSD §16 My Page).
+> **Moved to MVP:** Bookmarks is now included in the MVP scope (FSD §16 My Page).
 
 **Remaining future scope for new features:**
 - Community: post editing/deletion by users, post reporting, points redemption/spending
