@@ -672,6 +672,14 @@ Pre-seeded at launch via Strapi bootstrap scripts (`database/seeds/`):
 | District | `api::district.district` | Collection | Yes | Yes |
 | Partnership Inquiry | `api::partnership-inquiry.partnership-inquiry` | Collection | No | No |
 | Audit Log | `api::audit-log.audit-log` | Collection | No | No |
+| Board Post | `api::board-post.board-post` | Collection | Yes | Yes |
+| Community Post | `api::community-post.community-post` | Collection | No | No |
+| Comment | `api::comment.comment` | Collection | No | No |
+| Event | `api::event.event` | Collection | Yes | Yes |
+| Notice | `api::notice.notice` | Collection | Yes | Yes |
+| User Bookmark | `api::user-bookmark.user-bookmark` | Collection | No | No |
+| User Points Log | `api::user-points-log.user-points-log` | Collection | No | No |
+| Post Like | `api::post-like.post-like` | Collection | No | No |
 
 **Components:**
 
@@ -865,6 +873,384 @@ Public role permissions: `create` only. No `find`, `findOne`, `update`, `delete`
 
 **Implementation:** Uses Strapi's Document Service API to run aggregation queries (`strapi.documents().count()`) across shops, reviews, users, and partnership inquiries. The `recent_activity` field queries the `audit-log` collection type for the latest 10 entries. This endpoint is restricted to authenticated admin users via the admin API JWT.
 
+#### 5.2.6 Board Posts
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/api/board-posts` | Public | List board posts (paginated, filterable, sortable) |
+| GET | `/api/board-posts/:documentId` | Public | Single board post detail |
+
+**GET `/api/board-posts` — Query Parameters:**
+
+```
+?locale=ko
+&filters[type][$eq]=recommendation
+&filters[region][documentId][$eq]=abc123
+&filters[is_featured][$eq]=true
+&sort=created_at:desc
+&pagination[page]=1
+&pagination[pageSize]=12
+&populate[featured_image][fields][0]=url
+&populate[featured_image][fields][1]=alternativeText
+&populate[linked_shop][fields][0]=name
+&populate[linked_shop][fields][1]=slug
+&populate[region][fields][0]=name
+```
+
+**Response shape (list):**
+
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "documentId": "bp001",
+      "type": "recommendation",
+      "title": "이번 주 가장 핫한 강남 스웨디시 샵",
+      "excerpt": "전문가가 추천하는 최고의...",
+      "category": "에디터 픽",
+      "author_name": "SWIDA 에디터",
+      "is_featured": true,
+      "is_hot": false,
+      "view_count": 1242,
+      "like_count": 84,
+      "comment_count": 23,
+      "created_at": "2026-03-19T10:00:00Z",
+      "featured_image": { "url": "/uploads/board1.jpg", "alternativeText": "..." },
+      "linked_shop": { "name": "더 힐 테라피", "slug": "the-hill-therapy" },
+      "region": { "name": "서울" }
+    }
+  ],
+  "meta": { "pagination": { "page": 1, "pageSize": 12, "pageCount": 3, "total": 30 } }
+}
+```
+
+**GET `/api/board-posts/:documentId` — Response (single):**
+
+Same shape as list item but with full `body` (rich text) instead of `excerpt`, plus `linked_shop` populated with full shop card fields (name, slug, address, operating_hours, amenities).
+
+#### 5.2.7 Community Posts
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/api/community-posts` | Public | List community posts (feed) |
+| GET | `/api/community-posts/:documentId` | Public | Single post detail |
+| POST | `/api/community-posts` | Customer (JWT) | Create community post |
+
+**GET `/api/community-posts` — Query Parameters:**
+
+```
+?filters[author][id][$eq]=42          // "my posts" filter
+&filters[status][$eq]=published
+&sort=created_at:desc                  // or like_count:desc for monthly best
+&pagination[page]=1
+&pagination[pageSize]=10
+&populate[photos][fields][0]=url
+&populate[author][fields][0]=username
+&populate[author][fields][1]=total_points
+```
+
+**Response shape (list):**
+
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "documentId": "cp001",
+      "content": "강남 역삼동에 새로 오픈한 스웨디시 샵 다녀왔어요...",
+      "hashtags": ["#강남마사지", "#스웨디시"],
+      "location_text": "강남구 역삼동",
+      "view_count": 320,
+      "like_count": 24,
+      "comment_count": 8,
+      "created_at": "2026-03-27T08:15:00Z",
+      "photos": [{ "url": "/uploads/photo1.jpg" }],
+      "author": {
+        "id": 42,
+        "username": "힐링마스터",
+        "total_points": 3200,
+        "level": 3
+      }
+    }
+  ],
+  "meta": { "pagination": { "page": 1, "pageSize": 10, "pageCount": 5, "total": 48 } }
+}
+```
+
+> **Note:** `level` is computed at response time from `total_points`, not stored.
+
+**POST `/api/community-posts` — Request Body:**
+
+```json
+{
+  "data": {
+    "content": "오늘 방문한 마사지 샵 후기...",
+    "hashtags": ["#마사지후기", "#강남"],
+    "location_text": "강남구 역삼동"
+  }
+}
+```
+
+Photos and video are uploaded separately via Strapi's media upload endpoint, then linked in a follow-up PUT request (standard Strapi media workflow).
+
+#### 5.2.8 Comments
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/api/comments` | Public | List comments for a parent entity |
+| POST | `/api/comments` | Customer (JWT) | Create comment or nested reply |
+
+**GET `/api/comments` — Query Parameters:**
+
+```
+?filters[parent_type][$eq]=board_post
+&filters[parent_id][$eq]=1
+&filters[reply_to_id][$null]=true      // top-level comments only
+&sort=created_at:asc
+&pagination[page]=1
+&pagination[pageSize]=20
+&populate[author][fields][0]=username
+&populate[author][fields][1]=total_points
+&populate[replies][populate][author][fields][0]=username
+```
+
+**Response shape:**
+
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "documentId": "cm001",
+      "content": "와 여기 가보고 싶었는데 상세한 리뷰 감사합니다!",
+      "parent_type": "board_post",
+      "parent_id": 1,
+      "reply_to_id": null,
+      "created_at": "2026-03-27T10:30:00Z",
+      "author": { "id": 10, "username": "마사지매니아", "total_points": 800, "level": 2 },
+      "replies": [
+        {
+          "id": 2,
+          "content": "저도 갈만한지 알려주세요!",
+          "reply_to_id": 1,
+          "created_at": "2026-03-27T11:00:00Z",
+          "author": { "id": 15, "username": "쉬다", "total_points": 100, "level": 1 }
+        }
+      ]
+    }
+  ],
+  "meta": { "pagination": { "page": 1, "pageSize": 20, "pageCount": 2, "total": 24 } }
+}
+```
+
+**POST `/api/comments` — Request Body:**
+
+```json
+{
+  "data": {
+    "content": "좋은 정보 감사합니다!",
+    "parent_type": "board_post",
+    "parent_id": 1,
+    "reply_to_id": null
+  }
+}
+```
+
+For a reply: set `reply_to_id` to the parent comment's ID. Server validates that the referenced comment shares the same `parent_type` and `parent_id`.
+
+#### 5.2.9 Events & Notices
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/api/events` | Public | List events (filterable by category, sortable) |
+| GET | `/api/events/:documentId` | Public | Single event detail |
+| GET | `/api/notices` | Public | List notices (pinned first) |
+| GET | `/api/notices/:documentId` | Public | Single notice detail with prev/next |
+
+**GET `/api/events` — Query Parameters:**
+
+```
+?locale=ko
+&filters[category][$eq]=new_opening
+&filters[end_date][$gte]=2026-03-27    // only active/future events
+&sort=end_date:asc                      // or like_count:desc for popular
+&pagination[page]=1
+&pagination[pageSize]=12
+&populate[featured_image][fields][0]=url
+```
+
+**Response shape (event list):**
+
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "documentId": "ev001",
+      "title": "신규 가입하고 1만원 즉시 할인!",
+      "category": "coupon",
+      "start_date": "2026-05-01",
+      "end_date": "2026-05-31",
+      "is_featured": true,
+      "view_count": 4521,
+      "like_count": 128,
+      "author_name": "SWIDA",
+      "dday": "D-12",
+      "featured_image": { "url": "/uploads/event1.jpg" }
+    }
+  ],
+  "meta": { "pagination": { "page": 1, "pageSize": 12, "pageCount": 1, "total": 8 } }
+}
+```
+
+> **Note:** `dday` is computed at response time using KST, not stored.
+
+**GET `/api/notices` — Response includes `is_important` for pinned sorting:**
+
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "documentId": "nt001",
+      "title": "쉬다 리뉴얼 기념 포인트 2배 적립",
+      "category": "notice",
+      "is_important": true,
+      "view_count": 1245,
+      "published_at": "2026-05-15T00:00:00Z"
+    }
+  ],
+  "meta": { "pagination": { "page": 1, "pageSize": 20, "pageCount": 1, "total": 15 } }
+}
+```
+
+**GET `/api/notices/:documentId` — Single notice with prev/next:**
+
+Custom controller adds `prev` and `next` fields:
+
+```json
+{
+  "data": {
+    "id": 1,
+    "documentId": "nt001",
+    "title": "쉬다 리뉴얼 기념 포인트 2배 적립",
+    "body": "<p>Rich text content...</p>",
+    "category": "notice",
+    "is_important": true,
+    "view_count": 1246,
+    "published_at": "2026-05-15T00:00:00Z"
+  },
+  "prev": { "documentId": "nt002", "title": "서비스 정기 점검 안내", "published_at": "2026-05-28T00:00:00Z" },
+  "next": { "documentId": "nt003", "title": "부적절한 리뷰 작성 시 제재 안내", "published_at": "2026-05-10T00:00:00Z" }
+}
+```
+
+#### 5.2.10 Bookmarks
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/api/bookmarks` | Customer (JWT) | List user's bookmarked shops (paginated) |
+| POST | `/api/bookmarks` | Customer (JWT) | Add bookmark |
+| DELETE | `/api/bookmarks/:id` | Customer (JWT) | Remove bookmark |
+
+**GET `/api/bookmarks` — Query Parameters:**
+
+```
+?sort=created_at:desc
+&pagination[page]=1
+&pagination[pageSize]=12
+&populate[shop][populate][thumbnail][fields][0]=url
+&populate[shop][fields][0]=name
+&populate[shop][fields][1]=slug
+&populate[shop][fields][2]=address
+&populate[shop][populate][themes][fields][0]=name
+&populate[shop][populate][district][fields][0]=name
+```
+
+**Response shape:**
+
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "shop": {
+        "documentId": "shop001",
+        "name": "힐링스파 강남",
+        "slug": "healing-spa-gangnam",
+        "address": "서울 강남구 ...",
+        "thumbnail": { "url": "/uploads/thumb.jpg" },
+        "themes": [{ "name": "스웨디시" }],
+        "district": { "name": "강남구" }
+      },
+      "created_at": "2026-03-27T14:00:00Z"
+    }
+  ],
+  "meta": { "pagination": { "page": 1, "pageSize": 12, "pageCount": 1, "total": 5 } }
+}
+```
+
+**POST `/api/bookmarks` — Request:**
+
+```json
+{ "data": { "shop": "shop001" } }
+```
+
+Server auto-sets `user_id` from JWT. Returns 409 if bookmark already exists.
+
+**DELETE `/api/bookmarks/:id`** — Server validates the bookmark belongs to the authenticated user.
+
+#### 5.2.11 Likes
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| POST | `/api/likes` | Customer (JWT) | Like a target |
+| DELETE | `/api/likes/:id` | Customer (JWT) | Unlike |
+
+**POST `/api/likes` — Request:**
+
+```json
+{
+  "data": {
+    "target_type": "board_post",
+    "target_id": 1
+  }
+}
+```
+
+Server auto-sets `user_id` from JWT. Returns 409 if already liked. On success, triggers lifecycle hook to increment `like_count` on the target entity and create a `user_points_log` entry for the target author (+5P `like_received`).
+
+**DELETE `/api/likes/:id`** — Server validates ownership. Decrements `like_count` on target. Does NOT reverse the point award (points never decrease).
+
+#### 5.2.12 User Profile
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/api/users/me` | Customer (JWT) | Current user profile with computed level |
+| PUT | `/api/users/me/avatar` | Customer (JWT) | Upload/change profile photo |
+| DELETE | `/api/users/me/avatar` | Customer (JWT) | Remove profile photo |
+
+**GET `/api/users/me` — Response:**
+
+```json
+{
+  "id": 42,
+  "username": "힐링마스터",
+  "email": "user@example.com",
+  "total_points": 3200,
+  "level": 3,
+  "avatar": { "url": "/uploads/avatar42.jpg" },
+  "created_at": "2026-01-15T00:00:00Z"
+}
+```
+
+> `level` is computed from `total_points` at response time.
+
+**PUT `/api/users/me/avatar`** — Multipart form upload. Server validates file type (JPG/PNG/WebP) and size (max 5MB). Replaces existing avatar.
+
+**DELETE `/api/users/me/avatar`** — Removes avatar media relation. Profile reverts to default avatar on client.
+
 ### 5.3 Custom Middleware, Policies & Lifecycle Hooks
 
 #### 5.3.1 Middleware: `account-lock`
@@ -933,6 +1319,66 @@ await strapi.db.connection.raw('SELECT pg_advisory_xact_lock(hashtext(?))', [sho
 **Triggers:** `beforeUpdate` (to capture old values), `afterUpdate`, `afterCreate`, `afterDelete`
 **Behavior:** Captures field-level diffs and writes to the `audit-log` collection type with admin user info extracted from the authenticated Admin Web session (passed to Strapi via the admin API JWT in `strapi.requestContext`).
 
+#### 5.3.5 Lifecycle Hooks: Comment Count Recalculation
+
+On `comment` `afterCreate`: increment `comment_count` on the parent entity (determined by `parent_type` field — `board_post`, `community_post`, or `event`). Uses atomic `UPDATE SET comment_count = comment_count + 1` query.
+
+#### 5.3.6 Lifecycle Hooks: Like Count Recalculation
+
+On `post_like` `afterCreate`: increment `like_count` on the target entity (determined by `target_type` — `board_post`, `community_post`, or `event`).
+
+On `post_like` `afterDelete`: decrement `like_count` on the target entity.
+
+Both use atomic increment/decrement queries.
+
+#### 5.3.7 Lifecycle Hooks: Points Calculation
+
+On `community_post` `afterCreate`:
+1. Insert `user_points_log` entry: `{ action: 'post_created', points: 50, reference_type: 'community_post', reference_id: post.id }`
+2. Increment author's `total_points` by 50
+
+On `comment` `afterCreate`:
+1. Check daily limit: `SELECT COUNT(*) FROM user_points_log WHERE user_id = author.id AND action = 'comment_created' AND created_at >= today_start(KST)`
+2. If count < 10: insert `user_points_log` entry `{ action: 'comment_created', points: 10 }` and increment author's `total_points` by 10
+3. If count >= 10: skip point award (daily cap reached)
+
+On `post_like` `afterCreate`:
+1. Find the author of the liked target entity
+2. Insert `user_points_log` for that author: `{ action: 'like_received', points: 5, reference_type: 'post_like', reference_id: like.id }`
+3. Increment that author's `total_points` by 5
+
+> **Note:** Points never decrease. Unlinking (deleting a like) does NOT reverse the point award.
+
+#### 5.3.8 Custom Controller: View Count Increment
+
+**Route:** `POST /api/:contentType/:documentId/view`
+
+Increments `view_count` atomically for the specified content type and document. Rate-limited per user session (cookie-based, max 1 count per document per 30 minutes) to prevent artificial inflation.
+
+**Applies to:** `board-posts`, `community-posts`, `events`, `notices`
+
+**Response:** `{ "data": { "view_count": 1243 } }`
+
+#### 5.3.9 Custom Controller: Notice Prev/Next
+
+**Route:** `GET /api/notices/:documentId`
+
+Custom controller that extends the default Strapi `findOne` with `prev` and `next` notice references, based on `published_at` ordering within the same locale.
+
+**Logic:**
+- `prev`: the notice with the closest `published_at` AFTER the current notice (newer)
+- `next`: the notice with the closest `published_at` BEFORE the current notice (older)
+- If no prev/next exists, the field is `null`
+
+**Response fields added:**
+```json
+{
+  "data": { ... },
+  "prev": { "documentId": "nt002", "title": "...", "published_at": "..." },
+  "next": { "documentId": "nt003", "title": "...", "published_at": "..." }
+}
+```
+
 ### 5.4 Authentication
 
 #### 5.4.1 Customer Auth (Strapi Users & Permissions)
@@ -974,6 +1420,11 @@ The following features are built as pages/components within the Admin Web (Next.
 | Content Management | Manage themes, regions, districts, and amenity options. |
 | Locale Management | Create and manage localized content (Korean/English) via the Admin Web's locale switcher, which calls Strapi's i18n API. |
 | Audit Log Viewer | Searchable, filterable table of all listing changes. |
+| **Board Posts** | CRUD interface for board posts with type filter, featured toggle, HOT badge management |
+| **Events** | CRUD for events with date pickers, category, featured toggle |
+| **Notices** | CRUD for notices with important/pinned toggle |
+| **Community Moderation** | View, hide, or delete community posts. View user activity. |
+| **User Points** | View user point history and current levels (read-only) |
 
 > **Note:** Strapi's built-in admin panel is not used for any of these operational features. It is restricted to developers for monitoring and debugging only.
 
