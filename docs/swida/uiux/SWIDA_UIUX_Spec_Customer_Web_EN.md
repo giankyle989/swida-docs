@@ -1381,6 +1381,172 @@ Desktop (split-screen layout)
 
 ---
 
+## 10A. Pages — My Page
+
+> FSD Reference: §16 My Page
+> **Note:** This section was added to fill a content gap — My Page was referenced in nav (§3) but had no UIUX specification.
+
+### 10A.1 My Page Dashboard (`/[locale]/mypage`)
+
+#### Screen Structure — Desktop (D)
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  Header (§3.1)                                          │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│   ┌──────────┐                                          │
+│   │  (Photo) │  Display Name                            │
+│   │          │  email@example.com                       │
+│   └──────────┘  가입일: 2026.01.15                       │
+│                 [ 프로필 수정 ]                            │
+│                                                         │
+│   ┌──────────────┬──────────────┐                       │
+│   │  내 리뷰 (●) │  찜한 업체    │                       │
+│   ├──────────────┴──────────────┤                       │
+│   │                             │                       │
+│   │  Review Card 1              │                       │
+│   │  ┌────┐ ★★★★☆             │                       │
+│   │  │img │ Shop Name            │                       │
+│   │  └────┘ 리뷰 텍스트...       │                       │
+│   │         2026.03.15           │                       │
+│   │                             │                       │
+│   │  Review Card 2              │                       │
+│   │  ...                        │                       │
+│   │                             │                       │
+│   │  [ 1 ] [ 2 ] [ 3 ] ...     │                       │
+│   └─────────────────────────────┘                       │
+│                                                         │
+├─────────────────────────────────────────────────────────┤
+│  Footer (§3.3)                                          │
+└─────────────────────────────────────────────────────────┘
+```
+
+#### Screen Structure — Mobile (M)
+
+```
+┌─────────────────────────┐
+│  Header (§3.1)          │
+├─────────────────────────┤
+│                         │
+│      ┌──────┐           │
+│      │(Photo)│          │
+│      └──────┘           │
+│    Display Name         │
+│    email@example.com    │
+│    가입일: 2026.01.15    │
+│    [ 프로필 수정 ]       │
+│                         │
+│  ┌────────┬────────┐    │
+│  │내 리뷰●│찜한 업체│    │
+│  ├────────┴────────┤    │
+│  │                 │    │
+│  │ Review Card 1   │    │
+│  │ (full width)    │    │
+│  │                 │    │
+│  │ Review Card 2   │    │
+│  │ ...             │    │
+│  │                 │    │
+│  │ [ 1 ][ 2 ][ 3 ]│    │
+│  └─────────────────┘    │
+│                         │
+├─────────────────────────┤
+│  Tab Bar (§3.2)         │
+└─────────────────────────┘
+```
+
+#### Bookmarked Shops Tab — Desktop (D)
+
+```
+┌──────────────┬──────────────┐
+│  내 리뷰     │  찜한 업체 (●) │
+├──────────────┴──────────────┤
+│                             │
+│  ┌─────┐ ┌─────┐ ┌─────┐   │
+│  │ img │ │ img │ │ img │   │
+│  │  ♥  │ │  ♥  │ │  ♥  │   │
+│  │Name │ │Name │ │Name │   │
+│  │Loc  │ │Loc  │ │Loc  │   │
+│  │Tags │ │Tags │ │Tags │   │
+│  └─────┘ └─────┘ └─────┘   │
+│                             │
+│  [ 1 ] [ 2 ] [ 3 ] ...     │
+└─────────────────────────────┘
+```
+
+#### Tier Adaptation
+
+| Element | Desktop (D) | Tablet (T) | Mobile (M) |
+|---|---|---|---|
+| Profile card | Horizontal layout (photo left, info right) | Same as D | Stacked (photo centered above info) |
+| Tab bar | Full-width tabs | Same as D | Same as D |
+| My Reviews list | Single column, comfortable spacing | Same as D | Full-width cards |
+| Bookmarks grid | 3 columns | 2 columns | 1 column |
+| Pagination | Page numbers | Page numbers | Page numbers |
+
+#### Interaction Details
+
+| Action | Behavior |
+|---|---|
+| Tab switch | URL updates with `?tab=reviews` or `?tab=bookmarks`. Content area swaps. No full page reload. |
+| Review card tap | Navigate to shop detail page (`/[locale]/shop/[slug]`) |
+| Unbookmark (♥ tap) | Heart unfills (optimistic). On API failure: heart refills + toast error. Card stays until page refresh. |
+| Edit Profile button | Navigate to `/[locale]/mypage/edit` |
+
+#### Data States
+
+| State | Treatment |
+|---|---|
+| Loading | Skeleton UI for profile card and tab content |
+| Reviews empty | Empty state: icon + "아직 작성한 리뷰가 없습니다." + CTA to discover shops |
+| Bookmarks empty | Empty state: icon + "아직 찜한 업체가 없습니다." + CTA to discover shops |
+
+### 10A.2 Edit Profile (`/[locale]/mypage/edit`)
+
+#### Screen Structure — Desktop (D)
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  Header (§3.1)                                          │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│   프로필 수정                                             │
+│                                                         │
+│   ┌──────────┐                                          │
+│   │  (Photo) │  [ 사진 변경 ]  [ 사진 삭제 ]               │
+│   │          │                                          │
+│   └──────────┘                                          │
+│                                                         │
+│   닉네임:      Display Name (read-only)                   │
+│   이메일:      email@example.com (read-only)              │
+│   가입일:      2026.01.15 (read-only)                     │
+│                                                         │
+│   [ 취소 ]                              [ 저장 ]          │
+│                                                         │
+├─────────────────────────────────────────────────────────┤
+│  Footer (§3.3)                                          │
+└─────────────────────────────────────────────────────────┘
+```
+
+#### Tier Adaptation
+
+| Element | Desktop (D) | Tablet (T) | Mobile (M) |
+|---|---|---|---|
+| Layout | Centered card (max-width 600px) | Same as D | Full-width with padding |
+| Photo actions | Inline buttons beside photo | Same as D | Buttons below photo |
+| Save/Cancel | Right-aligned row | Same as D | Full-width stacked buttons (Save primary, Cancel secondary) |
+
+#### Interaction Details
+
+| Action | Behavior |
+|---|---|
+| 사진 변경 | Opens file picker. Client validates type + size before upload. |
+| 사진 삭제 | Confirm dialog: "프로필 사진을 삭제하시겠습니까?" → removes photo, shows default avatar |
+| 저장 | Submit → loading state on button → redirect to `/[locale]/mypage` on success |
+| 취소 | Navigate back to `/[locale]/mypage` (no confirmation if no changes made; confirm if unsaved changes) |
+
+---
+
 ## 11. Pages — Partnership
 
 ### 11.1 Partnership Landing + Form (`/[locale]/partnership`)
@@ -1533,7 +1699,7 @@ All conflicts between Figma designs and FSD are resolved with **FSD as source of
 | # | Item | Figma | FSD | Resolution | Notes |
 |---|---|---|---|---|---|
 | C-01 | Review character limit | 0/1000 | 10–500 characters | **Use FSD: 10–500** | Figma limit appears to be placeholder |
-| C-02 | Favorites / heart icon | ♡ on shop cards + detail | PRD §12: "Future" | **Excluded from MVP** | Remove heart icons from all shop cards |
+| C-02 | Favorites / heart icon | ♡ on shop cards + detail | PRD §12: "Future" | **Included in MVP (revised)** | Bookmarks moved to MVP scope for My Page. Heart icon on shop cards + detail + My Page bookmarks tab. |
 | C-03 | Price range slider filter | 0~20만원+ slider | Not in FSD filter list | **Deferred** | Note as future enhancement |
 | C-04 | PREMIUM / BEST badges | On shop card thumbnails | Not specified | **Deferred** | Requires admin-side badge assignment |
 | C-05 | Member pricing (회원가) | Original→member price | FSD: `price_range` text only | **Use FSD** | Display price_range text as-is |
