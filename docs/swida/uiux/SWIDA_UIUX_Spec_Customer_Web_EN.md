@@ -1,6 +1,6 @@
 ---
-title: "SWIDA — Customer Web UI/UX Spec"
-sidebar_label: "English"
+title: 'SWIDA — Customer Web UI/UX Spec'
+sidebar_label: 'English'
 sidebar_position: 1
 ---
 
@@ -25,14 +25,14 @@ This document defines the screen layouts, responsive behavior, component structu
 
 ### 1.2 Scope
 
-| Covered | Not Covered |
-|---|---|
-| 3-tier responsive layout shell | Colors, typography, spacing values |
-| Page-level screen structure (wireframe level) | Animation speed / easing curves |
-| Component tier adaptation rules | Per-client theming |
-| User interaction flows (storyboards) | Admin Web UI |
-| State-based screen branching | Backend configuration |
-| Figma–FSD conflict resolution log | |
+| Covered                                       | Not Covered                        |
+| --------------------------------------------- | ---------------------------------- |
+| 3-tier responsive layout shell                | Colors, typography, spacing values |
+| Page-level screen structure (wireframe level) | Animation speed / easing curves    |
+| Component tier adaptation rules               | Per-client theming                 |
+| User interaction flows (storyboards)          | Admin Web UI                       |
+| State-based screen branching                  | Backend configuration              |
+| Figma–FSD conflict resolution log             |                                    |
 
 ---
 
@@ -40,11 +40,11 @@ This document defines the screen layouts, responsive behavior, component structu
 
 ### 2.1 Breakpoints
 
-| Tier | Abbr | Reference Device |
-|---|---|---|
-| Desktop | D | PC, large monitors |
-| Tablet | T | iPad, small laptops |
-| Mobile | M | Smartphones |
+| Tier    | Abbr | Reference Device    |
+| ------- | ---- | ------------------- |
+| Desktop | D    | PC, large monitors  |
+| Tablet  | T    | iPad, small laptops |
+| Mobile  | M    | Smartphones         |
 
 The layout adapts across three tiers: Desktop, Tablet, and Mobile. Components are designed mobile-first, then extended for larger screens.
 
@@ -54,13 +54,13 @@ The layout adapts across three tiers: Desktop, Tablet, and Mobile. Components ar
 
 ### 2.2 Layout Shell Matrix
 
-| Element | Desktop | Tablet | Mobile |
-|---|:---:|:---:|:---:|
-| Header (top fixed) | ✅ Full nav | ✅ Condensed | ✅ Minimal |
-| Search Tab Bar | ✅ 6 tabs inline | ✅ 6 tabs (compact) | ❌ Hidden |
-| Mobile Bottom Nav | ❌ | ❌ | ✅ |
-| Hamburger Drawer | ❌ | ✅ (☰ trigger) | ✅ (☰ trigger) |
-| Footer | ✅ 4-column | ✅ 2-column | ✅ Accordion |
+| Element            |     Desktop      |       Tablet        |     Mobile      |
+| ------------------ | :--------------: | :-----------------: | :-------------: |
+| Header (top fixed) |   ✅ Full nav    |    ✅ Condensed     |   ✅ Minimal    |
+| Search Tab Bar     | ✅ 6 tabs inline | ✅ 6 tabs (compact) |    ❌ Hidden    |
+| Mobile Bottom Nav  |        ❌        |         ❌          |       ✅        |
+| Hamburger Drawer   |        ❌        |   ✅ (☰ trigger)   | ✅ (☰ trigger) |
+| Footer             |   ✅ 4-column    |     ✅ 2-column     |  ✅ Accordion   |
 
 ### 2.3 Layout Shell Structure
 
@@ -135,17 +135,17 @@ The layout adapts across three tiers: Desktop, Tablet, and Mobile. Components ar
 └────────────────────────────────────────────────────────────────────┘
 ```
 
-| Element | Guest | Logged In |
-|---|---|---|
-| Logo | ✅ → Homepage | ✅ → Homepage |
-| Search Bar (Quick Search) | ✅ Name search (F-NAV-02) | ✅ Name search |
-| 샵 검색 ▾ (dropdown) | ✅ → Search mode dropdown | ✅ |
-| 이벤트 | ✅ → Events & Notices | ✅ |
-| 게시판 ▾ (dropdown) | ✅ → Board dropdown | ✅ |
-| 파트너십 문의 | ✅ → Partnership | ✅ |
-| 로그인 / 회원가입 | ✅ → Login / Sign Up pages | — |
-| User avatar 👤 | — | ✅ → User menu dropdown |
-| Language Switcher | ✅ ko/en toggle (F-I18N-04) | ✅ |
+| Element                   | Guest                       | Logged In               |
+| ------------------------- | --------------------------- | ----------------------- |
+| Logo                      | ✅ → Homepage               | ✅ → Homepage           |
+| Search Bar (Quick Search) | ✅ Name search (F-NAV-02)   | ✅ Name search          |
+| 샵 검색 ▾ (dropdown)      | ✅ → Search mode dropdown   | ✅                      |
+| 이벤트                    | ✅ → Events & Notices       | ✅                      |
+| 게시판 ▾ (dropdown)       | ✅ → Board dropdown         | ✅                      |
+| 파트너십 문의             | ✅ → Partnership            | ✅                      |
+| 로그인 / 회원가입         | ✅ → Login / Sign Up pages  | —                       |
+| User avatar 👤            | —                           | ✅ → User menu dropdown |
+| Language Switcher         | ✅ ko/en toggle (F-I18N-04) | ✅                      |
 
 **샵 검색 Dropdown**: 상세 검색, 테마별 검색, 지역 검색, 내주변 검색
 
@@ -162,11 +162,11 @@ The layout adapts across three tiers: Desktop, Tablet, and Mobile. Components ar
 └────────────────────────────────────────────────────────────────────┘
 ```
 
-| Difference from Desktop | Description |
-|---|---|
-| ☰ added | Drawer trigger |
-| Nav links hidden | Moved to Drawer |
-| Search bar | Retained but narrower |
+| Difference from Desktop | Description           |
+| ----------------------- | --------------------- |
+| ☰ added                | Drawer trigger        |
+| Nav links hidden        | Moved to Drawer       |
+| Search bar              | Retained but narrower |
 
 #### Mobile Header
 
@@ -190,13 +190,13 @@ A horizontal tab bar displayed below the header on search-related pages.
 └──────────┴──────────┴──────────┴──────────┴──────────┴──────────┘
 ```
 
-| Behavior | Description |
-|---|---|
+| Behavior     | Description                               |
+| ------------ | ----------------------------------------- |
 | Active state | Filled background on current tab (orange) |
-| Click | Navigate to corresponding page |
-| Desktop | 6 tabs with icon + label, full width |
-| Tablet | 6 tabs with icon + label, compact |
-| Mobile | Hidden — replaced by Bottom Nav |
+| Click        | Navigate to corresponding page            |
+| Desktop      | 6 tabs with icon + label, full width      |
+| Tablet       | 6 tabs with icon + label, compact         |
+| Mobile       | Hidden — replaced by Bottom Nav           |
 
 ### 3.3 Bottom Nav Bar — Mobile Only
 
@@ -207,29 +207,29 @@ A horizontal tab bar displayed below the header on search-related pages.
 └──────┴──────┴──────┴──────┴──────┘
 ```
 
-| Tab | Action |
-|---|---|
-| 홈 | → Homepage |
-| 검색 | → Detail Search |
-| 내주변 | → Nearby Search |
-| 게시판 | → Board (Shop Recommendation) |
-| MY | Guest → Login page / Logged in → My Page |
+| Tab    | Action                                   |
+| ------ | ---------------------------------------- |
+| 홈     | → Homepage                               |
+| 검색   | → Detail Search                          |
+| 내주변 | → Nearby Search                          |
+| 게시판 | → Board (Shop Recommendation)            |
+| MY     | Guest → Login page / Logged in → My Page |
 
-| Behavior | Description |
-|---|---|
-| Fixed | Bottom of viewport, always visible |
-| Active indicator | Icon + label highlight |
-| Hide on scroll down | Optional — show on scroll up |
+| Behavior            | Description                        |
+| ------------------- | ---------------------------------- |
+| Fixed               | Bottom of viewport, always visible |
+| Active indicator    | Icon + label highlight             |
+| Hide on scroll down | Optional — show on scroll up       |
 
 ### 3.4 Hamburger Drawer — Tablet & Mobile
 
-| Property | Value |
-|---|---|
-| Trigger | T: Header ☰ / M: Header ☰ |
-| Direction | Left slide-in |
-| Width | 80% (max 360px) |
-| Background | Dim overlay |
-| Close | ✕ button, background tap, left swipe |
+| Property   | Value                                |
+| ---------- | ------------------------------------ |
+| Trigger    | T: Header ☰ / M: Header ☰          |
+| Direction  | Left slide-in                        |
+| Width      | 80% (max 360px)                      |
+| Background | Dim overlay                          |
+| Close      | ✕ button, background tap, left swipe |
 
 **Drawer — Guest**
 
@@ -287,11 +287,11 @@ A horizontal tab bar displayed below the header on search-related pages.
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-| Tier | Layout |
-|---|---|
-| Desktop | 4 columns as shown above |
-| Tablet | 2 columns (Logo+고객센터 / 메뉴+SNS) |
-| Mobile | Accordion — each section collapsible |
+| Tier    | Layout                               |
+| ------- | ------------------------------------ |
+| Desktop | 4 columns as shown above             |
+| Tablet  | 2 columns (Logo+고객센터 / 메뉴+SNS) |
+| Mobile  | Accordion — each section collapsible |
 
 ---
 
@@ -353,14 +353,14 @@ Desktop
 
 #### Tier Adaptations
 
-| Section | Desktop | Tablet | Mobile |
-|---|---|---|---|
-| Hero Banner | Full width, large | Full width, medium height | Full width, compact |
-| Theme Icons | 6 × 2 grid | 4 × 3 grid | 3 × 4 grid, horizontal scroll |
-| Region Quick Access | 8 tabs inline | 6 tabs + "더보기" | Horizontal scroll |
-| Nearby Shop Cards | 4 columns | 2 columns | 1 column or horizontal scroll |
-| Editor's Choice | 3 columns | 2 columns | 1 column |
-| Regional Recs | 2-column cards | 2-column cards | 1-column stack |
+| Section             | Desktop           | Tablet                    | Mobile                        |
+| ------------------- | ----------------- | ------------------------- | ----------------------------- |
+| Hero Banner         | Full width, large | Full width, medium height | Full width, compact           |
+| Theme Icons         | 6 × 2 grid        | 4 × 3 grid                | 3 × 4 grid, horizontal scroll |
+| Region Quick Access | 8 tabs inline     | 6 tabs + "더보기"         | Horizontal scroll             |
+| Nearby Shop Cards   | 4 columns         | 2 columns                 | 1 column or horizontal scroll |
+| Editor's Choice     | 3 columns         | 2 columns                 | 1 column                      |
+| Regional Recs       | 2-column cards    | 2-column cards            | 1-column stack                |
 
 #### Storyboard: Homepage Load
 
@@ -444,38 +444,38 @@ Desktop
 
 #### Filter Panel
 
-| Filter | Type | FSD Ref |
-|---|---|---|
-| Keyword (shop name) | Text input | F-SEARCH-01 |
-| Region (Level 1) | Dropdown | F-SEARCH-02 |
-| District (Level 2) | Dropdown (cascading) | F-SEARCH-02 |
-| Amenities | Checkboxes (6 options) | F-SEARCH-04 |
-| Booking Required | Yes/No/Any | F-SEARCH-05 |
-| Themes | Multi-select tag chips | F-SEARCH-03 |
+| Filter              | Type                   | FSD Ref     |
+| ------------------- | ---------------------- | ----------- |
+| Keyword (shop name) | Text input             | F-SEARCH-01 |
+| Region (Level 1)    | Dropdown               | F-SEARCH-02 |
+| District (Level 2)  | Dropdown (cascading)   | F-SEARCH-02 |
+| Amenities           | Checkboxes (6 options) | F-SEARCH-04 |
+| Booking Required    | Yes/No/Any             | F-SEARCH-05 |
+| Themes              | Multi-select tag chips | F-SEARCH-03 |
 
 **Note**: Figma includes a "가격대" (price range) slider — this is NOT in the FSD filter spec and is deferred to a future iteration. See §14 Conflict Log.
 
 #### Sort Options
 
-| Option | FSD Ref | Default |
-|---|---|---|
-| 평점 높은순 (Rating desc) | F-SEARCH-07 | ✅ |
-| 리뷰 많은순 (Review count desc) | F-SEARCH-07 | |
-| 추천순 (Recommended) | — | |
-| 가격 낮은순 (Price low) | — | |
+| Option                          | FSD Ref     | Default |
+| ------------------------------- | ----------- | ------- |
+| 평점 높은순 (Rating desc)       | F-SEARCH-07 | ✅      |
+| 리뷰 많은순 (Review count desc) | F-SEARCH-07 |         |
+| 추천순 (Recommended)            | —           |         |
+| 가격 낮은순 (Price low)         | —           |         |
 
 **Note**: FSD specifies "Newest listed" as a sort option. Figma shows "추천순" and "가격 낮은순" instead. Per priority rules, use FSD sort options: Rating, Review count, Newest.
 
 #### Tier Adaptations
 
-| Item | Desktop | Tablet | Mobile |
-|---|---|---|---|
-| Filter panel | Left sidebar (sticky) | Left sidebar (collapsible) | Icon → Bottom Sheet |
-| Results grid | 3 columns | 2 columns | 1 column |
-| Active filter chips | Inline above results | Inline above results | Horizontal scroll |
-| Sort | Inline text links | Inline text links | Dropdown |
-| Pagination | Page numbers | Page numbers | Page numbers (compact) |
-| "검색하기" button | Bottom of filter panel | Bottom of filter panel | Bottom Sheet CTA |
+| Item                | Desktop                | Tablet                     | Mobile                 |
+| ------------------- | ---------------------- | -------------------------- | ---------------------- |
+| Filter panel        | Left sidebar (sticky)  | Left sidebar (collapsible) | Icon → Bottom Sheet    |
+| Results grid        | 3 columns              | 2 columns                  | 1 column               |
+| Active filter chips | Inline above results   | Inline above results       | Horizontal scroll      |
+| Sort                | Inline text links      | Inline text links          | Dropdown               |
+| Pagination          | Page numbers           | Page numbers               | Page numbers (compact) |
+| "검색하기" button   | Bottom of filter panel | Bottom of filter panel     | Bottom Sheet CTA       |
 
 #### Storyboard: Detail Search
 
@@ -526,10 +526,10 @@ Desktop
 
 #### Tier Adaptations
 
-| Item | Desktop | Tablet | Mobile |
-|---|---|---|---|
-| Theme icon grid | 6 × 2 | 4 × 3 | Horizontal scroll |
-| Filter + results | Same as Detail Search | Same | Same |
+| Item             | Desktop               | Tablet | Mobile            |
+| ---------------- | --------------------- | ------ | ----------------- |
+| Theme icon grid  | 6 × 2                 | 4 × 3  | Horizontal scroll |
+| Filter + results | Same as Detail Search | Same   | Same              |
 
 ### 4.4 Location Browse (`/[locale]/location/[level1]/[level2]`)
 
@@ -559,10 +559,10 @@ Desktop
 
 #### Tier Adaptations
 
-| Item | Desktop | Tablet | Mobile |
-|---|---|---|---|
-| Region tabs | Full inline (8+) | 6 + horizontal scroll | Horizontal scroll |
-| Rest | Same as Detail Search | Same | Same |
+| Item        | Desktop               | Tablet                | Mobile            |
+| ----------- | --------------------- | --------------------- | ----------------- |
+| Region tabs | Full inline (8+)      | 6 + horizontal scroll | Horizontal scroll |
+| Rest        | Same as Detail Search | Same                  | Same              |
 
 ### 4.5 Nearby Search (`/[locale]/nearby`)
 
@@ -595,13 +595,13 @@ Desktop
 
 #### Tier Adaptations
 
-| Item | Desktop | Tablet | Mobile |
-|---|---|---|---|
-| Layout | Map (left) + List (right) | Map (top) + List (bottom) | Map (top, 40vh) + List (bottom) |
-| Map | ~60% width | Full width | Full width |
-| Shop list | Scrollable right panel | Below map | Below map |
-| Distance display | Right-aligned in card | Right-aligned | Right-aligned |
-| Radius control | Preset buttons: 1km, 3km, 5km, 10km | Same | Same |
+| Item             | Desktop                             | Tablet                    | Mobile                          |
+| ---------------- | ----------------------------------- | ------------------------- | ------------------------------- |
+| Layout           | Map (left) + List (right)           | Map (top) + List (bottom) | Map (top, 40vh) + List (bottom) |
+| Map              | ~60% width                          | Full width                | Full width                      |
+| Shop list        | Scrollable right panel              | Below map                 | Below map                       |
+| Distance display | Right-aligned in card               | Right-aligned             | Right-aligned                   |
+| Radius control   | Preset buttons: 1km, 3km, 5km, 10km | Same                      | Same                            |
 
 #### Storyboard: Nearby Search
 
@@ -709,15 +709,15 @@ Desktop
 
 #### Tier Adaptations
 
-| Item | Desktop | Tablet | Mobile |
-|---|---|---|---|
-| Layout | Gallery + Sidebar (2-col) | Gallery (top) + Sidebar (below) | Gallery (top) + Sidebar (below) |
-| Image gallery | Main + 5 thumbnails grid | Main + 4 thumbnails | Horizontal swipe carousel |
-| Booking sidebar | Fixed right column | Full width below gallery | Full width, sticky CTA at bottom |
-| Tab navigation | Inline tabs | Inline tabs | Horizontal scroll tabs |
-| Service menu | Full table | Full table | Card list |
-| Review list | List (wide) | List | List (full width) |
-| Nearby shops | 4 columns | 2 columns | Horizontal scroll |
+| Item            | Desktop                   | Tablet                          | Mobile                           |
+| --------------- | ------------------------- | ------------------------------- | -------------------------------- |
+| Layout          | Gallery + Sidebar (2-col) | Gallery (top) + Sidebar (below) | Gallery (top) + Sidebar (below)  |
+| Image gallery   | Main + 5 thumbnails grid  | Main + 4 thumbnails             | Horizontal swipe carousel        |
+| Booking sidebar | Fixed right column        | Full width below gallery        | Full width, sticky CTA at bottom |
+| Tab navigation  | Inline tabs               | Inline tabs                     | Horizontal scroll tabs           |
+| Service menu    | Full table                | Full table                      | Card list                        |
+| Review list     | List (wide)               | List                            | List (full width)                |
+| Nearby shops    | 4 columns                 | 2 columns                       | Horizontal scroll                |
 
 #### Storyboard: Shop Detail
 
@@ -792,11 +792,11 @@ Desktop
 
 #### Tier Adaptations
 
-| Item | Desktop | Tablet | Mobile |
-|---|---|---|---|
-| Rating distribution | Horizontal bar chart | Same | Same (compact) |
-| Filter panel | Left sidebar | Left sidebar (collapsible) | Bottom Sheet |
-| Review cards | Wide list | Wide list | Full-width cards |
+| Item                | Desktop              | Tablet                     | Mobile           |
+| ------------------- | -------------------- | -------------------------- | ---------------- |
+| Rating distribution | Horizontal bar chart | Same                       | Same (compact)   |
+| Filter panel        | Left sidebar         | Left sidebar (collapsible) | Bottom Sheet     |
+| Review cards        | Wide list            | Wide list                  | Full-width cards |
 
 ### 6.2 Review Write Modal
 
@@ -829,11 +829,11 @@ Desktop
 
 **Note**: Figma shows 0/1000 character limit. Per FSD (source of truth), the limit is **10–500 characters** (F-REV-03).
 
-| Tier | Display |
-|---|---|
-| Desktop | Center modal with dim overlay |
-| Tablet | Center modal |
-| Mobile | Bottom Sheet (full width, slide up) |
+| Tier    | Display                             |
+| ------- | ----------------------------------- |
+| Desktop | Center modal with dim overlay       |
+| Tablet  | Center modal                        |
+| Mobile  | Bottom Sheet (full width, slide up) |
 
 ### 6.3 Review Success Modal
 
@@ -903,11 +903,11 @@ Desktop
 
 #### Tier Adaptations
 
-| Item | Desktop | Tablet | Mobile |
-|---|---|---|---|
-| Post grid | 3 columns | 2 columns | 1 column |
-| Region filter | Inline tabs | Inline tabs | Horizontal scroll |
-| Featured banner | Large | Medium | Compact |
+| Item            | Desktop     | Tablet      | Mobile            |
+| --------------- | ----------- | ----------- | ----------------- |
+| Post grid       | 3 columns   | 2 columns   | 1 column          |
+| Region filter   | Inline tabs | Inline tabs | Horizontal scroll |
+| Featured banner | Large       | Medium      | Compact           |
 
 ### 7.2 Massage Info Board (`/[locale]/board/info`)
 
@@ -942,10 +942,10 @@ Desktop
 
 #### Tier Adaptations
 
-| Item | Desktop | Tablet | Mobile |
-|---|---|---|---|
-| Post list | Wide list | Wide list | Full-width cards |
-| Stats (views/likes/comments) | Inline right | Inline right | Below excerpt |
+| Item                         | Desktop      | Tablet       | Mobile           |
+| ---------------------------- | ------------ | ------------ | ---------------- |
+| Post list                    | Wide list    | Wide list    | Full-width cards |
+| Stats (views/likes/comments) | Inline right | Inline right | Below excerpt    |
 
 ### 7.3 Board Post Detail (`/[locale]/board/[type]/[id]`)
 
@@ -998,12 +998,12 @@ Desktop
 
 #### Tier Adaptations
 
-| Item | Desktop | Tablet | Mobile |
-|---|---|---|---|
-| Post body max width | 800px centered | Padding 24px | Padding 16px |
-| Embedded shop card | Inline card | Full width | Full width |
-| Related posts | 3 columns | 2 columns | Horizontal scroll |
-| Comment input | Full width | Full width | Sticky bottom |
+| Item                | Desktop        | Tablet       | Mobile            |
+| ------------------- | -------------- | ------------ | ----------------- |
+| Post body max width | 800px centered | Padding 24px | Padding 16px      |
+| Embedded shop card  | Inline card    | Full width   | Full width        |
+| Related posts       | 3 columns      | 2 columns    | Horizontal scroll |
+| Comment input       | Full width     | Full width   | Sticky bottom     |
 
 ---
 
@@ -1046,17 +1046,18 @@ Desktop (3-column layout)
 
 #### Tier Adaptations
 
-| Item | Desktop | Tablet | Mobile |
-|---|---|---|---|
-| Layout | 3-column (profile + feed + sidebar) | 2-column (feed + sidebar, profile in drawer) | 1-column (feed only) |
-| User profile | Left sidebar | Drawer/collapsed | Hidden or top bar |
-| Post creation | Inline above feed | Inline | FAB (floating action button) → Bottom Sheet |
-| Popular shops sidebar | Right column | Right column | Hidden or horizontal scroll below feed |
-| App promo | Right column below shops | Right column | Hidden |
+| Item                  | Desktop                             | Tablet                                       | Mobile                                      |
+| --------------------- | ----------------------------------- | -------------------------------------------- | ------------------------------------------- |
+| Layout                | 3-column (profile + feed + sidebar) | 2-column (feed + sidebar, profile in drawer) | 1-column (feed only)                        |
+| User profile          | Left sidebar                        | Drawer/collapsed                             | Hidden or top bar                           |
+| Post creation         | Inline above feed                   | Inline                                       | FAB (floating action button) → Bottom Sheet |
+| Popular shops sidebar | Right column                        | Right column                                 | Hidden or horizontal scroll below feed      |
+| App promo             | Right column below shops            | Right column                                 | Hidden                                      |
 
 ### 8.2 Community Post Detail
 
 Same structure as Board Post Detail (§7.3) but with:
+
 - User profile sidebar (left, Desktop only)
 - Popular shops sidebar (right, Desktop only)
 - Post content area in center column
@@ -1115,11 +1116,11 @@ Desktop
 
 #### Tier Adaptations
 
-| Item | Desktop | Tablet | Mobile |
-|---|---|---|---|
-| Important notices | 2×2 grid cards | 2×2 grid | 1-column list |
-| Event cards | 2 columns | 2 columns | 1 column |
-| Notice table | Full table | Compact table | Card list |
+| Item              | Desktop        | Tablet        | Mobile        |
+| ----------------- | -------------- | ------------- | ------------- |
+| Important notices | 2×2 grid cards | 2×2 grid      | 1-column list |
+| Event cards       | 2 columns      | 2 columns     | 1 column      |
+| Notice table      | Full table     | Compact table | Card list     |
 
 ### 9.2 All Ongoing Events (`/[locale]/events/ongoing`)
 
@@ -1152,10 +1153,10 @@ Desktop
 
 #### Tier Adaptations
 
-| Item | Desktop | Tablet | Mobile |
-|---|---|---|---|
+| Item             | Desktop      | Tablet                         | Mobile                 |
+| ---------------- | ------------ | ------------------------------ | ---------------------- |
 | Category sidebar | Left sidebar | Collapsible or horizontal tabs | Horizontal scroll tabs |
-| Event grid | 3 columns | 2 columns | 1 column |
+| Event grid       | 3 columns    | 2 columns                      | 1 column               |
 
 ### 9.3 Event Detail (`/[locale]/events/[id]`)
 
@@ -1194,6 +1195,7 @@ Desktop
 ### 9.4 Notice Detail (`/[locale]/events/notice/[id]`)
 
 Same structure as Board Post Detail (§7.3) without:
+
 - Embedded shop card
 - Related posts replaced with prev/next navigation
 
@@ -1241,10 +1243,10 @@ Desktop (split-screen layout)
 
 #### Tier Adaptations
 
-| Item | Desktop | Tablet | Mobile |
-|---|---|---|---|
-| Layout | Split-screen (brand + form) | Split-screen (narrower brand panel) | Single column (brand banner top + form below) |
-| Brand panel | 50% width | 40% width | Compact banner |
+| Item        | Desktop                     | Tablet                              | Mobile                                        |
+| ----------- | --------------------------- | ----------------------------------- | --------------------------------------------- |
+| Layout      | Split-screen (brand + form) | Split-screen (narrower brand panel) | Single column (brand banner top + form below) |
+| Brand panel | 50% width                   | 40% width                           | Compact banner                                |
 
 #### Storyboard: Login
 
@@ -1303,8 +1305,8 @@ Desktop (split-screen layout)
 
 #### Tier Adaptations
 
-| Item | Desktop | Tablet | Mobile |
-|---|---|---|---|
+| Item   | Desktop      | Tablet                        | Mobile        |
+| ------ | ------------ | ----------------------------- | ------------- |
 | Layout | Split-screen | Split-screen (narrower brand) | Single column |
 
 ### 10.3 Sign Up Success Modal
@@ -1476,30 +1478,30 @@ Desktop (split-screen layout)
 
 #### Tier Adaptation
 
-| Element | Desktop (D) | Tablet (T) | Mobile (M) |
-|---|---|---|---|
-| Profile card | Horizontal layout (photo left, info right) | Same as D | Stacked (photo centered above info) |
-| Tab bar | Full-width tabs | Same as D | Same as D |
-| My Reviews list | Single column, comfortable spacing | Same as D | Full-width cards |
-| Bookmarks grid | 3 columns | 2 columns | 1 column |
-| Pagination | Page numbers | Page numbers | Page numbers |
+| Element         | Desktop (D)                                | Tablet (T)   | Mobile (M)                          |
+| --------------- | ------------------------------------------ | ------------ | ----------------------------------- |
+| Profile card    | Horizontal layout (photo left, info right) | Same as D    | Stacked (photo centered above info) |
+| Tab bar         | Full-width tabs                            | Same as D    | Same as D                           |
+| My Reviews list | Single column, comfortable spacing         | Same as D    | Full-width cards                    |
+| Bookmarks grid  | 3 columns                                  | 2 columns    | 1 column                            |
+| Pagination      | Page numbers                               | Page numbers | Page numbers                        |
 
 #### Interaction Details
 
-| Action | Behavior |
-|---|---|
-| Tab switch | URL updates with `?tab=reviews` or `?tab=bookmarks`. Content area swaps. No full page reload. |
-| Review card tap | Navigate to shop detail page (`/[locale]/shop/[slug]`) |
-| Unbookmark (♥ tap) | Heart unfills (optimistic). On API failure: heart refills + toast error. Card stays until page refresh. |
-| Edit Profile button | Navigate to `/[locale]/mypage/edit` |
+| Action              | Behavior                                                                                                |
+| ------------------- | ------------------------------------------------------------------------------------------------------- |
+| Tab switch          | URL updates with `?tab=reviews` or `?tab=bookmarks`. Content area swaps. No full page reload.           |
+| Review card tap     | Navigate to shop detail page (`/[locale]/shop/[slug]`)                                                  |
+| Unbookmark (♥ tap)  | Heart unfills (optimistic). On API failure: heart refills + toast error. Card stays until page refresh. |
+| Edit Profile button | Navigate to `/[locale]/mypage/edit`                                                                     |
 
 #### Data States
 
-| State | Treatment |
-|---|---|
-| Loading | Skeleton UI for profile card and tab content |
-| Reviews empty | Empty state: icon + "아직 작성한 리뷰가 없습니다." + CTA to discover shops |
-| Bookmarks empty | Empty state: icon + "아직 찜한 업체가 없습니다." + CTA to discover shops |
+| State           | Treatment                                                                  |
+| --------------- | -------------------------------------------------------------------------- |
+| Loading         | Skeleton UI for profile card and tab content                               |
+| Reviews empty   | Empty state: icon + "아직 작성한 리뷰가 없습니다." + CTA to discover shops |
+| Bookmarks empty | Empty state: icon + "아직 찜한 업체가 없습니다." + CTA to discover shops   |
 
 ### 10A.2 Edit Profile (`/[locale]/mypage/edit`)
 
@@ -1530,20 +1532,20 @@ Desktop (split-screen layout)
 
 #### Tier Adaptation
 
-| Element | Desktop (D) | Tablet (T) | Mobile (M) |
-|---|---|---|---|
-| Layout | Centered card (max-width 600px) | Same as D | Full-width with padding |
-| Photo actions | Inline buttons beside photo | Same as D | Buttons below photo |
-| Save/Cancel | Right-aligned row | Same as D | Full-width stacked buttons (Save primary, Cancel secondary) |
+| Element       | Desktop (D)                     | Tablet (T) | Mobile (M)                                                  |
+| ------------- | ------------------------------- | ---------- | ----------------------------------------------------------- |
+| Layout        | Centered card (max-width 600px) | Same as D  | Full-width with padding                                     |
+| Photo actions | Inline buttons beside photo     | Same as D  | Buttons below photo                                         |
+| Save/Cancel   | Right-aligned row               | Same as D  | Full-width stacked buttons (Save primary, Cancel secondary) |
 
 #### Interaction Details
 
-| Action | Behavior |
-|---|---|
-| 사진 변경 | Opens file picker. Client validates type + size before upload. |
-| 사진 삭제 | Confirm dialog: "프로필 사진을 삭제하시겠습니까?" → removes photo, shows default avatar |
-| 저장 | Submit → loading state on button → redirect to `/[locale]/mypage` on success |
-| 취소 | Navigate back to `/[locale]/mypage` (no confirmation if no changes made; confirm if unsaved changes) |
+| Action    | Behavior                                                                                             |
+| --------- | ---------------------------------------------------------------------------------------------------- |
+| 사진 변경 | Opens file picker. Client validates type + size before upload.                                       |
+| 사진 삭제 | Confirm dialog: "프로필 사진을 삭제하시겠습니까?" → removes photo, shows default avatar              |
+| 저장      | Submit → loading state on button → redirect to `/[locale]/mypage` on success                         |
+| 취소      | Navigate back to `/[locale]/mypage` (no confirmation if no changes made; confirm if unsaved changes) |
 
 ---
 
@@ -1608,12 +1610,12 @@ Desktop
 
 #### Tier Adaptations
 
-| Item | Desktop | Tablet | Mobile |
-|---|---|---|---|
+| Item         | Desktop                | Tablet             | Mobile              |
+| ------------ | ---------------------- | ------------------ | ------------------- |
 | Hero section | Full width, large text | Full width, medium | Full width, compact |
-| Stats row | 4 columns | 2×2 grid | 1 column or 2×2 |
-| Benefits | 3 columns | 3 columns | 1 column |
-| Form fields | 2 columns | 2 columns | 1 column stack |
+| Stats row    | 4 columns              | 2×2 grid           | 1 column or 2×2     |
+| Benefits     | 3 columns              | 3 columns          | 1 column            |
+| Form fields  | 2 columns              | 2 columns          | 1 column stack      |
 
 ### 11.2 Partnership Success Modal
 
@@ -1636,22 +1638,22 @@ Desktop
 
 ## 12. Navigation Access Paths
 
-| Feature | Desktop | Tablet | Mobile |
-|---|---|---|---|
-| Detail Search | Header "샵 검색 ▾" → dropdown OR Tab Bar | Drawer → 샵 검색 section OR Tab Bar | Bottom Nav "검색" |
-| Theme Search | Header dropdown OR Tab Bar | Drawer OR Tab Bar | Bottom Nav "검색" → switch tab |
-| Location Search | Header dropdown OR Tab Bar | Drawer OR Tab Bar | Bottom Nav "검색" → switch tab |
-| Nearby Search | Tab Bar | Tab Bar | Bottom Nav "내주변" |
-| Review Feed | Tab Bar | Tab Bar | Bottom Nav → Drawer |
-| Shop Recommendation | Header "게시판 ▾" → dropdown | Drawer → 게시판 | Bottom Nav "게시판" |
-| Massage Info | Header "게시판 ▾" → dropdown | Drawer → 게시판 | Bottom Nav "게시판" → tab |
-| Community | Header "게시판 ▾" → dropdown | Drawer → 게시판 | Bottom Nav "게시판" → tab |
-| Events & Notices | Header "이벤트" | Drawer → 이벤트 | Drawer |
-| Partnership | Header "파트너십 문의" OR Tab Bar | Drawer OR Tab Bar | Drawer |
-| Login | Header "로그인" | Header "로그인" | Header "로그인" or Drawer |
-| Sign Up | Header "회원가입" | Drawer | Drawer |
-| Language Switch | Header (ko/en toggle) | Drawer | Drawer |
-| Quick Search | Header search bar | Header search bar | Drawer or search page |
+| Feature             | Desktop                                  | Tablet                              | Mobile                         |
+| ------------------- | ---------------------------------------- | ----------------------------------- | ------------------------------ |
+| Detail Search       | Header "샵 검색 ▾" → dropdown OR Tab Bar | Drawer → 샵 검색 section OR Tab Bar | Bottom Nav "검색"              |
+| Theme Search        | Header dropdown OR Tab Bar               | Drawer OR Tab Bar                   | Bottom Nav "검색" → switch tab |
+| Location Search     | Header dropdown OR Tab Bar               | Drawer OR Tab Bar                   | Bottom Nav "검색" → switch tab |
+| Nearby Search       | Tab Bar                                  | Tab Bar                             | Bottom Nav "내주변"            |
+| Review Feed         | Tab Bar                                  | Tab Bar                             | Bottom Nav → Drawer            |
+| Shop Recommendation | Header "게시판 ▾" → dropdown             | Drawer → 게시판                     | Bottom Nav "게시판"            |
+| Massage Info        | Header "게시판 ▾" → dropdown             | Drawer → 게시판                     | Bottom Nav "게시판" → tab      |
+| Community           | Header "게시판 ▾" → dropdown             | Drawer → 게시판                     | Bottom Nav "게시판" → tab      |
+| Events & Notices    | Header "이벤트"                          | Drawer → 이벤트                     | Drawer                         |
+| Partnership         | Header "파트너십 문의" OR Tab Bar        | Drawer OR Tab Bar                   | Drawer                         |
+| Login               | Header "로그인"                          | Header "로그인"                     | Header "로그인" or Drawer      |
+| Sign Up             | Header "회원가입"                        | Drawer                              | Drawer                         |
+| Language Switch     | Header (ko/en toggle)                    | Drawer                              | Drawer                         |
+| Quick Search        | Header search bar                        | Header search bar                   | Drawer or search page          |
 
 ---
 
@@ -1659,11 +1661,11 @@ Desktop
 
 ### 13.1 Auth States
 
-| State | Header Display | Accessible Pages | Restricted Action |
-|---|---|---|---|
-| Guest | 로그인 / 회원가입 buttons | All pages (browse only) | Review submit/report → redirect to login. My Page / Edit Profile → redirect to login. |
-| Active (logged in) | User avatar 👤 | All pages + review submission + My Page | Login/signup → redirect to homepage |
-| Locked/Suspended | User avatar 👤 | All pages (browse only) + My Page (view only) | Review submit/report → error: "계정이 정지되었습니다." |
+| State              | Header Display            | Accessible Pages                              | Restricted Action                                                                     |
+| ------------------ | ------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Guest              | 로그인 / 회원가입 buttons | All pages (browse only)                       | Review submit/report → redirect to login. My Page / Edit Profile → redirect to login. |
+| Active (logged in) | User avatar 👤            | All pages + review submission + My Page       | Login/signup → redirect to homepage                                                   |
+| Locked/Suspended   | User avatar 👤            | All pages (browse only) + My Page (view only) | Review submit/report → error: "계정이 정지되었습니다."                                |
 
 #### Storyboard: Guest → Protected Action
 
@@ -1676,19 +1678,19 @@ Desktop
 
 ### 13.2 Data States
 
-| State | Treatment |
-|---|---|
-| Loading | Skeleton UI (gray placeholder blocks matching content layout) |
-| Data empty | Empty state icon + message + suggestion (e.g., "검색 결과가 없습니다") |
-| Error | Toast notification + retry button |
-| End of list | "더 이상 데이터가 없습니다" or load-more button with remaining count |
+| State       | Treatment                                                              |
+| ----------- | ---------------------------------------------------------------------- |
+| Loading     | Skeleton UI (gray placeholder blocks matching content layout)          |
+| Data empty  | Empty state icon + message + suggestion (e.g., "검색 결과가 없습니다") |
+| Error       | Toast notification + retry button                                      |
+| End of list | "더 이상 데이터가 없습니다" or load-more button with remaining count   |
 
 ### 13.3 i18n Fallback
 
-| Condition | Treatment |
-|---|---|
-| English content unavailable | Display Korean version + indicator: "This content is not yet translated" (F-I18N-07) |
-| Language switcher | Available in header (Desktop) and Drawer (Tablet/Mobile). Links to equivalent page in alternate locale. |
+| Condition                   | Treatment                                                                                               |
+| --------------------------- | ------------------------------------------------------------------------------------------------------- |
+| English content unavailable | Display Korean version + indicator: "This content is not yet translated" (F-I18N-07)                    |
+| Language switcher           | Available in header (Desktop) and Drawer (Tablet/Mobile). Links to equivalent page in alternate locale. |
 
 ---
 
@@ -1696,23 +1698,23 @@ Desktop
 
 All conflicts between Figma designs and FSD are resolved with **FSD as source of truth**.
 
-| # | Item | Figma | FSD | Resolution | Notes |
-|---|---|---|---|---|---|
-| C-01 | Review character limit | 0/1000 | 10–500 characters | **Use FSD: 10–500** | Figma limit appears to be placeholder |
-| C-02 | Bookmarks / heart icon | ♡ on shop cards + detail | PRD §12: "Future" | **Included in MVP (revised)** | Bookmarks moved to MVP scope for My Page. Heart icon on shop cards + detail + My Page bookmarks tab. |
-| C-03 | Price range slider filter | 0~20만원+ slider | Not in FSD filter list | **Deferred** | Note as future enhancement |
-| C-04 | PREMIUM / BEST badges | On shop card thumbnails | Not specified | **Deferred** | Requires admin-side badge assignment |
-| C-05 | Member pricing (회원가) | Original→member price | FSD: `price_range` text only | **Use FSD** | Display price_range text as-is |
-| C-06 | Booking CTA split | "전화 예약" / "문자 예약" | `booking_url_phone` single field | **Use FSD** | Single booking CTA |
-| C-07 | Sort options | 추천순, 가격 낮은순 | Rating, Review count, Newest | **Use FSD** | 3 sort options as specified |
-| C-08 | Signup phone + SMS verification | Phone field + 인증요청 | Email + password + display name | **Use FSD** | Phone/SMS deferred |
-| C-09 | Password requirements | 영문/숫자/특수문자 8자+ | Min 6 characters (backend default) | **Use FSD** | Recommend upgrading to Figma's rule in future |
-| C-10 | Review points (500P) | Review success modal shows points | Not in PRD/FSD | **Partially included** | Community points system in MVP (FSD §18.3), but review-specific points remain excluded. |
-| C-11 | Welcome coupon (3,000 KRW) | Signup success modal shows coupon | Not in PRD/FSD | **Excluded from MVP** | Coupon system is future scope |
-| C-12 | User level/points | Lv.3, 보유 포인트 3200P | Not in PRD customer model | **Included in MVP (revised)** | User levels (Lv.1–Lv.5) and points system included for Community (FSD §18.3). |
-| C-13 | Navigation structure | Header dropdowns (업체검색▾, 게시판▾) | FSD §15.2 has 6 inline nav items | **Use Figma nav pattern** | Dropdown nav is cleaner for header; Tab Bar provides inline access. Exception to FSD-first rule — layout decision. |
-| C-14 | "비회원 예약 조회" | On login page | Not in FSD | **Deferred** | Non-member booking lookup is future scope |
-| C-15 | App download promo | In community sidebar | Not in FSD | **Deferred** | No mobile app in MVP |
+| #    | Item                            | Figma                                 | FSD                                | Resolution                    | Notes                                                                                                              |
+| ---- | ------------------------------- | ------------------------------------- | ---------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| C-01 | Review character limit          | 0/1000                                | 10–500 characters                  | **Use FSD: 10–500**           | Figma limit appears to be placeholder                                                                              |
+| C-02 | Bookmarks / heart icon          | ♡ on shop cards + detail              | PRD §12: "Future"                  | **Included in MVP (revised)** | Bookmarks moved to MVP scope for My Page. Heart icon on shop cards + detail + My Page bookmarks tab.               |
+| C-03 | Price range slider filter       | 0~20만원+ slider                      | Not in FSD filter list             | **Deferred**                  | Note as future enhancement                                                                                         |
+| C-04 | PREMIUM / BEST badges           | On shop card thumbnails               | Not specified                      | **Deferred**                  | Requires admin-side badge assignment                                                                               |
+| C-05 | Member pricing (회원가)         | Original→member price                 | FSD: `price_range` text only       | **Use FSD**                   | Display price_range text as-is                                                                                     |
+| C-06 | Booking CTA split               | "전화 예약" / "문자 예약"             | `booking_url_phone` single field   | **Use FSD**                   | Single booking CTA                                                                                                 |
+| C-07 | Sort options                    | 추천순, 가격 낮은순                   | Rating, Review count, Newest       | **Use FSD**                   | 3 sort options as specified                                                                                        |
+| C-08 | Signup phone + SMS verification | Phone field + 인증요청                | Email + password + display name    | **Use FSD**                   | Phone/SMS deferred                                                                                                 |
+| C-09 | Password requirements           | 영문/숫자/특수문자 8자+               | Min 6 characters (backend default) | **Use FSD**                   | Recommend upgrading to Figma's rule in future                                                                      |
+| C-10 | Review points (500P)            | Review success modal shows points     | Not in PRD/FSD                     | **Partially included**        | Community points system in MVP (FSD §18.3), but review-specific points remain excluded.                            |
+| C-11 | Welcome coupon (3,000 KRW)      | Signup success modal shows coupon     | Not in PRD/FSD                     | **Excluded from MVP**         | Coupon system is future scope                                                                                      |
+| C-12 | User level/points               | Lv.3, 보유 포인트 3200P               | Not in PRD customer model          | **Included in MVP (revised)** | User levels (Lv.1–Lv.5) and points system included for Community (FSD §18.3).                                      |
+| C-13 | Navigation structure            | Header dropdowns (업체검색▾, 게시판▾) | FSD §15.2 has 6 inline nav items   | **Use Figma nav pattern**     | Dropdown nav is cleaner for header; Tab Bar provides inline access. Exception to FSD-first rule — layout decision. |
+| C-14 | "비회원 예약 조회"              | On login page                         | Not in FSD                         | **Deferred**                  | Non-member booking lookup is future scope                                                                          |
+| C-15 | App download promo              | In community sidebar                  | Not in FSD                         | **Deferred**                  | No mobile app in MVP                                                                                               |
 
 ---
 

@@ -1,16 +1,20 @@
 ---
-title: "SWIDA — Technical Specification Document (TSD)"
-sidebar_label: "TSD (EN)"
+title: 'SWIDA — Technical Specification Document (TSD)'
+sidebar_label: 'TSD (EN)'
 sidebar_position: 1
 ---
 
 # SWIDA — Technical Specification Document (TSD)
 
-> **Version:** 1.1.0
-> **Date:** March 25, 2026
-> **Status:** Draft
-> **Based on:** SWIDA PRD v1.1 (updated — Admin Web as primary admin interface, Strapi admin panel developer-only)
-> **Author:** Engineering Team
+> **Version:** 1.2.0
+> **Date:** 2026-03-30
+> **Status:** Updated — Admin Web sections aligned to approved HTML prototype (v1.1 → v1.2)
+> **Based on:** SWIDA PRD v1.2, SWIDA Admin Web FSD v1.1
+> **Change summary (Admin Web only; all Customer Web sections unchanged):**
+>
+> - §5.2.5 Dashboard response shape updated: stat cards simplified (no status sub-breakdowns), added `monthly_users`, `shops_needing_verify`, `pending_reviews_feed`, `recent_shops_feed`, `recent_inquiries_feed`
+> - §5.6 Admin Web Features updated: shell is sidebar-only (no separate top header), sidebar groups revised, New Shop as sidebar item, inquiry layout is card grid, audit log is flat table
+> - All Customer Web sections (§6, §10, §11, etc.) are unchanged
 
 ---
 
@@ -61,26 +65,26 @@ The PRD specifies Strapi as a **headless API-only backend** with a **custom Next
 
 All versions are selected for LTS status, active security support, mutual compatibility, and non-deprecated status as of March 2026.
 
-| Technology | Version | LTS / Support Until | Notes |
-|---|---|---|---|
-| **Node.js** | `24.11.0` | Active LTS → April 2028 | Latest Active LTS. Strapi v5 supports Node 20, 22, 24. Native TypeScript type-stripping stable. npm v11 included. |
-| **pnpm** | `10.x` (latest 10.x stable) | Active | Workspace protocol for monorepo. Pin via `packageManager` in root `package.json` using Corepack. |
-| **Turborepo** | `2.x` (latest 2.x stable) | Active | Monorepo build orchestrator with remote caching. |
-| **Strapi** | `5.39.0` | Active (v5 latest stable) | Headless API-only — built-in admin panel restricted to developers for monitoring/debugging only. |
-| **Next.js** | `16.2.1` | Active (latest stable) | Latest stable as of March 2026. Turbopack stable by default. All RSC CVEs patched (see §2.4). |
-| **React** | `19.2.4` | Active (latest stable) | Shared across both Admin Web and Customer Web. Includes all RSC security patches. |
-| **TypeScript** | `5.9.x` | Active | Latest stable. Shared across all workspaces via `tsconfig` base in `packages/`. |
-| **PostgreSQL** | `17.9` | Supported → November 2029 | Latest patch of PG 17 stable. PG 18 is available but PostGIS ecosystem is more proven on 17. |
-| **PostGIS** | `3.6.2` | Active | Compatible with PostgreSQL 14–18. Required for nearby search (`ST_Distance`, `ST_DWithin`). |
-| **Redis** | `7.4.x` | Active LTS | API response caching at origin. |
-| **MinIO** | `RELEASE.2026-03-xx` (latest stable) | Rolling releases | S3-compatible object storage for shop images. Pin to a specific `RELEASE` tag in Docker. |
-| **Nginx** | `1.26.x` (latest stable) | Stable branch | Reverse proxy at origin. |
-| **Docker** | `27.x` | Active | Container runtime. |
-| **Docker Compose** | `2.x` | Active | Multi-container orchestration for development and production. |
-| **next-intl** | `4.8.3` | Active | Path-based i18n routing for Next.js. Compatible with Next.js 16.x since v4.4. |
-| **Tailwind CSS** | `4.x` (latest stable) | Active | Next.js 16 scaffolds Tailwind v4 by default. Uses `@tailwindcss/postcss`. |
-| **Headless UI** | `2.2.9` | Active | Unstyled accessible components. Compatible with React 19. |
-| **Nodemailer** | `7.x` (latest stable) | Active | Transactional email delivery for password reset, notifications. Configured with SMTP provider (e.g., AWS SES, SendGrid, or self-hosted SMTP). Provider selection is a deployment decision — Nodemailer abstracts the transport. |
+| Technology         | Version                              | LTS / Support Until       | Notes                                                                                                                                                                                                                           |
+| ------------------ | ------------------------------------ | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Node.js**        | `24.11.0`                            | Active LTS → April 2028   | Latest Active LTS. Strapi v5 supports Node 20, 22, 24. Native TypeScript type-stripping stable. npm v11 included.                                                                                                               |
+| **pnpm**           | `10.x` (latest 10.x stable)          | Active                    | Workspace protocol for monorepo. Pin via `packageManager` in root `package.json` using Corepack.                                                                                                                                |
+| **Turborepo**      | `2.x` (latest 2.x stable)            | Active                    | Monorepo build orchestrator with remote caching.                                                                                                                                                                                |
+| **Strapi**         | `5.39.0`                             | Active (v5 latest stable) | Headless API-only — built-in admin panel restricted to developers for monitoring/debugging only.                                                                                                                                |
+| **Next.js**        | `16.2.1`                             | Active (latest stable)    | Latest stable as of March 2026. Turbopack stable by default. All RSC CVEs patched (see §2.4).                                                                                                                                   |
+| **React**          | `19.2.4`                             | Active (latest stable)    | Shared across both Admin Web and Customer Web. Includes all RSC security patches.                                                                                                                                               |
+| **TypeScript**     | `5.9.x`                              | Active                    | Latest stable. Shared across all workspaces via `tsconfig` base in `packages/`.                                                                                                                                                 |
+| **PostgreSQL**     | `17.9`                               | Supported → November 2029 | Latest patch of PG 17 stable. PG 18 is available but PostGIS ecosystem is more proven on 17.                                                                                                                                    |
+| **PostGIS**        | `3.6.2`                              | Active                    | Compatible with PostgreSQL 14–18. Required for nearby search (`ST_Distance`, `ST_DWithin`).                                                                                                                                     |
+| **Redis**          | `7.4.x`                              | Active LTS                | API response caching at origin.                                                                                                                                                                                                 |
+| **MinIO**          | `RELEASE.2026-03-xx` (latest stable) | Rolling releases          | S3-compatible object storage for shop images. Pin to a specific `RELEASE` tag in Docker.                                                                                                                                        |
+| **Nginx**          | `1.26.x` (latest stable)             | Stable branch             | Reverse proxy at origin.                                                                                                                                                                                                        |
+| **Docker**         | `27.x`                               | Active                    | Container runtime.                                                                                                                                                                                                              |
+| **Docker Compose** | `2.x`                                | Active                    | Multi-container orchestration for development and production.                                                                                                                                                                   |
+| **next-intl**      | `4.8.3`                              | Active                    | Path-based i18n routing for Next.js. Compatible with Next.js 16.x since v4.4.                                                                                                                                                   |
+| **Tailwind CSS**   | `4.x` (latest stable)                | Active                    | Next.js 16 scaffolds Tailwind v4 by default. Uses `@tailwindcss/postcss`.                                                                                                                                                       |
+| **Headless UI**    | `2.2.9`                              | Active                    | Unstyled accessible components. Compatible with React 19.                                                                                                                                                                       |
+| **Nodemailer**     | `7.x` (latest stable)                | Active                    | Transactional email delivery for password reset, notifications. Configured with SMTP provider (e.g., AWS SES, SendGrid, or self-hosted SMTP). Provider selection is a deployment decision — Nodemailer abstracts the transport. |
 
 ### 2.3 Key Version Decisions & Rationale
 
@@ -125,14 +129,14 @@ PostgreSQL 17.9
 
 The React Server Components (RSC) protocol used by Next.js App Router has been the target of multiple critical and high-severity vulnerabilities since December 2025. These directly affect both SWIDA's Admin Web and Customer Web (Next.js with App Router). All patched versions below are **mandatory minimums** — never deploy an unpatched version.
 
-| CVE | Severity | CVSS | Description | Disclosed | Patched in (16.x) |
-|---|---|---|---|---|---|
-| CVE-2025-55182 | **Critical** | 10.0 | Remote Code Execution via unsafe deserialization in RSC Flight protocol | 2025-12-03 | `16.0.7` |
-| CVE-2025-66478 | **Critical** | 10.0 | Next.js-specific tracking of CVE-2025-55182 | 2025-12-03 | `16.0.7` |
-| CVE-2025-55184 | **High** | 7.5 | DoS — infinite loop via crafted HTTP request to any App Router endpoint | 2025-12-11 | `16.0.10` |
-| CVE-2025-67779 | **High** | 7.5 | Incomplete fix for CVE-2025-55184 — requires re-upgrade | 2025-12-11 | `16.0.10` |
-| CVE-2025-55183 | **Medium** | 5.3 | Source code exposure — Server Functions return compiled source including hardcoded secrets | 2025-12-11 | `16.0.10` |
-| CVE-2026-23864 | **High** | 7.5 | DoS — memory exhaustion / excessive CPU via crafted HTTP requests to Server Function endpoints | 2026-01-26 | `16.0.11` / **`16.1.5`** / **`16.2.1`** |
+| CVE            | Severity     | CVSS | Description                                                                                    | Disclosed  | Patched in (16.x)                       |
+| -------------- | ------------ | ---- | ---------------------------------------------------------------------------------------------- | ---------- | --------------------------------------- |
+| CVE-2025-55182 | **Critical** | 10.0 | Remote Code Execution via unsafe deserialization in RSC Flight protocol                        | 2025-12-03 | `16.0.7`                                |
+| CVE-2025-66478 | **Critical** | 10.0 | Next.js-specific tracking of CVE-2025-55182                                                    | 2025-12-03 | `16.0.7`                                |
+| CVE-2025-55184 | **High**     | 7.5  | DoS — infinite loop via crafted HTTP request to any App Router endpoint                        | 2025-12-11 | `16.0.10`                               |
+| CVE-2025-67779 | **High**     | 7.5  | Incomplete fix for CVE-2025-55184 — requires re-upgrade                                        | 2025-12-11 | `16.0.10`                               |
+| CVE-2025-55183 | **Medium**   | 5.3  | Source code exposure — Server Functions return compiled source including hardcoded secrets     | 2025-12-11 | `16.0.10`                               |
+| CVE-2026-23864 | **High**     | 7.5  | DoS — memory exhaustion / excessive CPU via crafted HTTP requests to Server Function endpoints | 2026-01-26 | `16.0.11` / **`16.1.5`** / **`16.2.1`** |
 
 **SWIDA pinned version: `next@16.2.1`** — includes fixes for all six CVEs above plus `react@19.2.4` which addresses the underlying React-level vulnerabilities.
 
@@ -189,11 +193,11 @@ npm ls react-server-dom-webpack react-server-dom-turbopack 2>/dev/null
 
 ### 3.2 Domain Routing (Nginx)
 
-| Domain | Upstream | Purpose |
-|---|---|---|
-| `{{DOMAIN}}` (www) | Next.js Customer Web `:3000` | Customer-facing web app |
-| `{{API_DOMAIN}}` | Strapi `:1337/api` | Public REST API (consumed by both frontends) |
-| `{{ADMIN_DOMAIN}}` | Next.js Admin Web `:3001` | Custom admin dashboard and management |
+| Domain             | Upstream                     | Purpose                                      |
+| ------------------ | ---------------------------- | -------------------------------------------- |
+| `{{DOMAIN}}` (www) | Next.js Customer Web `:3000` | Customer-facing web app                      |
+| `{{API_DOMAIN}}`   | Strapi `:1337/api`           | Public REST API (consumed by both frontends) |
+| `{{ADMIN_DOMAIN}}` | Next.js Admin Web `:3001`    | Custom admin dashboard and management        |
 
 ### 3.3 Data Flow
 
@@ -290,38 +294,38 @@ Below are the logical schemas. Strapi auto-generates the actual SQL tables, colu
 
 #### 4.4.1 `regions`
 
-| Column | Type | Constraints | Notes |
-|---|---|---|---|
-| id | serial | PK | Auto-generated |
-| document_id | varchar | Unique, Not Null | Strapi v5 document identifier |
-| name | varchar(100) | Not Null | Localized (i18n): 서울특별시, Seoul |
-| locale | varchar(10) | Not Null | `ko`, `en` |
-| created_at | timestamptz | Not Null | Auto |
-| updated_at | timestamptz | Not Null | Auto |
-| published_at | timestamptz | Nullable | Draft & Publish |
+| Column       | Type         | Constraints      | Notes                               |
+| ------------ | ------------ | ---------------- | ----------------------------------- |
+| id           | serial       | PK               | Auto-generated                      |
+| document_id  | varchar      | Unique, Not Null | Strapi v5 document identifier       |
+| name         | varchar(100) | Not Null         | Localized (i18n): 서울특별시, Seoul |
+| locale       | varchar(10)  | Not Null         | `ko`, `en`                          |
+| created_at   | timestamptz  | Not Null         | Auto                                |
+| updated_at   | timestamptz  | Not Null         | Auto                                |
+| published_at | timestamptz  | Nullable         | Draft & Publish                     |
 
 #### 4.4.2 `districts`
 
-| Column | Type | Constraints | Notes |
-|---|---|---|---|
-| id | serial | PK | |
-| document_id | varchar | Unique, Not Null | |
-| name | varchar(100) | Not Null | Localized: 강남구, Gangnam-gu |
-| region_id | integer | FK → regions.id | Belongs to one Region |
-| locale | varchar(10) | Not Null | |
-| published_at | timestamptz | Nullable | |
+| Column       | Type         | Constraints      | Notes                         |
+| ------------ | ------------ | ---------------- | ----------------------------- |
+| id           | serial       | PK               |                               |
+| document_id  | varchar      | Unique, Not Null |                               |
+| name         | varchar(100) | Not Null         | Localized: 강남구, Gangnam-gu |
+| region_id    | integer      | FK → regions.id  | Belongs to one Region         |
+| locale       | varchar(10)  | Not Null         |                               |
+| published_at | timestamptz  | Nullable         |                               |
 
 #### 4.4.3 `themes`
 
-| Column | Type | Constraints | Notes |
-|---|---|---|---|
-| id | serial | PK | |
-| document_id | varchar | Unique, Not Null | |
-| name | varchar(100) | Not Null | Localized: 스웨디시, Swedish |
-| slug | varchar(100) | Unique, Not Null | Auto from name |
-| display_order | integer | Nullable | Sort priority |
-| locale | varchar(10) | Not Null | |
-| published_at | timestamptz | Nullable | |
+| Column        | Type         | Constraints      | Notes                        |
+| ------------- | ------------ | ---------------- | ---------------------------- |
+| id            | serial       | PK               |                              |
+| document_id   | varchar      | Unique, Not Null |                              |
+| name          | varchar(100) | Not Null         | Localized: 스웨디시, Swedish |
+| slug          | varchar(100) | Unique, Not Null | Auto from name               |
+| display_order | integer      | Nullable         | Sort priority                |
+| locale        | varchar(10)  | Not Null         |                              |
+| published_at  | timestamptz  | Nullable         |                              |
 
 **Media:** `icon` — single media relation (optional)
 
@@ -331,38 +335,39 @@ The core entity. Fields are split across the main table and embedded component t
 
 **Main table fields:**
 
-| Column | Type | Constraints | Notes |
-|---|---|---|---|
-| id | serial | PK | |
-| document_id | varchar | Unique, Not Null | |
-| name | varchar(255) | Not Null | Localized |
-| slug | varchar(255) | Unique, Not Null | UID from name |
-| description | text | Not Null | Max 500 chars (app-level validation) |
-| address | varchar(500) | Not Null | Localized |
-| latitude | decimal(10,7) | Not Null | GPS coordinate |
-| longitude | decimal(10,7) | Not Null | GPS coordinate |
-| phone_number | varchar(20) | Nullable | |
-| operating_hours | jsonb | Not Null | Structured per-day schedule (see format below). Not localized — times are universal. |
-| operating_hours_text | varchar(200) | Nullable | Localized. Free-text display override for irregular hours (e.g., "공휴일 휴무", "연중무휴"). When set, displayed instead of computed schedule. |
-| last_order_time | varchar(100) | Nullable | |
-| closed_days | varchar(200) | Not Null | Localized |
-| holiday_exceptions | text | Nullable | Localized |
-| price_range | varchar(50) | Nullable | |
-| booking_required | boolean | Not Null | Default: false |
-| booking_url_phone | varchar(255) | Nullable | |
-| gender_availability | varchar(20) | Nullable | Enum: all, female_only, male_only, couple_available |
-| languages_supported | jsonb | Nullable | Array of language codes |
-| last_verified_date | date | Nullable | |
-| inactive_reason | varchar(20) | Nullable | Enum: closed, owner_request, violation, stale, other |
-| inactive_reason_detail | text | Nullable | Free-text for "other" |
-| open_tag | varchar(50) | Nullable | Custom label, default: 영업중 |
-| close_tag | varchar(50) | Nullable | Custom label, default: 영업종료 |
-| average_rating | decimal(3,2) | Not Null, Default 0 | Computed via lifecycle hooks |
-| total_reviews | integer | Not Null, Default 0 | Computed via lifecycle hooks |
-| locale | varchar(10) | Not Null | |
-| published_at | timestamptz | Nullable | Controls visibility |
+| Column                 | Type          | Constraints         | Notes                                                                                                                                          |
+| ---------------------- | ------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| id                     | serial        | PK                  |                                                                                                                                                |
+| document_id            | varchar       | Unique, Not Null    |                                                                                                                                                |
+| name                   | varchar(255)  | Not Null            | Localized                                                                                                                                      |
+| slug                   | varchar(255)  | Unique, Not Null    | UID from name                                                                                                                                  |
+| description            | text          | Not Null            | Max 500 chars (app-level validation)                                                                                                           |
+| address                | varchar(500)  | Not Null            | Localized                                                                                                                                      |
+| latitude               | decimal(10,7) | Not Null            | GPS coordinate                                                                                                                                 |
+| longitude              | decimal(10,7) | Not Null            | GPS coordinate                                                                                                                                 |
+| phone_number           | varchar(20)   | Nullable            |                                                                                                                                                |
+| operating_hours        | jsonb         | Not Null            | Structured per-day schedule (see format below). Not localized — times are universal.                                                           |
+| operating_hours_text   | varchar(200)  | Nullable            | Localized. Free-text display override for irregular hours (e.g., "공휴일 휴무", "연중무휴"). When set, displayed instead of computed schedule. |
+| last_order_time        | varchar(100)  | Nullable            |                                                                                                                                                |
+| closed_days            | varchar(200)  | Not Null            | Localized                                                                                                                                      |
+| holiday_exceptions     | text          | Nullable            | Localized                                                                                                                                      |
+| price_range            | varchar(50)   | Nullable            |                                                                                                                                                |
+| booking_required       | boolean       | Not Null            | Default: false                                                                                                                                 |
+| booking_url_phone      | varchar(255)  | Nullable            |                                                                                                                                                |
+| gender_availability    | varchar(20)   | Nullable            | Enum: all, female_only, male_only, couple_available                                                                                            |
+| languages_supported    | jsonb         | Nullable            | Array of language codes                                                                                                                        |
+| last_verified_date     | date          | Nullable            |                                                                                                                                                |
+| inactive_reason        | varchar(20)   | Nullable            | Enum: closed, owner_request, violation, stale, other                                                                                           |
+| inactive_reason_detail | text          | Nullable            | Free-text for "other"                                                                                                                          |
+| open_tag               | varchar(50)   | Nullable            | Custom label, default: 영업중                                                                                                                  |
+| close_tag              | varchar(50)   | Nullable            | Custom label, default: 영업종료                                                                                                                |
+| average_rating         | decimal(3,2)  | Not Null, Default 0 | Computed via lifecycle hooks                                                                                                                   |
+| total_reviews          | integer       | Not Null, Default 0 | Computed via lifecycle hooks                                                                                                                   |
+| locale                 | varchar(10)   | Not Null            |                                                                                                                                                |
+| published_at           | timestamptz   | Nullable            | Controls visibility                                                                                                                            |
 
 **Relations:**
+
 - `region_id` → FK to `regions` (many-to-one)
 - `district_id` → FK to `districts` (many-to-one)
 - `themes` → M:N junction table `shops_themes_lnk`
@@ -370,73 +375,75 @@ The core entity. Fields are split across the main table and embedded component t
 - `thumbnail` → Strapi media (single)
 
 **Embedded Components (separate tables managed by Strapi):**
+
 - `shop_service_menu_items` — repeatable component
 - `shop_amenities` — single component
 - `shop_contact_channels` — single component
 
 #### 4.4.5 `reviews`
 
-| Column | Type | Constraints | Notes |
-|---|---|---|---|
-| id | serial | PK | |
-| document_id | varchar | Unique, Not Null | |
-| rating | integer | Not Null | CHECK: 1–5 |
-| comment | text | Not Null | 10–500 chars (app-level) |
-| status | varchar(20) | Not Null, Default 'published' | Enum: published, hidden, under_review, deleted |
-| moderation_reason | varchar(20) | Nullable | Enum: spam, inappropriate, fake_review, irrelevant, other |
-| report_count | integer | Not Null, Default 0 | |
+| Column            | Type        | Constraints                   | Notes                                                     |
+| ----------------- | ----------- | ----------------------------- | --------------------------------------------------------- |
+| id                | serial      | PK                            |                                                           |
+| document_id       | varchar     | Unique, Not Null              |                                                           |
+| rating            | integer     | Not Null                      | CHECK: 1–5                                                |
+| comment           | text        | Not Null                      | 10–500 chars (app-level)                                  |
+| status            | varchar(20) | Not Null, Default 'published' | Enum: published, hidden, under_review, deleted            |
+| moderation_reason | varchar(20) | Nullable                      | Enum: spam, inappropriate, fake_review, irrelevant, other |
+| report_count      | integer     | Not Null, Default 0           |                                                           |
 
 > **Note:** `moderation_reason` values (set by admin: `spam`, `inappropriate`, `fake_review`, `irrelevant`, `other`) differ from user report reasons (submitted via `POST /api/reviews/:id/report`: `spam`, `fake`, `inappropriate`, `irrelevant`, `other`). Note `fake` (user report) vs `fake_review` (admin moderation). Report reasons are not stored on the review record — they are sent as part of the report request body (PRD §8.5).
-| author_id | integer | FK → up_users.id | |
-| shop_id | integer | FK → shops.id | |
-| published_at | timestamptz | Nullable | |
+> | author_id | integer | FK → up_users.id | |
+> | shop_id | integer | FK → shops.id | |
+> | published_at | timestamptz | Nullable | |
 
 **No i18n** — reviews are stored in the language they were written.
 
 #### 4.4.6 `partnership_inquiries`
 
-| Column | Type | Constraints | Notes |
-|---|---|---|---|
-| id | serial | PK | |
-| document_id | varchar | Unique, Not Null | |
-| shop_name | varchar(255) | Not Null | |
-| contact_person | varchar(100) | Not Null | |
-| phone_number | varchar(20) | Not Null | |
-| email | varchar(255) | Nullable | |
-| address | varchar(500) | Not Null | |
-| business_type | varchar(100) | Nullable | |
-| preferred_contact_channel | varchar(20) | Not Null | Enum: phone, kakaotalk, instagram, email |
-| message | text | Nullable | |
-| status | varchar(20) | Not Null, Default 'new' | Enum: new, contacted, awaiting_info, approved, rejected, published |
-| source | varchar(20) | Not Null | Enum: website_form, email, kakaotalk, instagram |
-| admin_notes | text | Nullable | Not exposed via public API |
-| linked_shop_id | integer | FK → shops.id, Nullable | |
+| Column                    | Type         | Constraints             | Notes                                                              |
+| ------------------------- | ------------ | ----------------------- | ------------------------------------------------------------------ |
+| id                        | serial       | PK                      |                                                                    |
+| document_id               | varchar      | Unique, Not Null        |                                                                    |
+| shop_name                 | varchar(255) | Not Null                |                                                                    |
+| contact_person            | varchar(100) | Not Null                |                                                                    |
+| phone_number              | varchar(20)  | Not Null                |                                                                    |
+| email                     | varchar(255) | Nullable                |                                                                    |
+| address                   | varchar(500) | Not Null                |                                                                    |
+| business_type             | varchar(100) | Nullable                |                                                                    |
+| preferred_contact_channel | varchar(20)  | Not Null                | Enum: phone, kakaotalk, instagram, email                           |
+| message                   | text         | Nullable                |                                                                    |
+| status                    | varchar(20)  | Not Null, Default 'new' | Enum: new, contacted, awaiting_info, approved, rejected, published |
+| source                    | varchar(20)  | Not Null                | Enum: website_form, email, kakaotalk, instagram                    |
+| admin_notes               | text         | Nullable                | Not exposed via public API                                         |
+| linked_shop_id            | integer      | FK → shops.id, Nullable |                                                                    |
 
 #### 4.4.7 `audit_logs`
 
-| Column | Type | Constraints | Notes |
-|---|---|---|---|
-| id | serial | PK | |
-| content_type | varchar(100) | Not Null | e.g., `api::shop.shop` |
-| document_id | varchar | Not Null | ID of the modified document |
-| action | varchar(20) | Not Null | `create`, `update`, `delete`, `publish`, `unpublish` |
-| admin_user_id | integer | FK → admin_users.id | Who made the change |
-| field_diffs | jsonb | Nullable | `{ field: { before, after } }` |
-| created_at | timestamptz | Not Null | |
+| Column        | Type         | Constraints         | Notes                                                |
+| ------------- | ------------ | ------------------- | ---------------------------------------------------- |
+| id            | serial       | PK                  |                                                      |
+| content_type  | varchar(100) | Not Null            | e.g., `api::shop.shop`                               |
+| document_id   | varchar      | Not Null            | ID of the modified document                          |
+| action        | varchar(20)  | Not Null            | `create`, `update`, `delete`, `publish`, `unpublish` |
+| admin_user_id | integer      | FK → admin_users.id | Who made the change                                  |
+| field_diffs   | jsonb        | Nullable            | `{ field: { before, after } }`                       |
+| created_at    | timestamptz  | Not Null            |                                                      |
 
 #### Extending `up_users` (Strapi Users & Permissions)
 
 Additional fields on the existing Strapi user model:
 
-| Column | Type | Constraints | Notes |
-|---|---|---|---|
-| avatar | relation | Nullable | Strapi media (single). Profile photo. Max 5MB, JPG/PNG/WebP. |
-| total_points | integer | Not Null, Default 0 | Computed: SUM of user_points_log.points. Updated via lifecycle hook. |
-| email_verified | boolean | Not Null, Default false | Set to `true` when user clicks the verification link. Social login users are auto-verified. |
-| email_verification_token | varchar | Nullable, Unique | Cryptographically random token sent in verification email. Cleared after verification. |
-| email_verification_sent_at | timestamptz | Nullable | Timestamp of last verification email. Used for resend rate-limiting (1 per minute). |
+| Column                     | Type        | Constraints             | Notes                                                                                       |
+| -------------------------- | ----------- | ----------------------- | ------------------------------------------------------------------------------------------- |
+| avatar                     | relation    | Nullable                | Strapi media (single). Profile photo. Max 5MB, JPG/PNG/WebP.                                |
+| total_points               | integer     | Not Null, Default 0     | Computed: SUM of user_points_log.points. Updated via lifecycle hook.                        |
+| email_verified             | boolean     | Not Null, Default false | Set to `true` when user clicks the verification link. Social login users are auto-verified. |
+| email_verification_token   | varchar     | Nullable, Unique        | Cryptographically random token sent in verification email. Cleared after verification.      |
+| email_verification_sent_at | timestamptz | Nullable                | Timestamp of last verification email. Used for resend rate-limiting (1 per minute).         |
 
 **Level derivation (computed, not stored):**
+
 - 0P → Lv.1, 500P → Lv.2, 2,000P → Lv.3, 5,000P → Lv.4, 10,000P → Lv.5
 
 Existing fields reused: `username` (display name), `email`, `created_at` (member since).
@@ -445,27 +452,28 @@ Existing fields reused: `username` (display name), `email`, `created_at` (member
 
 Admin-curated board posts for shop recommendations and massage information.
 
-| Column | Type | Constraints | Notes |
-|---|---|---|---|
-| id | serial | PK | Auto-generated |
-| document_id | varchar | Unique, Not Null | Strapi v5 document identifier |
-| type | varchar(20) | Not Null | Enum: `recommendation`, `info` |
-| title | varchar(255) | Not Null | Localized (i18n) |
-| body | text | Not Null | Rich text, localized |
-| excerpt | varchar(500) | Nullable | Localized. Auto-generated from body if empty. |
-| category | varchar(50) | Nullable | Badge label (e.g., "실전팁", "초보가이드") |
-| author_name | varchar(100) | Not Null | Admin display name (not FK — admins create via Strapi) |
-| is_featured | boolean | Not Null, Default false | Shown in featured banner carousel |
-| is_hot | boolean | Not Null, Default false | Admin-set HOT badge |
-| view_count | integer | Not Null, Default 0 | Incremented on page view |
-| like_count | integer | Not Null, Default 0, CHECK >= 0 | Computed via lifecycle hooks |
-| comment_count | integer | Not Null, Default 0 | Computed via lifecycle hooks |
-| locale | varchar(10) | Not Null | `ko`, `en` |
-| published_at | timestamptz | Nullable | Draft & Publish |
-| created_at | timestamptz | Not Null | Auto |
-| updated_at | timestamptz | Not Null | Auto |
+| Column        | Type         | Constraints                     | Notes                                                  |
+| ------------- | ------------ | ------------------------------- | ------------------------------------------------------ |
+| id            | serial       | PK                              | Auto-generated                                         |
+| document_id   | varchar      | Unique, Not Null                | Strapi v5 document identifier                          |
+| type          | varchar(20)  | Not Null                        | Enum: `recommendation`, `info`                         |
+| title         | varchar(255) | Not Null                        | Localized (i18n)                                       |
+| body          | text         | Not Null                        | Rich text, localized                                   |
+| excerpt       | varchar(500) | Nullable                        | Localized. Auto-generated from body if empty.          |
+| category      | varchar(50)  | Nullable                        | Badge label (e.g., "실전팁", "초보가이드")             |
+| author_name   | varchar(100) | Not Null                        | Admin display name (not FK — admins create via Strapi) |
+| is_featured   | boolean      | Not Null, Default false         | Shown in featured banner carousel                      |
+| is_hot        | boolean      | Not Null, Default false         | Admin-set HOT badge                                    |
+| view_count    | integer      | Not Null, Default 0             | Incremented on page view                               |
+| like_count    | integer      | Not Null, Default 0, CHECK >= 0 | Computed via lifecycle hooks                           |
+| comment_count | integer      | Not Null, Default 0             | Computed via lifecycle hooks                           |
+| locale        | varchar(10)  | Not Null                        | `ko`, `en`                                             |
+| published_at  | timestamptz  | Nullable                        | Draft & Publish                                        |
+| created_at    | timestamptz  | Not Null                        | Auto                                                   |
+| updated_at    | timestamptz  | Not Null                        | Auto                                                   |
 
 **Relations:**
+
 - `region_id` → FK to `regions` (many-to-one, nullable — for region filtering)
 - `linked_shop_id` → FK to `shops` (many-to-one, nullable — recommendation posts only)
 - `featured_image` → Strapi media (single)
@@ -474,22 +482,23 @@ Admin-curated board posts for shop recommendations and massage information.
 
 User-generated community posts.
 
-| Column | Type | Constraints | Notes |
-|---|---|---|---|
-| id | serial | PK | |
-| document_id | varchar | Unique, Not Null | |
-| content | text | Not Null | 1–2,000 characters (app-level) |
-| hashtags | jsonb | Nullable | Array of strings, max 10, each max 30 chars |
-| location_text | varchar(200) | Nullable | Free-text location (e.g., "강남구 역삼동") |
-| view_count | integer | Not Null, Default 0 | |
-| like_count | integer | Not Null, Default 0, CHECK >= 0 | Computed via lifecycle hooks |
-| comment_count | integer | Not Null, Default 0 | Computed via lifecycle hooks |
-| status | varchar(20) | Not Null, Default 'published' | Enum: `published`, `hidden`, `deleted` |
-| author_id | integer | FK → up_users.id | Not Null |
-| created_at | timestamptz | Not Null | |
-| updated_at | timestamptz | Not Null | |
+| Column        | Type         | Constraints                     | Notes                                       |
+| ------------- | ------------ | ------------------------------- | ------------------------------------------- |
+| id            | serial       | PK                              |                                             |
+| document_id   | varchar      | Unique, Not Null                |                                             |
+| content       | text         | Not Null                        | 1–2,000 characters (app-level)              |
+| hashtags      | jsonb        | Nullable                        | Array of strings, max 10, each max 30 chars |
+| location_text | varchar(200) | Nullable                        | Free-text location (e.g., "강남구 역삼동")  |
+| view_count    | integer      | Not Null, Default 0             |                                             |
+| like_count    | integer      | Not Null, Default 0, CHECK >= 0 | Computed via lifecycle hooks                |
+| comment_count | integer      | Not Null, Default 0             | Computed via lifecycle hooks                |
+| status        | varchar(20)  | Not Null, Default 'published'   | Enum: `published`, `hidden`, `deleted`      |
+| author_id     | integer      | FK → up_users.id                | Not Null                                    |
+| created_at    | timestamptz  | Not Null                        |                                             |
+| updated_at    | timestamptz  | Not Null                        |                                             |
 
 **Relations:**
+
 - `photos` → Strapi media (multiple, max 5, max 5MB each, JPG/PNG/WebP)
 - `video` → Strapi media (single, nullable, max 50MB, MP4/MOV)
 
@@ -499,16 +508,16 @@ User-generated community posts.
 
 Shared polymorphic comment system for board posts, community posts, and events.
 
-| Column | Type | Constraints | Notes |
-|---|---|---|---|
-| id | serial | PK | |
-| document_id | varchar | Unique, Not Null | |
-| content | text | Not Null | 1–500 characters (app-level) |
-| parent_type | varchar(50) | Not Null | Polymorphic: `board_post`, `community_post`, `event` |
-| parent_id | integer | Not Null | ID of the parent entity |
-| reply_to_id | integer | FK → comments.id, Nullable | For 1-level nested replies only |
-| author_id | integer | FK → up_users.id | Not Null |
-| created_at | timestamptz | Not Null | |
+| Column      | Type        | Constraints                | Notes                                                |
+| ----------- | ----------- | -------------------------- | ---------------------------------------------------- |
+| id          | serial      | PK                         |                                                      |
+| document_id | varchar     | Unique, Not Null           |                                                      |
+| content     | text        | Not Null                   | 1–500 characters (app-level)                         |
+| parent_type | varchar(50) | Not Null                   | Polymorphic: `board_post`, `community_post`, `event` |
+| parent_id   | integer     | Not Null                   | ID of the parent entity                              |
+| reply_to_id | integer     | FK → comments.id, Nullable | For 1-level nested replies only                      |
+| author_id   | integer     | FK → up_users.id           | Not Null                                             |
+| created_at  | timestamptz | Not Null                   |                                                      |
 
 **No i18n** — comments stored in language written.
 
@@ -518,30 +527,32 @@ Shared polymorphic comment system for board posts, community posts, and events.
 
 Admin-managed time-limited events/campaigns.
 
-| Column | Type | Constraints | Notes |
-|---|---|---|---|
-| id | serial | PK | |
-| document_id | varchar | Unique, Not Null | |
-| title | varchar(255) | Not Null | Localized (i18n) |
-| body | text | Not Null | Rich text, localized |
-| category | varchar(30) | Not Null | Enum: `new_opening`, `closing_soon`, `coupon`, `winner_announcement`, `general` |
-| start_date | date | Not Null | Event start (KST) |
-| end_date | date | Not Null | Event end (KST). Used for D-day calculation. |
-| disclaimers | text | Nullable | Localized. Event rules/conditions. |
-| is_featured | boolean | Not Null, Default false | Shown in hero banner carousel |
-| view_count | integer | Not Null, Default 0 | |
-| like_count | integer | Not Null, Default 0, CHECK >= 0 | Computed via lifecycle hooks |
-| author_name | varchar(100) | Not Null | Admin display name |
-| locale | varchar(10) | Not Null | |
-| published_at | timestamptz | Nullable | |
-| created_at | timestamptz | Not Null | |
-| updated_at | timestamptz | Not Null | |
+| Column       | Type         | Constraints                     | Notes                                                                           |
+| ------------ | ------------ | ------------------------------- | ------------------------------------------------------------------------------- |
+| id           | serial       | PK                              |                                                                                 |
+| document_id  | varchar      | Unique, Not Null                |                                                                                 |
+| title        | varchar(255) | Not Null                        | Localized (i18n)                                                                |
+| body         | text         | Not Null                        | Rich text, localized                                                            |
+| category     | varchar(30)  | Not Null                        | Enum: `new_opening`, `closing_soon`, `coupon`, `winner_announcement`, `general` |
+| start_date   | date         | Not Null                        | Event start (KST)                                                               |
+| end_date     | date         | Not Null                        | Event end (KST). Used for D-day calculation.                                    |
+| disclaimers  | text         | Nullable                        | Localized. Event rules/conditions.                                              |
+| is_featured  | boolean      | Not Null, Default false         | Shown in hero banner carousel                                                   |
+| view_count   | integer      | Not Null, Default 0             |                                                                                 |
+| like_count   | integer      | Not Null, Default 0, CHECK >= 0 | Computed via lifecycle hooks                                                    |
+| author_name  | varchar(100) | Not Null                        | Admin display name                                                              |
+| locale       | varchar(10)  | Not Null                        |                                                                                 |
+| published_at | timestamptz  | Nullable                        |                                                                                 |
+| created_at   | timestamptz  | Not Null                        |                                                                                 |
+| updated_at   | timestamptz  | Not Null                        |                                                                                 |
 
 **Relations:**
+
 - `banner_image` → Strapi media (single) — full-width detail banner
 - `featured_image` → Strapi media (single) — card thumbnail
 
 **D-Day Countdown (computed, not stored):**
+
 - `end_date > today(KST)` → D-N
 - `end_date = today(KST)` → D-DAY
 - `end_date < today(KST)` → 마감 (Closed)
@@ -550,19 +561,19 @@ Admin-managed time-limited events/campaigns.
 
 Admin-published announcements.
 
-| Column | Type | Constraints | Notes |
-|---|---|---|---|
-| id | serial | PK | |
-| document_id | varchar | Unique, Not Null | |
-| title | varchar(255) | Not Null | Localized (i18n) |
-| body | text | Not Null | Rich text, localized |
-| category | varchar(20) | Not Null | Enum: `notice`, `general` |
-| is_important | boolean | Not Null, Default false | Pinned to top with 📌 |
-| view_count | integer | Not Null, Default 0 | |
-| locale | varchar(10) | Not Null | |
-| published_at | timestamptz | Nullable | |
-| created_at | timestamptz | Not Null | |
-| updated_at | timestamptz | Not Null | |
+| Column       | Type         | Constraints             | Notes                     |
+| ------------ | ------------ | ----------------------- | ------------------------- |
+| id           | serial       | PK                      |                           |
+| document_id  | varchar      | Unique, Not Null        |                           |
+| title        | varchar(255) | Not Null                | Localized (i18n)          |
+| body         | text         | Not Null                | Rich text, localized      |
+| category     | varchar(20)  | Not Null                | Enum: `notice`, `general` |
+| is_important | boolean      | Not Null, Default false | Pinned to top with 📌     |
+| view_count   | integer      | Not Null, Default 0     |                           |
+| locale       | varchar(10)  | Not Null                |                           |
+| published_at | timestamptz  | Nullable                |                           |
+| created_at   | timestamptz  | Not Null                |                           |
+| updated_at   | timestamptz  | Not Null                |                           |
 
 No comments, no likes on notices.
 
@@ -570,12 +581,12 @@ No comments, no likes on notices.
 
 Junction table for user ↔ shop bookmarks.
 
-| Column | Type | Constraints | Notes |
-|---|---|---|---|
-| id | serial | PK | |
-| user_id | integer | FK → up_users.id, Not Null | |
-| shop_id | integer | FK → shops.id, Not Null | |
-| created_at | timestamptz | Not Null | For "most recently bookmarked" sort |
+| Column     | Type        | Constraints                | Notes                               |
+| ---------- | ----------- | -------------------------- | ----------------------------------- |
+| id         | serial      | PK                         |                                     |
+| user_id    | integer     | FK → up_users.id, Not Null |                                     |
+| shop_id    | integer     | FK → shops.id, Not Null    |                                     |
+| created_at | timestamptz | Not Null                   | For "most recently bookmarked" sort |
 
 **Unique constraint:** `(user_id, shop_id)` — prevents duplicate bookmarks.
 
@@ -583,15 +594,15 @@ Junction table for user ↔ shop bookmarks.
 
 Point transaction history for gamification.
 
-| Column | Type | Constraints | Notes |
-|---|---|---|---|
-| id | serial | PK | |
-| user_id | integer | FK → up_users.id, Not Null | |
-| action | varchar(30) | Not Null | Enum: `post_created`, `comment_created`, `like_received` |
-| points | integer | Not Null | +50, +10, or +5 |
-| reference_type | varchar(50) | Not Null | `community_post`, `comment`, `post_like` |
-| reference_id | integer | Not Null | ID of the triggering entity |
-| created_at | timestamptz | Not Null | For daily limit tracking |
+| Column         | Type        | Constraints                | Notes                                                    |
+| -------------- | ----------- | -------------------------- | -------------------------------------------------------- |
+| id             | serial      | PK                         |                                                          |
+| user_id        | integer     | FK → up_users.id, Not Null |                                                          |
+| action         | varchar(30) | Not Null                   | Enum: `post_created`, `comment_created`, `like_received` |
+| points         | integer     | Not Null                   | +50, +10, or +5                                          |
+| reference_type | varchar(50) | Not Null                   | `community_post`, `comment`, `post_like`                 |
+| reference_id   | integer     | Not Null                   | ID of the triggering entity                              |
+| created_at     | timestamptz | Not Null                   | For daily limit tracking                                 |
 
 **Daily limit enforcement:** `comment_created` actions capped at 10 per user per day (check `COUNT WHERE action='comment_created' AND user_id=X AND created_at >= today`).
 
@@ -599,13 +610,13 @@ Point transaction history for gamification.
 
 Junction table tracking who liked what (polymorphic).
 
-| Column | Type | Constraints | Notes |
-|---|---|---|---|
-| id | serial | PK | |
-| user_id | integer | FK → up_users.id, Not Null | |
-| target_type | varchar(50) | Not Null | `board_post`, `community_post`, `event` |
-| target_id | integer | Not Null | ID of the liked entity |
-| created_at | timestamptz | Not Null | |
+| Column      | Type        | Constraints                | Notes                                   |
+| ----------- | ----------- | -------------------------- | --------------------------------------- |
+| id          | serial      | PK                         |                                         |
+| user_id     | integer     | FK → up_users.id, Not Null |                                         |
+| target_type | varchar(50) | Not Null                   | `board_post`, `community_post`, `event` |
+| target_id   | integer     | Not Null                   | ID of the liked entity                  |
+| created_at  | timestamptz | Not Null                   |                                         |
 
 **Unique constraint:** `(user_id, target_type, target_id)` — one like per user per target.
 
@@ -613,16 +624,16 @@ Junction table tracking who liked what (polymorphic).
 
 Retry queue for failed shop rating recalculations (see §5.3.3). Ensures a failed recalculation does not leave `average_rating` permanently stale.
 
-| Column | Type | Constraints | Notes |
-|---|---|---|---|
-| id | serial | PK | Auto-generated |
-| shop_id | integer | FK → shops.id, Not Null | Shop whose rating needs recalculation |
-| attempts | integer | Not Null, Default 0 | Number of retry attempts so far |
-| max_attempts | integer | Not Null, Default 5 | Configurable ceiling |
-| last_error | text | Nullable | Most recent error message / stack trace |
-| next_retry_at | timestamptz | Not Null | When the next retry should be attempted |
-| created_at | timestamptz | Not Null | Auto |
-| resolved_at | timestamptz | Nullable | Set when recalculation finally succeeds |
+| Column        | Type        | Constraints             | Notes                                   |
+| ------------- | ----------- | ----------------------- | --------------------------------------- |
+| id            | serial      | PK                      | Auto-generated                          |
+| shop_id       | integer     | FK → shops.id, Not Null | Shop whose rating needs recalculation   |
+| attempts      | integer     | Not Null, Default 0     | Number of retry attempts so far         |
+| max_attempts  | integer     | Not Null, Default 5     | Configurable ceiling                    |
+| last_error    | text        | Nullable                | Most recent error message / stack trace |
+| next_retry_at | timestamptz | Not Null                | When the next retry should be attempted |
+| created_at    | timestamptz | Not Null                | Auto                                    |
+| resolved_at   | timestamptz | Nullable                | Set when recalculation finally succeeds |
 
 **Index:** `CREATE INDEX idx_recalc_queue_pending ON rating_recalc_queue (next_retry_at) WHERE resolved_at IS NULL;`
 
@@ -652,23 +663,23 @@ CREATE INDEX idx_districts_region ON districts (region_id);
 
 Additional indexes for new tables:
 
-| Table | Columns | Type | Purpose |
-|---|---|---|---|
-| board_posts | `(type, published_at DESC)` | B-tree | Board list queries by type |
-| board_posts | `(region_id, type)` | B-tree | Region filter on recommendations |
-| board_posts | `(is_featured, type)` | Partial (where is_featured=true) | Featured banner query |
-| community_posts | `(author_id, created_at DESC)` | B-tree | "My posts" filter |
-| community_posts | `(status, created_at DESC)` | B-tree | Feed query |
-| comments | `(parent_type, parent_id, created_at)` | B-tree | Comment list for a post |
-| events | `(category, end_date DESC)` | B-tree | Category + active filter |
-| events | `(is_featured, end_date)` | Partial (where is_featured=true) | Hero banner query |
-| notices | `(is_important DESC, published_at DESC)` | B-tree | Pinned-first notice list |
-| user_bookmarks | `(user_id, created_at DESC)` | B-tree | User's bookmark list |
-| user_bookmarks | `(user_id, shop_id)` | Unique | Prevent duplicate bookmarks |
-| user_points_log | `(user_id, action, created_at)` | B-tree | Daily limit check |
-| post_likes | `(user_id, target_type, target_id)` | Unique | Prevent duplicate likes |
-| post_likes | `(target_type, target_id)` | B-tree | Count likes for a target |
-| partnership_inquiries | `(shop_name, phone_number, created_at)` | B-tree | Deduplication lookup within time window |
+| Table                 | Columns                                  | Type                             | Purpose                                 |
+| --------------------- | ---------------------------------------- | -------------------------------- | --------------------------------------- |
+| board_posts           | `(type, published_at DESC)`              | B-tree                           | Board list queries by type              |
+| board_posts           | `(region_id, type)`                      | B-tree                           | Region filter on recommendations        |
+| board_posts           | `(is_featured, type)`                    | Partial (where is_featured=true) | Featured banner query                   |
+| community_posts       | `(author_id, created_at DESC)`           | B-tree                           | "My posts" filter                       |
+| community_posts       | `(status, created_at DESC)`              | B-tree                           | Feed query                              |
+| comments              | `(parent_type, parent_id, created_at)`   | B-tree                           | Comment list for a post                 |
+| events                | `(category, end_date DESC)`              | B-tree                           | Category + active filter                |
+| events                | `(is_featured, end_date)`                | Partial (where is_featured=true) | Hero banner query                       |
+| notices               | `(is_important DESC, published_at DESC)` | B-tree                           | Pinned-first notice list                |
+| user_bookmarks        | `(user_id, created_at DESC)`             | B-tree                           | User's bookmark list                    |
+| user_bookmarks        | `(user_id, shop_id)`                     | Unique                           | Prevent duplicate bookmarks             |
+| user_points_log       | `(user_id, action, created_at)`          | B-tree                           | Daily limit check                       |
+| post_likes            | `(user_id, target_type, target_id)`      | Unique                           | Prevent duplicate likes                 |
+| post_likes            | `(target_type, target_id)`               | B-tree                           | Count likes for a target                |
+| partnership_inquiries | `(shop_name, phone_number, created_at)`  | B-tree                           | Deduplication lookup within time window |
 
 ### 4.6 Seed Data
 
@@ -684,31 +695,31 @@ Pre-seeded at launch via Strapi bootstrap scripts (`database/seeds/`):
 
 ### 5.1 Content Type Summary
 
-| Content Type | API ID | Type | i18n | Draft & Publish |
-|---|---|---|---|---|
-| Shop | `api::shop.shop` | Collection | Yes | Yes |
-| Review | `api::review.review` | Collection | No | Yes |
-| Theme | `api::theme.theme` | Collection | Yes | Yes |
-| Region | `api::region.region` | Collection | Yes | Yes |
-| District | `api::district.district` | Collection | Yes | Yes |
-| Partnership Inquiry | `api::partnership-inquiry.partnership-inquiry` | Collection | No | No |
-| Audit Log | `api::audit-log.audit-log` | Collection | No | No |
-| Board Post | `api::board-post.board-post` | Collection | Yes | Yes |
-| Community Post | `api::community-post.community-post` | Collection | No | No |
-| Comment | `api::comment.comment` | Collection | No | No |
-| Event | `api::event.event` | Collection | Yes | Yes |
-| Notice | `api::notice.notice` | Collection | Yes | Yes |
-| User Bookmark | `api::user-bookmark.user-bookmark` | Collection | No | No |
-| User Points Log | `api::user-points-log.user-points-log` | Collection | No | No |
-| Post Like | `api::post-like.post-like` | Collection | No | No |
+| Content Type        | API ID                                         | Type       | i18n | Draft & Publish |
+| ------------------- | ---------------------------------------------- | ---------- | ---- | --------------- |
+| Shop                | `api::shop.shop`                               | Collection | Yes  | Yes             |
+| Review              | `api::review.review`                           | Collection | No   | Yes             |
+| Theme               | `api::theme.theme`                             | Collection | Yes  | Yes             |
+| Region              | `api::region.region`                           | Collection | Yes  | Yes             |
+| District            | `api::district.district`                       | Collection | Yes  | Yes             |
+| Partnership Inquiry | `api::partnership-inquiry.partnership-inquiry` | Collection | No   | No              |
+| Audit Log           | `api::audit-log.audit-log`                     | Collection | No   | No              |
+| Board Post          | `api::board-post.board-post`                   | Collection | Yes  | Yes             |
+| Community Post      | `api::community-post.community-post`           | Collection | No   | No              |
+| Comment             | `api::comment.comment`                         | Collection | No   | No              |
+| Event               | `api::event.event`                             | Collection | Yes  | Yes             |
+| Notice              | `api::notice.notice`                           | Collection | Yes  | Yes             |
+| User Bookmark       | `api::user-bookmark.user-bookmark`             | Collection | No   | No              |
+| User Points Log     | `api::user-points-log.user-points-log`         | Collection | No   | No              |
+| Post Like           | `api::post-like.post-like`                     | Collection | No   | No              |
 
 **Components:**
 
-| Component | Namespace | Type |
-|---|---|---|
+| Component         | Namespace                | Type       |
+| ----------------- | ------------------------ | ---------- |
 | Service Menu Item | `shop.service-menu-item` | Repeatable |
-| Amenities | `shop.amenities` | Single |
-| Contact Channels | `shop.contact-channels` | Single |
+| Amenities         | `shop.amenities`         | Single     |
+| Contact Channels  | `shop.contact-channels`  | Single     |
 
 ### 5.2 REST API Endpoints
 
@@ -716,11 +727,11 @@ All public endpoints serve published content only (Strapi v5 default behavior). 
 
 #### 5.2.1 Shops
 
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| GET | `/api/shops` | Public | List shops (paginated, filterable, sortable) |
-| GET | `/api/shops/:documentId` | Public | Single shop detail |
-| GET | `/api/shops/nearby` | Public | **Custom controller** — geospatial nearby search |
+| Method | Endpoint                 | Auth   | Description                                      |
+| ------ | ------------------------ | ------ | ------------------------------------------------ |
+| GET    | `/api/shops`             | Public | List shops (paginated, filterable, sortable)     |
+| GET    | `/api/shops/:documentId` | Public | Single shop detail                               |
+| GET    | `/api/shops/nearby`      | Public | **Custom controller** — geospatial nearby search |
 
 > **Note:** The Customer Web uses slug-based routes (`/[locale]/shop/[slug]`), so it fetches shop detail via `GET /api/shops?filters[slug][$eq]={slug}&locale={locale}` rather than by `documentId`. The `documentId`-based endpoint is used by the Admin Web and internal references.
 
@@ -795,7 +806,8 @@ Response includes a `distance` field (meters) on each shop. Sorted by distance a
 
 ```typescript
 // Simplified — full implementation in codebase
-const shops = await strapi.db.connection.raw(`
+const shops = await strapi.db.connection.raw(
+  `
   SELECT s.*, ST_Distance(
     ST_MakePoint(s.longitude, s.latitude)::geography,
     ST_MakePoint(?, ?)::geography
@@ -809,7 +821,9 @@ const shops = await strapi.db.connection.raw(`
     )
   ORDER BY distance ASC
   LIMIT ? OFFSET ?
-`, [lng, lat, lng, lat, radius, pageSize, offset]);
+`,
+  [lng, lat, lng, lat, radius, pageSize, offset],
+);
 ```
 
 **Custom route registration** at `src/api/shop/routes/shop.ts`:
@@ -829,11 +843,11 @@ export default {
 
 #### 5.2.2 Reviews
 
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| GET | `/api/reviews` | Public | List published reviews (feed) |
-| POST | `/api/reviews` | Customer (JWT) | Submit a new review |
-| POST | `/api/reviews/:id/report` | Customer (JWT) | Report a review |
+| Method | Endpoint                  | Auth           | Description                   |
+| ------ | ------------------------- | -------------- | ----------------------------- |
+| GET    | `/api/reviews`            | Public         | List published reviews (feed) |
+| POST   | `/api/reviews`            | Customer (JWT) | Submit a new review           |
+| POST   | `/api/reviews/:id/report` | Customer (JWT) | Report a review               |
 
 **POST `/api/reviews` — Request Body:**
 
@@ -853,27 +867,27 @@ The `author` is automatically set from the authenticated user's JWT. Validated b
 
 When the requesting user is authenticated, each review object in the `GET /api/reviews` response includes an additional field:
 
-| Field | Type | Description |
-|---|---|---|
+| Field            | Type    | Description                                                                          |
+| ---------------- | ------- | ------------------------------------------------------------------------------------ |
 | `reported_by_me` | boolean | `true` if the authenticated user has already reported this review, `false` otherwise |
 
 Computed via `LEFT JOIN` on `review_reports` where `reporter_id = current_user` and `review_id = review.id`. This allows the frontend to disable the report button for already-reported reviews without a separate API call. When the user is not authenticated, this field is omitted.
 
 #### 5.2.3 Themes, Regions, Districts
 
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| GET | `/api/themes` | Public | All published themes |
-| GET | `/api/regions` | Public | All published regions |
-| GET | `/api/districts?filters[region][documentId][$eq]=xxx` | Public | Districts filtered by region |
+| Method | Endpoint                                              | Auth   | Description                  |
+| ------ | ----------------------------------------------------- | ------ | ---------------------------- |
+| GET    | `/api/themes`                                         | Public | All published themes         |
+| GET    | `/api/regions`                                        | Public | All published regions        |
+| GET    | `/api/districts?filters[region][documentId][$eq]=xxx` | Public | Districts filtered by region |
 
 These are simple Strapi auto-generated endpoints with no custom controllers needed.
 
 #### 5.2.4 Partnership Inquiries
 
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| POST | `/api/partnership-inquiries` | Public | Submit inquiry (form) |
+| Method | Endpoint                     | Auth   | Description           |
+| ------ | ---------------------------- | ------ | --------------------- |
+| POST   | `/api/partnership-inquiries` | Public | Submit inquiry (form) |
 
 Public role permissions: `create` only. No `find`, `findOne`, `update`, `delete` for public role.
 
@@ -893,9 +907,9 @@ Public role permissions: `create` only. No `find`, `findOne`, `update`, `delete`
 
 #### 5.2.5 Dashboard Analytics
 
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| GET | `/api/dashboard/stats` | Admin (JWT) | **Custom controller** — aggregated platform statistics |
+| Method | Endpoint               | Auth        | Description                                            |
+| ------ | ---------------------- | ----------- | ------------------------------------------------------ |
+| GET    | `/api/dashboard/stats` | Admin (JWT) | **Custom controller** — aggregated platform statistics |
 
 **Location:** `src/api/dashboard/controllers/dashboard.ts`
 **Route:** `src/api/dashboard/routes/dashboard.ts`
@@ -905,25 +919,78 @@ Public role permissions: `create` only. No `find`, `findOne`, `update`, `delete`
 ```json
 {
   "data": {
-    "shops": { "total": 150, "published": 120, "draft": 30 },
-    "reviews": { "total": 500, "published": 400, "hidden": 20, "under_review": 10, "deleted": 70 },
-    "users": { "total": 300, "active": 280, "locked": 20 },
-    "inquiries": { "total": 80, "new": 5, "contacted": 10, "awaiting_info": 8, "approved": 7, "rejected": 15, "published": 35 },
-    "recent_activity": [
-      { "type": "shop_published", "document_id": "abc123", "name": "힐링스파 강남", "admin": "admin@swida.com", "timestamp": "2026-03-25T14:30:00Z" }
+    "shops": {
+      "total": 512,
+      "delta_this_month": 18,
+      "needs_verify": 7
+    },
+    "monthly_users": {
+      "total": 9841,
+      "delta_percent_vs_last_month": 12
+    },
+    "reviews": {
+      "total": 4328,
+      "delta_this_month": 487,
+      "under_review": 7
+    },
+    "inquiries": {
+      "total": 4,
+      "new": 4,
+      "overdue_new": 2
+    },
+    "pending_reviews_feed": [
+      {
+        "shop_name": "그린 힐링 스파",
+        "author": "김민준",
+        "report_count": 3,
+        "report_reason": "스팸 의심",
+        "status": "under_review"
+      }
+    ],
+    "recent_shops_feed": [
+      {
+        "document_id": "abc123",
+        "name": "그린 힐링 스파",
+        "district": "강남구",
+        "created_at": "2026-03-24T00:00:00Z",
+        "status": "published"
+      }
+    ],
+    "recent_inquiries_feed": [
+      {
+        "document_id": "inq001",
+        "shop_name": "한강 뷰 스파",
+        "district": "마포구",
+        "created_at": "2026-03-26T00:00:00Z",
+        "status": "new",
+        "is_overdue": true
+      }
     ]
   }
 }
 ```
 
-**Implementation:** Uses Strapi's Document Service API to run aggregation queries (`strapi.documents().count()`) across shops, reviews, users, and partnership inquiries. The `recent_activity` field queries the `audit-log` collection type for the latest 10 entries. This endpoint is restricted to authenticated admin users via the admin API JWT.
+**Stat card mapping (Admin Web dashboard):**
+
+| Stat Card     | Field Used            | Delta Line                                                      |
+| ------------- | --------------------- | --------------------------------------------------------------- |
+| Total Shops   | `shops.total`         | `shops.delta_this_month` (+N this month)                        |
+| Monthly Users | `monthly_users.total` | `monthly_users.delta_percent_vs_last_month` (+N% vs last month) |
+| Total Reviews | `reviews.total`       | `reviews.delta_this_month` (+N this month)                      |
+| New Inquiries | `inquiries.new`       | `inquiries.overdue_new` (⚠ N overdue 48h)                       |
+
+**Verify-needed alert:** If `shops.needs_verify > 0`, the dashboard displays an amber alert banner: "⚠️ {N} shops have not been verified in over 90 days." linking to the filtered shop list (`/shops?filter=verify_needed`).
+
+**Feeds:** `pending_reviews_feed` (up to 3 entries, `under_review` status), `recent_shops_feed` (up to 3 most-recently-created shops), `recent_inquiries_feed` (up to 3 open inquiries sorted by newest, with overdue flag). All feeds are displayed as item lists in the dashboard, not as stat numbers.
+
+**Implementation:** Uses Strapi's Document Service API to run aggregation queries (`strapi.documents().count()`) across shops, reviews, users, and partnership inquiries. Monthly user count is computed from `up_users` where `created_at >= first day of current KST month`. `needs_verify` counts shops where `last_verified_at < NOW() - INTERVAL '90 days'`. This endpoint is restricted to authenticated admin users via the admin API JWT.
 
 #### 5.2.6 Board Posts
 
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| GET | `/api/board-posts` | Public | List board posts (paginated, filterable, sortable) |
-| GET | `/api/board-posts/:documentId` | Public | Single board post detail |
+| Method | Endpoint                       | Auth   | Description                                        |
+| ------ | ------------------------------ | ------ | -------------------------------------------------- |
+| GET    | `/api/board-posts`             | Public | List board posts (paginated, filterable, sortable) |
+| GET    | `/api/board-posts/:documentId` | Public | Single board post detail                           |
 
 **GET `/api/board-posts` — Query Parameters:**
 
@@ -961,12 +1028,17 @@ Public role permissions: `create` only. No `find`, `findOne`, `update`, `delete`
       "like_count": 84,
       "comment_count": 23,
       "created_at": "2026-03-19T10:00:00Z",
-      "featured_image": { "url": "/uploads/board1.jpg", "alternativeText": "..." },
+      "featured_image": {
+        "url": "/uploads/board1.jpg",
+        "alternativeText": "..."
+      },
       "linked_shop": { "name": "더 힐 테라피", "slug": "the-hill-therapy" },
       "region": { "name": "서울" }
     }
   ],
-  "meta": { "pagination": { "page": 1, "pageSize": 12, "pageCount": 3, "total": 30 } }
+  "meta": {
+    "pagination": { "page": 1, "pageSize": 12, "pageCount": 3, "total": 30 }
+  }
 }
 ```
 
@@ -976,11 +1048,11 @@ Same shape as list item but with full `body` (rich text) instead of `excerpt`, p
 
 #### 5.2.7 Community Posts
 
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| GET | `/api/community-posts` | Public | List community posts (feed) |
-| GET | `/api/community-posts/:documentId` | Public | Single post detail |
-| POST | `/api/community-posts` | Customer (JWT) | Create community post |
+| Method | Endpoint                           | Auth           | Description                 |
+| ------ | ---------------------------------- | -------------- | --------------------------- |
+| GET    | `/api/community-posts`             | Public         | List community posts (feed) |
+| GET    | `/api/community-posts/:documentId` | Public         | Single post detail          |
+| POST   | `/api/community-posts`             | Customer (JWT) | Create community post       |
 
 **GET `/api/community-posts` — Query Parameters:**
 
@@ -1019,7 +1091,9 @@ Same shape as list item but with full `body` (rich text) instead of `excerpt`, p
       }
     }
   ],
-  "meta": { "pagination": { "page": 1, "pageSize": 10, "pageCount": 5, "total": 48 } }
+  "meta": {
+    "pagination": { "page": 1, "pageSize": 10, "pageCount": 5, "total": 48 }
+  }
 }
 ```
 
@@ -1041,10 +1115,10 @@ Photos and video are uploaded separately via Strapi's media upload endpoint, the
 
 #### 5.2.8 Comments
 
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| GET | `/api/comments` | Public | List comments for a parent entity |
-| POST | `/api/comments` | Customer (JWT) | Create comment or nested reply |
+| Method | Endpoint        | Auth           | Description                       |
+| ------ | --------------- | -------------- | --------------------------------- |
+| GET    | `/api/comments` | Public         | List comments for a parent entity |
+| POST   | `/api/comments` | Customer (JWT) | Create comment or nested reply    |
 
 **GET `/api/comments` — Query Parameters:**
 
@@ -1073,19 +1147,31 @@ Photos and video are uploaded separately via Strapi's media upload endpoint, the
       "parent_id": 1,
       "reply_to_id": null,
       "created_at": "2026-03-27T10:30:00Z",
-      "author": { "id": 10, "username": "마사지매니아", "total_points": 800, "level": 2 },
+      "author": {
+        "id": 10,
+        "username": "마사지매니아",
+        "total_points": 800,
+        "level": 2
+      },
       "replies": [
         {
           "id": 2,
           "content": "저도 갈만한지 알려주세요!",
           "reply_to_id": 1,
           "created_at": "2026-03-27T11:00:00Z",
-          "author": { "id": 15, "username": "쉬다", "total_points": 100, "level": 1 }
+          "author": {
+            "id": 15,
+            "username": "쉬다",
+            "total_points": 100,
+            "level": 1
+          }
         }
       ]
     }
   ],
-  "meta": { "pagination": { "page": 1, "pageSize": 20, "pageCount": 2, "total": 24 } }
+  "meta": {
+    "pagination": { "page": 1, "pageSize": 20, "pageCount": 2, "total": 24 }
+  }
 }
 ```
 
@@ -1106,12 +1192,12 @@ For a reply: set `reply_to_id` to the parent comment's ID. Server validates that
 
 #### 5.2.9 Events & Notices
 
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| GET | `/api/events` | Public | List events (filterable by category, sortable) |
-| GET | `/api/events/:documentId` | Public | Single event detail |
-| GET | `/api/notices` | Public | List notices (pinned first) |
-| GET | `/api/notices/:documentId` | Public | Single notice detail with prev/next |
+| Method | Endpoint                   | Auth   | Description                                    |
+| ------ | -------------------------- | ------ | ---------------------------------------------- |
+| GET    | `/api/events`              | Public | List events (filterable by category, sortable) |
+| GET    | `/api/events/:documentId`  | Public | Single event detail                            |
+| GET    | `/api/notices`             | Public | List notices (pinned first)                    |
+| GET    | `/api/notices/:documentId` | Public | Single notice detail with prev/next            |
 
 **GET `/api/events` — Query Parameters:**
 
@@ -1145,7 +1231,9 @@ For a reply: set `reply_to_id` to the parent comment's ID. Server validates that
       "featured_image": { "url": "/uploads/event1.jpg" }
     }
   ],
-  "meta": { "pagination": { "page": 1, "pageSize": 12, "pageCount": 1, "total": 8 } }
+  "meta": {
+    "pagination": { "page": 1, "pageSize": 12, "pageCount": 1, "total": 8 }
+  }
 }
 ```
 
@@ -1166,7 +1254,9 @@ For a reply: set `reply_to_id` to the parent comment's ID. Server validates that
       "published_at": "2026-05-15T00:00:00Z"
     }
   ],
-  "meta": { "pagination": { "page": 1, "pageSize": 20, "pageCount": 1, "total": 15 } }
+  "meta": {
+    "pagination": { "page": 1, "pageSize": 20, "pageCount": 1, "total": 15 }
+  }
 }
 ```
 
@@ -1186,18 +1276,26 @@ Custom controller adds `prev` and `next` fields:
     "view_count": 1246,
     "published_at": "2026-05-15T00:00:00Z"
   },
-  "prev": { "documentId": "nt002", "title": "서비스 정기 점검 안내", "published_at": "2026-05-28T00:00:00Z" },
-  "next": { "documentId": "nt003", "title": "부적절한 리뷰 작성 시 제재 안내", "published_at": "2026-05-10T00:00:00Z" }
+  "prev": {
+    "documentId": "nt002",
+    "title": "서비스 정기 점검 안내",
+    "published_at": "2026-05-28T00:00:00Z"
+  },
+  "next": {
+    "documentId": "nt003",
+    "title": "부적절한 리뷰 작성 시 제재 안내",
+    "published_at": "2026-05-10T00:00:00Z"
+  }
 }
 ```
 
 #### 5.2.10 Bookmarks
 
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| GET | `/api/bookmarks` | Customer (JWT) | List user's bookmarked shops (paginated) |
-| POST | `/api/bookmarks` | Customer (JWT) | Add bookmark |
-| DELETE | `/api/bookmarks/:id` | Customer (JWT) | Remove bookmark |
+| Method | Endpoint             | Auth           | Description                              |
+| ------ | -------------------- | -------------- | ---------------------------------------- |
+| GET    | `/api/bookmarks`     | Customer (JWT) | List user's bookmarked shops (paginated) |
+| POST   | `/api/bookmarks`     | Customer (JWT) | Add bookmark                             |
+| DELETE | `/api/bookmarks/:id` | Customer (JWT) | Remove bookmark                          |
 
 **GET `/api/bookmarks` — Query Parameters:**
 
@@ -1232,7 +1330,9 @@ Custom controller adds `prev` and `next` fields:
       "created_at": "2026-03-27T14:00:00Z"
     }
   ],
-  "meta": { "pagination": { "page": 1, "pageSize": 12, "pageCount": 1, "total": 5 } }
+  "meta": {
+    "pagination": { "page": 1, "pageSize": 12, "pageCount": 1, "total": 5 }
+  }
 }
 ```
 
@@ -1251,16 +1351,19 @@ Server auto-sets `user_id` from JWT. Returns 409 if bookmark already exists.
 Atomic bookmark toggle endpoint. Uses UPSERT/DELETE pattern to avoid race conditions.
 
 Request:
+
 ```json
 { "shop": "shop001" }
 ```
 
 Response (bookmark created):
+
 ```json
 { "bookmarked": true, "id": 42 }
 ```
 
 Response (bookmark removed):
+
 ```json
 { "bookmarked": false }
 ```
@@ -1269,10 +1372,10 @@ Logic: If a bookmark for the given shop + authenticated user exists, delete it a
 
 #### 5.2.11 Likes
 
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| POST | `/api/likes` | Customer (JWT) | Like a target |
-| DELETE | `/api/likes/:id` | Customer (JWT) | Unlike |
+| Method | Endpoint         | Auth           | Description   |
+| ------ | ---------------- | -------------- | ------------- |
+| POST   | `/api/likes`     | Customer (JWT) | Like a target |
+| DELETE | `/api/likes/:id` | Customer (JWT) | Unlike        |
 
 **POST `/api/likes` — Request:**
 
@@ -1291,11 +1394,11 @@ Server auto-sets `user_id` from JWT. Returns 409 if already liked. On success, t
 
 #### 5.2.12 User Profile
 
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| GET | `/api/users/me` | Customer (JWT) | Current user profile with computed level |
-| PUT | `/api/users/me/avatar` | Customer (JWT) | Upload/change profile photo |
-| DELETE | `/api/users/me/avatar` | Customer (JWT) | Remove profile photo |
+| Method | Endpoint               | Auth           | Description                              |
+| ------ | ---------------------- | -------------- | ---------------------------------------- |
+| GET    | `/api/users/me`        | Customer (JWT) | Current user profile with computed level |
+| PUT    | `/api/users/me/avatar` | Customer (JWT) | Upload/change profile photo              |
+| DELETE | `/api/users/me/avatar` | Customer (JWT) | Remove profile photo                     |
 
 **GET `/api/users/me` — Response:**
 
@@ -1393,7 +1496,9 @@ The `recalculateShopRating` function uses a read-then-write pattern that is vuln
 **Required safeguard:** Wrap the recalculation in a PostgreSQL advisory lock keyed on the shop's `documentId`. This ensures only one recalculation runs at a time per shop:
 
 ```typescript
-await strapi.db.connection.raw('SELECT pg_advisory_xact_lock(hashtext(?))', [shopDocumentId]);
+await strapi.db.connection.raw('SELECT pg_advisory_xact_lock(hashtext(?))', [
+  shopDocumentId,
+]);
 // ... then read reviews, compute average, update shop (within the same transaction)
 ```
 
@@ -1407,7 +1512,8 @@ A Strapi cron task registered in `config/cron-tasks.ts` runs every 5 minutes and
 // config/cron-tasks.ts (simplified)
 export default {
   '*/5 * * * *': async ({ strapi }) => {
-    const pending = await strapi.db.connection('rating_recalc_queue')
+    const pending = await strapi.db
+      .connection('rating_recalc_queue')
       .where('next_retry_at', '<=', new Date())
       .whereNull('resolved_at')
       .where('attempts', '<', strapi.db.connection.ref('max_attempts'));
@@ -1415,12 +1521,14 @@ export default {
     for (const entry of pending) {
       try {
         await recalculateShopRating(entry.shop_id);
-        await strapi.db.connection('rating_recalc_queue')
+        await strapi.db
+          .connection('rating_recalc_queue')
           .where('id', entry.id)
           .update({ resolved_at: new Date() });
       } catch (err) {
         const nextAttempt = entry.attempts + 1;
-        await strapi.db.connection('rating_recalc_queue')
+        await strapi.db
+          .connection('rating_recalc_queue')
           .where('id', entry.id)
           .update({
             attempts: nextAttempt,
@@ -1434,6 +1542,7 @@ export default {
 ```
 
 Key behaviors:
+
 - **Exponential backoff:** Each successive retry waits `attempts * 5 minutes` (5 min, 10 min, 15 min, 20 min, 25 min).
 - **On success:** `resolved_at` is set; the row remains for auditing.
 - **On exhaustion:** When `attempts >= max_attempts` (default 5), the entry is no longer retried. An admin alert is raised (see below).
@@ -1455,6 +1564,7 @@ On `comment` `afterCreate`: increment `comment_count` on the parent entity (dete
 #### 5.3.6 Lifecycle Hooks: Like Count Recalculation
 
 On `post_like` creation, the following operations MUST execute within a single database transaction:
+
 1. Insert the `post_like` row
 2. Atomic increment `like_count` on the target entity (determined by `target_type` — `board_post`, `community_post`, or `event`)
 3. Insert `user_points_log` entry for the target author (+5P `like_received`, see §5.3.7)
@@ -1462,6 +1572,7 @@ On `post_like` creation, the following operations MUST execute within a single d
 If any step fails, the entire transaction rolls back — no partial state.
 
 On `post_like` deletion, the following operations MUST execute within a single database transaction:
+
 1. Delete the `post_like` row
 2. Atomic decrement `like_count` on the target entity
 
@@ -1472,15 +1583,18 @@ If the decrement would violate the `CHECK (like_count >= 0)` constraint, the tra
 #### 5.3.7 Lifecycle Hooks: Points Calculation
 
 On `community_post` `afterCreate`:
+
 1. Insert `user_points_log` entry: `{ action: 'post_created', points: 50, reference_type: 'community_post', reference_id: post.id }`
 2. Increment author's `total_points` by 50
 
 On `comment` `afterCreate`:
+
 1. Check daily limit: `SELECT COUNT(*) FROM user_points_log WHERE user_id = author.id AND action = 'comment_created' AND created_at >= today_start(KST)`
 2. If count < 10: insert `user_points_log` entry `{ action: 'comment_created', points: 10 }` and increment author's `total_points` by 10
 3. If count >= 10: skip point award (daily cap reached)
 
 On `post_like` `afterCreate`:
+
 1. Find the author of the liked target entity
 2. Insert `user_points_log` for that author: `{ action: 'like_received', points: 5, reference_type: 'post_like', reference_id: like.id }`
 3. Increment that author's `total_points` by 5
@@ -1506,11 +1620,13 @@ Increments `view_count` atomically for the specified content type and document. 
 Custom controller that extends the default Strapi `findOne` with `prev` and `next` notice references, based on `published_at` ordering within the same locale.
 
 **Logic:**
+
 - `prev`: the notice with the closest `published_at` AFTER the current notice (newer)
 - `next`: the notice with the closest `published_at` BEFORE the current notice (older)
 - If no prev/next exists, the field is `null`
 
 **Response fields added:**
+
 ```json
 {
   "data": { ... },
@@ -1538,6 +1654,7 @@ Custom controller that extends the default Strapi `findOne` with `prev` and `nex
 4. Social login users (Kakao, Naver) have `email_verified` set to `true` automatically on first login.
 
 **Email verification middleware:** A custom Strapi policy (`is-email-verified`) checks `ctx.state.user.email_verified` before allowing write operations. Applied to:
+
 - `POST /api/reviews` (review creation)
 - `POST /api/community-posts` (community post creation)
 - `POST /api/comments` (comment creation)
@@ -1554,33 +1671,58 @@ Unverified users receive `403 { error: "EMAIL_NOT_VERIFIED", message: "Please ve
 
 ### 5.5 Strapi Plugins
 
-| Plugin | Purpose | Config Notes |
-|---|---|---|
-| Users & Permissions | Customer auth | Extended with Kakao/Naver providers |
-| i18n | Content localization | Default locale: `ko`, additional: `en` |
-| Upload | Media management | Provider: `@strapi/provider-upload-aws-s3` pointed at MinIO |
+| Plugin                  | Purpose              | Config Notes                                                                                                                                                                         |
+| ----------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Users & Permissions     | Customer auth        | Extended with Kakao/Naver providers                                                                                                                                                  |
+| i18n                    | Content localization | Default locale: `ko`, additional: `en`                                                                                                                                               |
+| Upload                  | Media management     | Provider: `@strapi/provider-upload-aws-s3` pointed at MinIO                                                                                                                          |
 | Custom cache middleware | API response caching | Redis-backed custom Strapi middleware (`src/middlewares/api-cache.ts`), invalidated via lifecycle hooks. Chosen over plugin for full control over cache keys and invalidation logic. |
 
 ### 5.6 Admin Web Features (Next.js)
 
 The following features are built as pages/components within the Admin Web (Next.js) application — not as Strapi admin plugins:
 
-| Feature | Description |
-|---|---|
-| Dashboard | Platform stats: total shops, reviews, users, inquiries. Built as a Next.js page fetching data from the custom analytics endpoint (`GET /api/dashboard/stats`, §5.2.5). |
-| Map Pin Drop | Integrated map component (Kakao Map) for latitude/longitude selection when creating or editing shop listings. Also used on the Customer Web shop detail page as a static map. Built as a React component within the Admin Web. |
-| Shop CRUD | Full create, read, update, delete interface for shop listings with search, filter, and sort. |
-| Review Moderation | View, flag, hide, and moderate customer reviews. |
-| Partnership Inquiry Management | Track and manage incoming partnership requests with status workflow. |
-| Customer Account Management | Lock/unlock customer accounts, view activity. |
-| Content Management | Manage themes, regions, districts, and amenity options. |
-| Locale Management | Create and manage localized content (Korean/English) via the Admin Web's locale switcher, which calls Strapi's i18n API. |
-| Audit Log Viewer | Searchable, filterable table of all listing changes. |
-| **Board Posts** | CRUD interface for board posts with type filter, featured toggle, HOT badge management |
-| **Events** | CRUD for events with date pickers, category, featured toggle |
-| **Notices** | CRUD for notices with important/pinned toggle |
-| **Community Moderation** | View, hide, or delete community posts. View user activity. |
-| **User Points** | View user point history and current levels (read-only) |
+**Shell layout:** The Admin Web uses a sidebar-only shell. There is no separate global top header bar. The left sidebar contains: the logo mark at the top, navigation links grouped by category in the middle, and the logged-in admin user identity (avatar initial, display name, role label) at the bottom. A topbar across the main content area shows only the current page title, breadcrumb, and contextual action buttons. Logout is accessed from the user identity area at the bottom of the sidebar.
+
+**Sidebar navigation groups and items:**
+
+| Group Label | Sidebar Items                                                                             |
+| ----------- | ----------------------------------------------------------------------------------------- |
+| Overview    | Dashboard                                                                                 |
+| Content     | Shops (total-count badge), New Shop, Themes, Locations                                    |
+| Moderation  | Reviews (under_review count badge — yellow), Partnership (new inquiry count badge), Users |
+| System      | Audit Log                                                                                 |
+
+**Feature table:**
+
+| Feature                        | Description                                                                                                                                                                                                                                                                                                                                                                                  |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Dashboard                      | 4 stat cards (Total Shops, Monthly Users, Total Reviews, New Inquiries) with month-over-month delta lines. Verify-needed alert banner for shops not re-verified in 90+ days. Two dashboard rows: (1) Monthly Signups bar chart + Pending Reviews feed; (2) Recent Shops feed + Recent Partnership Inquiries feed. Built as a Next.js page fetching from `GET /api/dashboard/stats` (§5.2.5). |
+| Map Pin Drop                   | Integrated map component (Kakao Map) for latitude/longitude selection when creating or editing shop listings. Also used on the Customer Web shop detail page as a static map. Built as a React component within the Admin Web.                                                                                                                                                               |
+| Shop CRUD                      | Full create, read, update, delete interface for shop listings with search, filter (All/Published/Draft/Verify-needed), and sort. Shop list topbar shows "+ New Shop" button. Inline row actions: Edit, Publish/Unpublish, Preview (👁).                                                                                                                                                      |
+| Shop Form                      | Two-column form layout: main column (Basic Info, Location + Map, Service Themes, Hours & Booking, Amenities, Images) and right sidebar panel (Publish Status card, Contact Channels card, Custom Status Tags card). Form title shows "Create New Shop" on `/shops/new` and "Edit Shop" on `/shops/[id]`. Topbar actions: Cancel / Save Draft / Publish.                                      |
+| Review Moderation              | Flat table of reviews with filter chips (All / Under Review / Published / Hidden). Row actions: Keep (→ published) and Hide inline buttons. Status displayed as colored pills.                                                                                                                                                                                                               |
+| Partnership Inquiry Management | Card grid layout (3 columns). Each card shows shop name, location/channel metadata, status badge, overdue warning (if >48h in new status), contact info, progress step bar, and Add Note + primary action buttons. Status badge colors: new=blue, contacted=green, awaiting info=blue, approved=brand color.                                                                                 |
+| Customer Account Management    | Table of users with columns: Name, Email, Reviews, Joined, Status, Action. Single Lock/Unlock action button per row. Status pills: active=green, locked=red (using `hidden` class).                                                                                                                                                                                                          |
+| Themes Management              | Table with columns: KO name, EN name, Shop count. Edit button per row. "+ Add Theme" button below table.                                                                                                                                                                                                                                                                                     |
+| Locations Management           | Region/district management page with accordion expand.                                                                                                                                                                                                                                                                                                                                       |
+| Audit Log Viewer               | Flat table (no expand/collapse diffs). Columns: Timestamp, Admin, Shop, Action, Field, Change (before → after). Filter chips: All Changes / Publish/Unpublish / Field Updates. Text search input.                                                                                                                                                                                            |
+| Board Posts                    | CRUD interface for board posts with type filter, featured toggle, HOT badge management.                                                                                                                                                                                                                                                                                                      |
+| Events                         | CRUD for events with date pickers, category, featured toggle.                                                                                                                                                                                                                                                                                                                                |
+| Notices                        | CRUD for notices with important/pinned toggle.                                                                                                                                                                                                                                                                                                                                               |
+| Community Moderation           | View, hide, or delete community posts. View user activity.                                                                                                                                                                                                                                                                                                                                   |
+| User Points                    | View user point history and current levels (read-only).                                                                                                                                                                                                                                                                                                                                      |
+
+**Status pill color mapping (as implemented in prototype CSS):**
+
+| CSS Class | Color | Used For                                                 |
+| --------- | ----- | -------------------------------------------------------- |
+| `.pub`    | Green | Published (shops, reviews) / Active (users)              |
+| `.draft`  | Amber | Draft (shops)                                            |
+| `.hidden` | Red   | Hidden (reviews), Under Review (reviews), Locked (users) |
+| `.new`    | Blue  | New (inquiries)                                          |
+
+> **Note:** Reviews in `hidden` and `under_review` status both use the `.hidden` (red) CSS class in the prototype. The distinction is shown via the text label inside the pill, not via separate colors.
 
 > **Note:** Strapi's built-in admin panel is not used for any of these operational features. It is restricted to developers for monitoring and debugging only.
 
@@ -1737,32 +1879,33 @@ apps/customer-web/
 
 ### 6.2 Rendering Strategy
 
-| Page | Strategy | Revalidation | Rationale |
-|---|---|---|---|
-| Homepage | SSG + ISR | 300s (5 min) | Relatively static, shows featured shops/themes |
-| Shop Detail | ISR | 60s | Content updates (reviews, ratings) need near-real-time reflection |
-| Theme Browse | SSG | On-demand (webhook) | Theme list rarely changes |
-| Location Browse | SSG | On-demand (webhook) | Location hierarchy is static |
-| Detail Search | SSR | N/A | Dynamic filter/sort combos, not cacheable via SSG |
-| Nearby Search | CSR | N/A | Requires client-side GPS, fully dynamic |
-| Review Feed | SSR | N/A | Must reflect latest reviews |
-| Partnership | SSG | On-demand | Static content page |
-| Login/Callback | CSR | N/A | Auth flow, no SEO value |
-| My Page | CSR | N/A | Auth-required, personalized, no SEO value |
-| Edit Profile | CSR | N/A | Auth-required form |
-| Board Recommendation | SSR | N/A | Dynamic region filtering |
-| Board Info | SSR | N/A | Dynamic sorting |
-| Board Post Detail | ISR | 60s | Content stable, comments dynamic via client |
-| Community Feed | SSR | N/A | Highly dynamic user content |
-| Community Post Detail | SSR | N/A | Dynamic comments/likes |
-| Events Hub | ISR | 300s (5 min) | Mixed static notices + time-sensitive events |
-| Ongoing Events | SSR | N/A | Dynamic category filtering/sorting |
-| Event Detail | ISR | 60s | Content stable, D-day needs freshness |
-| Notice Detail | SSG | On-demand (webhook) | Static admin content |
+| Page                  | Strategy  | Revalidation        | Rationale                                                         |
+| --------------------- | --------- | ------------------- | ----------------------------------------------------------------- |
+| Homepage              | SSG + ISR | 300s (5 min)        | Relatively static, shows featured shops/themes                    |
+| Shop Detail           | ISR       | 60s                 | Content updates (reviews, ratings) need near-real-time reflection |
+| Theme Browse          | SSG       | On-demand (webhook) | Theme list rarely changes                                         |
+| Location Browse       | SSG       | On-demand (webhook) | Location hierarchy is static                                      |
+| Detail Search         | SSR       | N/A                 | Dynamic filter/sort combos, not cacheable via SSG                 |
+| Nearby Search         | CSR       | N/A                 | Requires client-side GPS, fully dynamic                           |
+| Review Feed           | SSR       | N/A                 | Must reflect latest reviews                                       |
+| Partnership           | SSG       | On-demand           | Static content page                                               |
+| Login/Callback        | CSR       | N/A                 | Auth flow, no SEO value                                           |
+| My Page               | CSR       | N/A                 | Auth-required, personalized, no SEO value                         |
+| Edit Profile          | CSR       | N/A                 | Auth-required form                                                |
+| Board Recommendation  | SSR       | N/A                 | Dynamic region filtering                                          |
+| Board Info            | SSR       | N/A                 | Dynamic sorting                                                   |
+| Board Post Detail     | ISR       | 60s                 | Content stable, comments dynamic via client                       |
+| Community Feed        | SSR       | N/A                 | Highly dynamic user content                                       |
+| Community Post Detail | SSR       | N/A                 | Dynamic comments/likes                                            |
+| Events Hub            | ISR       | 300s (5 min)        | Mixed static notices + time-sensitive events                      |
+| Ongoing Events        | SSR       | N/A                 | Dynamic category filtering/sorting                                |
+| Event Detail          | ISR       | 60s                 | Content stable, D-day needs freshness                             |
+| Notice Detail         | SSG       | On-demand (webhook) | Static admin content                                              |
 
 **On-demand revalidation:** Strapi webhooks trigger Next.js revalidation when content is published/updated.
 
 **Webhook configuration:**
+
 - **Next.js revalidation endpoint:** `POST /api/revalidate` (custom API route in both Customer Web and Admin Web)
 - **Authentication:** Webhook requests are verified via a shared secret (`REVALIDATION_SECRET` env var) passed in the `x-revalidate-secret` header
 - **Payload:** `{ "model": "shop", "documentId": "abc123", "event": "entry.publish" }`
@@ -1784,7 +1927,7 @@ apps/customer-web/
 export async function fetchStrapi<T>(
   path: string,
   params?: Record<string, any>,
-  options?: RequestInit
+  options?: RequestInit,
 ): Promise<StrapiResponse<T>> {
   const url = new URL(`${process.env.STRAPI_API_URL}${path}`);
   if (params) {
@@ -1806,6 +1949,7 @@ export async function fetchStrapi<T>(
 ### 6.4 Key Frontend Patterns
 
 **Filter state in URL:** All search filters are serialized to URL query parameters via `useSearchParams()`. This ensures:
+
 - Shareable/bookmarkable search results
 - Back-navigation preserves state
 - SEO for search result pages (though marked `noindex`)
@@ -1813,6 +1957,7 @@ export async function fetchStrapi<T>(
 **Cascading location dropdowns:** The `LocationCascade` component fetches regions on mount, then fetches districts when a region is selected. Both calls are cached aggressively (region/district data rarely changes).
 
 **GPS nearby search:** The `NearbySearch` component is a client component (`"use client"`) that:
+
 1. Requests `navigator.geolocation.getCurrentPosition()`
 2. Calls the custom `/api/shops/nearby` endpoint
 3. Renders results with distance labels
@@ -1822,6 +1967,7 @@ export async function fetchStrapi<T>(
 > **Rendering ownership (OWNER-01):** `OpenCloseTag` is a **server component** — the tag is computed server-side during SSR/ISR using KST via `Intl.DateTimeFormat`. On shop cards in search results (SSR) and shop detail pages (ISR), the tag is included in the rendered HTML. Because both server and client use the same KST logic, there is no hydration mismatch. For ISR-cached pages, the tag may be up to 60 seconds stale (the ISR revalidation interval), which is acceptable for operating-hours granularity.
 
 **`operating_hours` JSON format:**
+
 ```json
 {
   "mon": { "open": "10:00", "close": "22:00" },
@@ -1833,6 +1979,7 @@ export async function fetchStrapi<T>(
   "sun": null
 }
 ```
+
 - Keys: `mon`, `tue`, `wed`, `thu`, `fri`, `sat`, `sun`
 - Values: `{ "open": "HH:mm", "close": "HH:mm" }` or `null` (closed that day)
 - Times are in 24-hour KST format. Overnight hours (e.g., `"open": "18:00", "close": "02:00"`) are supported — close time before open time means next day.
@@ -1850,19 +1997,19 @@ export async function fetchStrapi<T>(
 
 ### 7.1 On-Premise Server Requirements
 
-| Resource | Minimum (MVP) | Recommended |
-|---|---|---|
-| CPU | 4 cores | 8 cores |
-| RAM | 8 GB | 16 GB |
-| Storage | 100 GB SSD | 250 GB NVMe SSD |
-| OS | Ubuntu 24.04 LTS | Ubuntu 24.04 LTS |
-| Network | 100 Mbps | 1 Gbps |
+| Resource | Minimum (MVP)    | Recommended      |
+| -------- | ---------------- | ---------------- |
+| CPU      | 4 cores          | 8 cores          |
+| RAM      | 8 GB             | 16 GB            |
+| Storage  | 100 GB SSD       | 250 GB NVMe SSD  |
+| OS       | Ubuntu 24.04 LTS | Ubuntu 24.04 LTS |
+| Network  | 100 Mbps         | 1 Gbps           |
 
 ### 7.2 Docker Compose — Production
 
 ```yaml
 # docker/docker-compose.prod.yml (simplified)
-version: "3.9"
+version: '3.9'
 
 services:
   postgres:
@@ -1875,9 +2022,9 @@ services:
       POSTGRES_USER: ${DATABASE_USERNAME}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
     ports:
-      - "127.0.0.1:5432:5432"
+      - '127.0.0.1:5432:5432'
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USERNAME}"]
+      test: ['CMD-SHELL', 'pg_isready -U ${DATABASE_USERNAME}']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -1889,13 +2036,13 @@ services:
     volumes:
       - redis_data:/data
     ports:
-      - "127.0.0.1:6379:6379"
+      - '127.0.0.1:6379:6379'
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      test: ['CMD', 'redis-cli', '-a', '${REDIS_PASSWORD}', 'ping']
       interval: 10s
 
   minio:
-    image: minio/minio:RELEASE.2026-03-15T00-00-00Z  # Pin to specific release
+    image: minio/minio:RELEASE.2026-03-15T00-00-00Z # Pin to specific release
     restart: unless-stopped
     command: server /data --console-address ":9001"
     volumes:
@@ -1904,10 +2051,10 @@ services:
       MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
       MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
     ports:
-      - "127.0.0.1:9000:9000"
-      - "127.0.0.1:9001:9001"
+      - '127.0.0.1:9000:9000'
+      - '127.0.0.1:9001:9001'
     healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
+      test: ['CMD', 'mc', 'ready', 'local']
       interval: 10s
 
   strapi:
@@ -1938,7 +2085,7 @@ services:
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
       MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME}
     ports:
-      - "127.0.0.1:1337:1337"
+      - '127.0.0.1:1337:1337'
 
   customer-web:
     build:
@@ -1953,7 +2100,7 @@ services:
       STRAPI_API_TOKEN: ${STRAPI_API_TOKEN}
       NEXT_PUBLIC_SITE_URL: https://${DOMAIN}
     ports:
-      - "127.0.0.1:3000:3000"
+      - '127.0.0.1:3000:3000'
 
   admin-web:
     build:
@@ -1969,7 +2116,7 @@ services:
       NEXT_PUBLIC_CUSTOMER_URL: https://${DOMAIN}
       NEXT_PUBLIC_KAKAO_MAP_APP_KEY: ${KAKAO_MAP_APP_KEY}
     ports:
-      - "127.0.0.1:3001:3001"
+      - '127.0.0.1:3001:3001'
 
   nginx:
     image: nginx:1.26-alpine
@@ -1981,12 +2128,12 @@ services:
       - minio
     volumes:
       - ../nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - /etc/ssl/cloudflare:/etc/ssl/cloudflare:ro  # Cloudflare Origin Certificate
+      - /etc/ssl/cloudflare:/etc/ssl/cloudflare:ro # Cloudflare Origin Certificate
     ports:
-      - "443:443"
-      - "80:80"
+      - '443:443'
+      - '80:80'
     healthcheck:
-      test: ["CMD", "nginx", "-t"]
+      test: ['CMD', 'nginx', '-t']
       interval: 30s
 
 volumes:
@@ -2124,35 +2271,35 @@ server {
 
 ### 7.4 Cloudflare Configuration
 
-| Setting | Value | Notes |
-|---|---|---|
-| SSL Mode | Full (Strict) | Origin Certificate installed on Nginx |
-| Minimum TLS | 1.2 | |
-| Always Use HTTPS | On | |
-| Auto Minify | JS, CSS, HTML | |
-| Brotli | On | |
-| HTTP/3 (QUIC) | On | |
-| Bot Fight Mode | On | Challenge suspicious bots |
-| Crawler Hints | On | Allowlist Yeti (Naver), Googlebot |
+| Setting          | Value         | Notes                                 |
+| ---------------- | ------------- | ------------------------------------- |
+| SSL Mode         | Full (Strict) | Origin Certificate installed on Nginx |
+| Minimum TLS      | 1.2           |                                       |
+| Always Use HTTPS | On            |                                       |
+| Auto Minify      | JS, CSS, HTML |                                       |
+| Brotli           | On            |                                       |
+| HTTP/3 (QUIC)    | On            |                                       |
+| Bot Fight Mode   | On            | Challenge suspicious bots             |
+| Crawler Hints    | On            | Allowlist Yeti (Naver), Googlebot     |
 
 **Page Rules / Cache Rules:**
 
-| Pattern | Rule | Notes |
-|---|---|---|
-| `{{API_DOMAIN}}/api/themes*` | Cache Everything, Edge TTL: 1 day | |
-| `{{API_DOMAIN}}/api/regions*` | Cache Everything, Edge TTL: 1 day | |
-| `{{API_DOMAIN}}/api/districts*` | Cache Everything, Edge TTL: 1 day | |
-| `{{API_DOMAIN}}/uploads/*` | Cache Everything, Edge TTL: 7 days | |
-| `{{ADMIN_DOMAIN}}/*` | Bypass Cache, Security Level: High | Admin Web (admin-only access) |
-| `{{API_DOMAIN}}/admin/*` | Bypass Cache, Security Level: High | Strapi built-in admin panel (developer-only, IP-restricted at Nginx) |
+| Pattern                         | Rule                               | Notes                                                                |
+| ------------------------------- | ---------------------------------- | -------------------------------------------------------------------- |
+| `{{API_DOMAIN}}/api/themes*`    | Cache Everything, Edge TTL: 1 day  |                                                                      |
+| `{{API_DOMAIN}}/api/regions*`   | Cache Everything, Edge TTL: 1 day  |                                                                      |
+| `{{API_DOMAIN}}/api/districts*` | Cache Everything, Edge TTL: 1 day  |                                                                      |
+| `{{API_DOMAIN}}/uploads/*`      | Cache Everything, Edge TTL: 7 days |                                                                      |
+| `{{ADMIN_DOMAIN}}/*`            | Bypass Cache, Security Level: High | Admin Web (admin-only access)                                        |
+| `{{API_DOMAIN}}/admin/*`        | Bypass Cache, Security Level: High | Strapi built-in admin panel (developer-only, IP-restricted at Nginx) |
 
 **Rate Limiting Rules (Cloudflare):**
 
-| Path Pattern | Limit | Window | Action |
-|---|---|---|---|
-| `{{API_DOMAIN}}/api/auth/*` | 10 requests | 1 minute | Block |
-| `{{API_DOMAIN}}/api/reviews` (POST) | 5 requests | 1 minute | Challenge |
-| `{{API_DOMAIN}}/api/partnership-inquiries` (POST) | 3 requests | 1 minute | Challenge |
+| Path Pattern                                      | Limit       | Window   | Action    |
+| ------------------------------------------------- | ----------- | -------- | --------- |
+| `{{API_DOMAIN}}/api/auth/*`                       | 10 requests | 1 minute | Block     |
+| `{{API_DOMAIN}}/api/reviews` (POST)               | 5 requests  | 1 minute | Challenge |
+| `{{API_DOMAIN}}/api/partnership-inquiries` (POST) | 3 requests  | 1 minute | Challenge |
 
 ### 7.5 CI/CD Pipeline (GitLab CI)
 
@@ -2226,13 +2373,13 @@ echo "Deployment complete at $(date)"
 
 #### PostgreSQL Backup
 
-| Item | Spec |
-|---|---|
-| Method | `pg_dump --format=custom` via cron |
-| Schedule | Daily at 03:00 KST |
-| Storage | Off-site S3-compatible storage (separate from MinIO) |
-| Retention | 30 days rolling |
-| Verification | Weekly test restore to staging database |
+| Item         | Spec                                                 |
+| ------------ | ---------------------------------------------------- |
+| Method       | `pg_dump --format=custom` via cron                   |
+| Schedule     | Daily at 03:00 KST                                   |
+| Storage      | Off-site S3-compatible storage (separate from MinIO) |
+| Retention    | 30 days rolling                                      |
+| Verification | Weekly test restore to staging database              |
 
 **Restore procedure:**
 
@@ -2243,12 +2390,12 @@ echo "Deployment complete at $(date)"
 
 #### MinIO Backup
 
-| Item | Spec |
-|---|---|
-| Method | `rsync` of MinIO data directory |
-| Schedule | Daily at 04:00 KST |
-| Storage | Off-site S3-compatible storage |
-| Retention | 30 days rolling |
+| Item      | Spec                            |
+| --------- | ------------------------------- |
+| Method    | `rsync` of MinIO data directory |
+| Schedule  | Daily at 04:00 KST              |
+| Storage   | Off-site S3-compatible storage  |
+| Retention | 30 days rolling                 |
 
 ---
 
@@ -2298,7 +2445,12 @@ export default [
       contentSecurityPolicy: {
         useDefaults: true,
         directives: {
-          'img-src': ["'self'", 'data:', 'blob:', `${process.env.MINIO_ENDPOINT}`],
+          'img-src': [
+            "'self'",
+            'data:',
+            'blob:',
+            `${process.env.MINIO_ENDPOINT}`,
+          ],
         },
       },
     },
@@ -2372,11 +2524,11 @@ Cache invalidation is triggered by Strapi lifecycle hooks:
 
 **Additional webhook triggers for new content types:**
 
-| Content Type | Webhook Event | Revalidation Target |
-|---|---|---|
-| board_post | publish, update, unpublish | Board list pages, post detail |
-| event | publish, update, unpublish | Events hub, ongoing events, event detail |
-| notice | publish, update, unpublish | Events hub, notice detail |
+| Content Type | Webhook Event              | Revalidation Target                      |
+| ------------ | -------------------------- | ---------------------------------------- |
+| board_post   | publish, update, unpublish | Board list pages, post detail            |
+| event        | publish, update, unpublish | Events hub, ongoing events, event detail |
+| notice       | publish, update, unpublish | Events hub, notice detail                |
 
 Community posts and comments are SSR (no cache), so no webhook revalidation needed. Bookmark and like operations are user-specific CSR calls — no cache implications.
 
@@ -2426,8 +2578,8 @@ import createMiddleware from 'next-intl/middleware';
 export default createMiddleware({
   locales: ['ko', 'en'],
   defaultLocale: 'ko',
-  localePrefix: 'always',  // Both /ko and /en are explicit
-  localeDetection: true,    // Detect from Accept-Language header
+  localePrefix: 'always', // Both /ko and /en are explicit
+  localeDetection: true, // Detect from Accept-Language header
 });
 
 export const config = {
@@ -2478,6 +2630,7 @@ Every page includes:
 ### 11.5 Structured Data (JSON-LD)
 
 Shop detail pages include `LocalBusiness` schema markup with:
+
 - Name, address, telephone
 - Geo coordinates (latitude, longitude)
 - Opening hours
@@ -2494,11 +2647,11 @@ Test-Driven Development (TDD) — tests written before implementation.
 
 ### 12.2 Test Layers
 
-| Layer | Tool | Scope | Coverage Target |
-|---|---|---|---|
-| Unit | Vitest | Controllers, services, hooks, utilities, React components | ≥ 80% lines |
-| Integration | Vitest + Supertest | Strapi API endpoints, custom routes, policies | ≥ 80% lines |
-| E2E | Playwright | Full user flows across both locales | Critical paths 100% |
+| Layer       | Tool               | Scope                                                     | Coverage Target     |
+| ----------- | ------------------ | --------------------------------------------------------- | ------------------- |
+| Unit        | Vitest             | Controllers, services, hooks, utilities, React components | ≥ 80% lines         |
+| Integration | Vitest + Supertest | Strapi API endpoints, custom routes, policies             | ≥ 80% lines         |
+| E2E         | Playwright         | Full user flows across both locales                       | Critical paths 100% |
 
 ### 12.3 Critical E2E Test Paths
 
@@ -2515,14 +2668,14 @@ Test-Driven Development (TDD) — tests written before implementation.
 
 ### 13.1 Health Checks
 
-| Service | Endpoint | Expected |
-|---|---|---|
-| Strapi | `/_health` | HTTP 204 |
+| Service                | Endpoint               | Expected        |
+| ---------------------- | ---------------------- | --------------- |
+| Strapi                 | `/_health`             | HTTP 204        |
 | Customer Web (Next.js) | `/api/health` (custom) | HTTP 200 + JSON |
-| Admin Web (Next.js) | `/api/health` (custom) | HTTP 200 + JSON |
-| PostgreSQL | `pg_isready` | Exit code 0 |
-| Redis | `redis-cli ping` | PONG |
-| MinIO | `mc ready local` | Exit code 0 |
+| Admin Web (Next.js)    | `/api/health` (custom) | HTTP 200 + JSON |
+| PostgreSQL             | `pg_isready`           | Exit code 0     |
+| Redis                  | `redis-cli ping`       | PONG            |
+| MinIO                  | `mc ready local`       | Exit code 0     |
 
 **MinIO Storage Monitoring:**
 
@@ -2559,22 +2712,22 @@ access_log /var/log/nginx/access.log json_combined;
 
 #### Strapi Request Logging
 
-| Status Range | Log Level | Details |
-|---|---|---|
-| 2xx | `debug` | Route, response time |
-| 4xx | `warn` | Route, status, request ID, client IP |
-| 5xx | `error` | Route, status, request ID, client IP, stack trace |
+| Status Range | Log Level | Details                                           |
+| ------------ | --------- | ------------------------------------------------- |
+| 2xx          | `debug`   | Route, response time                              |
+| 4xx          | `warn`    | Route, status, request ID, client IP              |
+| 5xx          | `error`   | Route, status, request ID, client IP, stack trace |
 
 - Correlate logs using the `X-Request-ID` header from Nginx
 
 #### Log Rotation
 
-| Item | Spec |
-|---|---|
-| Tool | `logrotate` |
-| Retention | 90 days |
-| Rotation | Daily, compressed (`gzip`) |
-| Format | JSON for machine parsing |
+| Item      | Spec                       |
+| --------- | -------------------------- |
+| Tool      | `logrotate`                |
+| Retention | 90 days                    |
+| Rotation  | Daily, compressed (`gzip`) |
+| Format    | JSON for machine parsing   |
 
 ### 13.3 Uptime Monitoring
 
@@ -2591,18 +2744,19 @@ access_log /var/log/nginx/access.log json_combined;
 
 ### 13.5 Key Metrics & Alerting
 
-| Metric | Source | Threshold (Warning) | Threshold (Critical) |
-|---|---|---|---|
-| API response time p95 | Nginx access log | > 1 s | > 2 s |
-| Error rate (5xx / total) | Nginx access log | > 2 % | > 5 % |
-| Health check failure | UptimeRobot | — | Any failure |
-| Active users (concurrent) | Nginx access log | Informational | — |
-| Disk usage | `df` via cron | > 80 % | > 90 % |
-| PostgreSQL connections | `pg_stat_activity` | > 80 % of `max_connections` | > 90 % |
+| Metric                    | Source             | Threshold (Warning)         | Threshold (Critical) |
+| ------------------------- | ------------------ | --------------------------- | -------------------- |
+| API response time p95     | Nginx access log   | > 1 s                       | > 2 s                |
+| Error rate (5xx / total)  | Nginx access log   | > 2 %                       | > 5 %                |
+| Health check failure      | UptimeRobot        | —                           | Any failure          |
+| Active users (concurrent) | Nginx access log   | Informational               | —                    |
+| Disk usage                | `df` via cron      | > 80 %                      | > 90 %               |
+| PostgreSQL connections    | `pg_stat_activity` | > 80 % of `max_connections` | > 90 %               |
 
 **Alert channel:** Dedicated Slack channel (`#swida-alerts`).
 
 **Alert delivery:**
+
 - UptimeRobot → Slack webhook (health check failures)
 - Sentry → Slack integration (application errors)
 - Cron scripts → Slack webhook (disk, DB connection threshold breaches)
@@ -2684,8 +2838,8 @@ ADMIN_DOMAIN=admin.example.com
 ```yaml
 # pnpm-workspace.yaml
 packages:
-  - "apps/*"
-  - "packages/*"
+  - 'apps/*'
+  - 'packages/*'
 ```
 
 ```json
@@ -2768,26 +2922,26 @@ export interface StrapiResponse<T> {
 
 ### 14.4 Decision Log
 
-| # | Decision | Rationale | Date |
-|---|---|---|---|
-| D-001 | Next.js 16.2.1 (latest) for both frontends | Custom admin web eliminates Strapi React 18 conflict. All RSC CVEs patched. Turbopack stable, 87% faster dev startup. | 2026-03-24 |
-| D-002 | Node.js 24 Active LTS | Recommended for new projects in 2026. Strapi v5 officially supports it. Native TS type-stripping, npm v11, OpenSSL 3.5. EOL April 2028. | 2026-03-24 |
-| D-003 | PostgreSQL 17 over 18 | PostGIS 3.6.2 better validated on PG 17, PG 18 still newer | 2026-03-24 |
-| D-004 | Tailwind CSS v4 (latest) | Next.js 16 scaffolds v4 by default. Greenfield project — no migration concerns. Faster builds, CSS-first config. | 2026-03-24 |
-| D-005 | pnpm over npm/yarn | Best monorepo support, fastest installs, strict dependency isolation | 2026-03-24 |
-| D-006 | Custom Next.js Admin Web over Strapi built-in admin | Unified frontend stack (React 19 everywhere), custom UX for admin workflows, full design control. Admin Web accessible only to authenticated admin users. | 2026-03-24 |
-| D-007 | Strapi as headless API-only | Strapi's built-in admin panel restricted to developers only for monitoring, debugging, and emergency operations — not used for day-to-day platform management | 2026-03-24 |
-| D-008 | ISR over full SSR for shop detail | Balances freshness (60s revalidation) with performance and cost | 2026-03-24 |
-| D-009 | Page-based pagination over infinite scroll | SEO: unique crawlable URLs per page for Naver/Google indexing | 2026-03-24 |
-| D-010 | On-premise over cloud | Client requirement — dedicated server with full control | 2026-03-24 |
-| D-011 | PostGIS raw SQL over ORM geospatial | Strapi's Knex doesn't natively support PostGIS. Raw SQL via `strapi.db.connection.raw()` is the recommended approach. | 2026-03-24 |
-| D-012 | Redis for API cache over in-memory | Persistent across Strapi restarts, shared if scaled to multiple instances | 2026-03-24 |
-| D-013 | React 19.2.4 pinned | Patches all RSC CVEs including CVE-2026-23864. All frontends share same version. | 2026-03-24 |
+| #     | Decision                                            | Rationale                                                                                                                                                     | Date       |
+| ----- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| D-001 | Next.js 16.2.1 (latest) for both frontends          | Custom admin web eliminates Strapi React 18 conflict. All RSC CVEs patched. Turbopack stable, 87% faster dev startup.                                         | 2026-03-24 |
+| D-002 | Node.js 24 Active LTS                               | Recommended for new projects in 2026. Strapi v5 officially supports it. Native TS type-stripping, npm v11, OpenSSL 3.5. EOL April 2028.                       | 2026-03-24 |
+| D-003 | PostgreSQL 17 over 18                               | PostGIS 3.6.2 better validated on PG 17, PG 18 still newer                                                                                                    | 2026-03-24 |
+| D-004 | Tailwind CSS v4 (latest)                            | Next.js 16 scaffolds v4 by default. Greenfield project — no migration concerns. Faster builds, CSS-first config.                                              | 2026-03-24 |
+| D-005 | pnpm over npm/yarn                                  | Best monorepo support, fastest installs, strict dependency isolation                                                                                          | 2026-03-24 |
+| D-006 | Custom Next.js Admin Web over Strapi built-in admin | Unified frontend stack (React 19 everywhere), custom UX for admin workflows, full design control. Admin Web accessible only to authenticated admin users.     | 2026-03-24 |
+| D-007 | Strapi as headless API-only                         | Strapi's built-in admin panel restricted to developers only for monitoring, debugging, and emergency operations — not used for day-to-day platform management | 2026-03-24 |
+| D-008 | ISR over full SSR for shop detail                   | Balances freshness (60s revalidation) with performance and cost                                                                                               | 2026-03-24 |
+| D-009 | Page-based pagination over infinite scroll          | SEO: unique crawlable URLs per page for Naver/Google indexing                                                                                                 | 2026-03-24 |
+| D-010 | On-premise over cloud                               | Client requirement — dedicated server with full control                                                                                                       | 2026-03-24 |
+| D-011 | PostGIS raw SQL over ORM geospatial                 | Strapi's Knex doesn't natively support PostGIS. Raw SQL via `strapi.db.connection.raw()` is the recommended approach.                                         | 2026-03-24 |
+| D-012 | Redis for API cache over in-memory                  | Persistent across Strapi restarts, shared if scaled to multiple instances                                                                                     | 2026-03-24 |
+| D-013 | React 19.2.4 pinned                                 | Patches all RSC CVEs including CVE-2026-23864. All frontends share same version.                                                                              | 2026-03-24 |
 
 ### 14.5 Deferred Items
 
-| Item | Description | Depends On |
-|---|---|---|
+| Item                           | Description                                                                                                                                                                                                                                                                                       | Depends On                       |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
 | Server-Side Review Rate Limits | Per-user hourly and per-shop daily caps (e.g., 10 reviews/user/hour, 3 reviews/user/shop/day) enforced via Strapi middleware to prevent review flooding beyond Cloudflare WAF limits (~400+/day per user passthrough). Requires Redis-backed counters in a custom `review-rate-limit` middleware. | Strapi custom middleware + Redis |
 
 ---
